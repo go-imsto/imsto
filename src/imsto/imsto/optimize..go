@@ -31,6 +31,7 @@ func runOptimize(args []string) {
 
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	// write
@@ -39,6 +40,6 @@ func runOptimize(args []string) {
 		panic(err)
 	}
 	defer dest.Close()
-	image.RewriteJpeg(file, dest, &image.WriteOption{Quality: 88, StripAll: true})
+	image.RewriteJpeg(file, dest, &image.WriteOption{Quality: 75, StripAll: true})
 
 }

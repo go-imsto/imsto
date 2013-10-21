@@ -1,7 +1,7 @@
 package image
 
 /*
-#cgo CFLAGS: -I/opt/local/include
+#cgo CFLAGS: -I/opt/local/include -DIM_DEBUG
 #cgo LDFLAGS: -ljpeg -L/opt/local/lib
 // liut: add CFLAGS "-DIM_DEBUG" for debug output
 
@@ -44,7 +44,7 @@ func ReadJpegImage(file *os.File) (*ImageAttr, error) {
 	infile := C.fdopen(C.int(file.Fd()), cmode)
 
 	var ia C.struct_jpeg_attr
-	r := C.ReadJPEGFile(infile, &ia)
+	r := C.read_jpeg_file(infile, &ia)
 	// fmt.Println(ia)
 	fmt.Printf("C.Read_jpeg_file %d\n", r)
 	return NewImageAttr(ia.width, ia.height, ia.quality), nil
@@ -66,7 +66,7 @@ func ReadJpeg(filename string) (*ImageAttr, error) {
 	// defer C.free(unsafe.Pointer(csfilename))
 	// // var cinfo C.j_decompress_ptr
 	// var ia C.jpeg_attr
-	// r := C.ReadJPEGFile(csfilename, &ia)
+	// r := C.read_jpeg_file(csfilename, &ia)
 	// fmt.Println(ia)
 	// fmt.Printf("C.Read_jpeg_file %d\n", r)
 	// return NewImageAttr(ia.width, ia.height, ia.quality), nil
@@ -90,9 +90,9 @@ func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
 		opt.strip_all = C.boolean(0)
 	}
 
-	r := C.WriteJPEGFile(infile, outfile, &opt)
+	r := C.write_jpeg_file(infile, outfile, &opt)
 
-	fmt.Printf("C.WriteJPEGFile %d\n", r)
+	fmt.Printf("C.write_jpeg_file %d\n", r)
 	st_i, _ := src.Stat()
 	st_o, _ := dest.Stat()
 	insize := st_i.Size()
