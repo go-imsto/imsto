@@ -111,12 +111,19 @@ func (self *wandImpl) SetFormat(format string) error {
 	return nil
 }
 
-// Implements direct to memory image formats. It returns the image as a blob
-func (self *wandImpl) Blob(length *uint) []byte {
-	ptr := unsafe.Pointer(C.MagickGetImageBlob(self.wand, (*C.size_t)(unsafe.Pointer(length))))
-	data := C.GoBytes(ptr, C.int(*length))
-	C.MagickRelinquishMemory(ptr)
-	return data
+// Get image data as a byte array.
+func (self *wandImpl) GetImageBlob() ([]byte, error) {
+	size := C.size_t(0)
+	p := unsafe.Pointer(C.MagickGetImageBlob(self.wand, &size))
+	if size == 0 {
+		return nil, fmt.Errorf("Could not get image blob \n")
+	}
+
+	blob := C.GoBytes(p, C.int(size))
+
+	C.MagickRelinquishMemory(p)
+
+	return blob, nil
 }
 
 // Converts the current image into a thumbnail of the specified
@@ -169,25 +176,17 @@ func (self *wandImpl) Resize(width uint, height uint) error {
 	return nil
 }
 
-// Get image data as a byte array.
-func (self *wandImpl) GetImageBlob() ([]byte, error) {
-	var size C.size_t = 0
-
-	p := unsafe.Pointer(C.MagickGetImageBlob(self.wand, &size))
-	if size == 0 {
-		return nil, fmt.Errorf("Could not get image blob \n")
-	}
-
-	blob := C.GoBytes(p, C.int(size))
-
-	C.MagickRelinquishMemory(p)
-
-	return blob, nil
-}
-
 // Returns the compression quality of the image. Ranges from 1 (lowest) to 100 (highest).
 func (self *wandImpl) Quality() uint8 {
 	return uint8(C.MagickGetImageCompressionQuality(self.wand))
+}
+
+// Implements direct to memory image formats. It returns the image as a blob
+func (self *wandImpl) Blob(length *uint) []byte {
+	ptr := unsafe.Pointer(C.MagickGetImageBlob(self.wand, (*C.size_t)(unsafe.Pointer(length))))
+	data := C.GoBytes(ptr, C.int(*length))
+	C.MagickRelinquishMemory(ptr)
+	return data
 }
 
 // Destroys image.
