@@ -23,7 +23,7 @@ Simp_Image *
 simp_open_stdio(FILE *infile)
 {
 #ifdef IM_DEBUG
-	printf("start simp_open_stdio\n");
+	printf("[start simp_open_stdio]\n");
 #endif
 
 	Simp_Image *im;
@@ -66,7 +66,7 @@ void
 _simp_init(Simp_Image *im)
 {
 #ifdef IM_DEBUG
-	printf("start _simp_init\n");
+	printf("[start _simp_init]\n");
 #endif
 
 	im->in.ji.err = jpeg_std_error(&(im->jerr.pub));
@@ -88,7 +88,7 @@ Simp_Image *
 _simp_read_head(Simp_Image *im)
 {
 #ifdef IM_DEBUG
-	printf("start _simp_read_head\n");
+	printf("[start _simp_read_head]\n");
 #endif
 
 	jpeg_read_header(&(im->in.ji), TRUE);

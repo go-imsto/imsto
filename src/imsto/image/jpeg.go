@@ -73,6 +73,16 @@ func ReadJpeg(filename string) (*ImageAttr, error) {
 }
 
 func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
+	var (
+		st_i, st_o      os.FileInfo
+		err             error
+		insize, outsize int64
+		ratio           float64
+	)
+	st_i, err = src.Stat()
+	if err != nil {
+		return err
+	}
 	icmode := C.CString("rb")
 	defer C.free(unsafe.Pointer(icmode))
 	infile := C.fdopen(C.int(src.Fd()), icmode)
@@ -93,11 +103,13 @@ func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
 	r := C.write_jpeg_file(infile, outfile, &opt)
 
 	fmt.Printf("C.write_jpeg_file %d\n", r)
-	st_i, _ := src.Stat()
-	st_o, _ := dest.Stat()
-	insize := st_i.Size()
-	outsize := st_o.Size()
-	ratio := float64(insize-outsize) * 100.0 / float64(insize)
+	st_o, err = dest.Stat()
+	if err != nil {
+		return err
+	}
+	insize = st_i.Size()
+	outsize = st_o.Size()
+	ratio = float64(insize-outsize) * 100.0 / float64(insize)
 	fmt.Printf("%d --> %d bytes (%0.2f%%), optimized.\n", insize, outsize, ratio)
 	// fmt.Printf("src size: %d, dest size: %d \n", st_i.Size(), st_o.Size())
 

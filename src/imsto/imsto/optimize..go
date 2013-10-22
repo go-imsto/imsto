@@ -19,7 +19,7 @@ func init() {
 	cmdOptimize.Run = runOptimize
 }
 
-func runOptimize(args []string) {
+func runOptimize(args []string) bool {
 
 	if len(args) < 1 {
 		//fmt.Println("nothing")
@@ -31,15 +31,17 @@ func runOptimize(args []string) {
 
 	if err != nil {
 		fmt.Println(err)
-		return
+		return false
 	}
 
 	// write
 	dest, err := os.Create(args[1])
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return false
 	}
 	defer dest.Close()
 	image.RewriteJpeg(file, dest, &image.WriteOption{Quality: 75, StripAll: true})
 
+	return true
 }

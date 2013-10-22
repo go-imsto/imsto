@@ -19,12 +19,19 @@ func init() {
 	cmdImport.Run = runImport
 }
 
-func runImport(args []string) {
+func runImport(args []string) bool {
 	if len(args) == 0 {
 		fmt.Println("nothing")
-		return
+		return false
 	} else {
 		fmt.Println(args[0])
+	}
+
+	if _, err := os.Stat(args[0]); err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println(err)
+			return false
+		}
 	}
 
 	ia, _ := image.ReadJpeg(args[0])
@@ -38,6 +45,7 @@ func runImport(args []string) {
 
 	if err != nil {
 		fmt.Println(err)
+		return false
 	}
 
 	var (
@@ -48,9 +56,11 @@ func runImport(args []string) {
 
 	if err != nil {
 		fmt.Println(err)
+		return false
 	}
 
 	// fmt.Println(entry)
 	fmt.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
 
+	return true
 }

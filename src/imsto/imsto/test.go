@@ -23,7 +23,7 @@ func init() {
 	cmdTest.Run = testApp
 }
 
-func testApp(args []string) {
+func testApp(args []string) bool {
 	al := len(args)
 	if al == 0 {
 		fmt.Println("nothing")
@@ -37,6 +37,7 @@ func testApp(args []string) {
 
 		if err != nil {
 			fmt.Println(err)
+			return false
 		}
 
 		t := imsto.GuessImageType(&data)
@@ -51,6 +52,7 @@ func testApp(args []string) {
 		fmt.Println(mimetype)
 	}
 
+	return true
 }
 
 func readImageHead(fname string) ([]byte, error) {
