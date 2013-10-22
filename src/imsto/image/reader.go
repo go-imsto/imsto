@@ -1,52 +1,86 @@
 package image
 
 import (
-	"imsto"
+	// "imsto"
+	// "os"
+	// "errors"
+	"fmt"
 )
 
-func GetImageAttr(filename string) *imsto.ImageAttr {
+type ImageAttr struct {
+	Width   uint32
+	Height  uint32
+	Quality uint8
+}
 
-	//args := [][]byte{[]byte("-format"), []byte("%m %w %h %Q"), []byte(filename)}
-	// args := [][]byte{[]byte("-verbose"), []byte(filename)}
-	//argc := len(args)
+type WriteOption struct {
+	StripAll bool
+	Quality  uint8
+}
 
-	//argv := cargv(args)
+// export NewImageAttr
+func NewImageAttr(w, h uint, q uint8) *ImageAttr {
+	return &ImageAttr{uint32(w), uint32(h), uint8(q)}
+}
 
-	// defer C.free(unsafe.Pointer(argv))
-	//r := C.IdentifyMain(C.int(argc), argv)
+type ThumbOption struct {
+	Width, Height int
+	IsFit         bool
+	IsCrop        bool
+	wopt          WriteOption
+}
 
-	//fmt.Println(r)
+type Image interface {
+	Open(filename string) error
+	OpenBlob(blob []byte, length uint) error
+	GetAttr() *ImageAttr
+	Write(filename string) error
+	GetImageBlob() ([]byte, error)
+	Close()
+}
 
-	// imagick.Initialize()
-	// Schedule cleanup
-	// defer imagick.Terminate()
-	// var err error
+func Open(filename string) (Image, error) {
 
-	// image := New()
+	data, err := readHeadFile(filename)
 
-	// Opening some image from disk.
-	// err := image.Open(filename)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	// fmt.Print(data)
 
-	// mw := imagick.NewMagickWand()
-	// Schedule cleanup
-	// defer image.Destroy()
+	t := GuessType(&data)
 
-	// if err != nil {
-	// 	panic(err)
-	// }
+	fmt.Printf("GuessType: %d\n", t)
 
-	// Get original logo size
-	// width := mw.GetImageWidth()
-	// height := mw.GetImageHeight()
-	// quality := mw.GetImageCompressionQuality()
-	// format := mw.GetImageFormat()
+	if t == TYPE_NONE {
+		return nil, ErrorFormat
+	}
 
-	// fmt.Println(quality)
-	// fmt.Println(image.Metadata())
-	// fmt.Println(image.Error())
+	var im Image
+	if t == TYPE_JPEG {
+		im = newSimpJPEG()
+	} else {
+		im = newWandImage()
+	}
+	err = im.Open(filename)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
-	// ia := &imsto.ImageAttr{image.Width(), image.Height(), image.Quality(), image.Format()}
+	return im, nil
+}
 
-	// return ia
-	return &imsto.ImageAttr{}
+func Thumbnail(src, dest string, topt ThumbOption) error {
+	im := newWandImage()
+	im.Open(src)
+	err := im.Thumbnail(topt)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
 }

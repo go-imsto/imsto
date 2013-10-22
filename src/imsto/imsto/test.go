@@ -3,7 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"imsto"
+	// "imsto"
+	"imsto/image"
 	"mime"
 	"os"
 	"path"
@@ -40,10 +41,10 @@ func testApp(args []string) bool {
 			return false
 		}
 
-		t := imsto.GuessImageType(&data)
+		t := image.GuessType(&data)
 
 		fmt.Println(t)
-		fmt.Println(imsto.ExtByImageType(t))
+		fmt.Println(image.ExtByType(t))
 	} else if al > 1 && args[0] == "mimetype" {
 
 		ext := path.Ext(args[1])

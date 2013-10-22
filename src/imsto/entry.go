@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"imsto/base"
+	"imsto/image"
 	"io"
 	"io/ioutil"
 )
@@ -76,8 +77,8 @@ func NewEntryFromIo(r io.Reader) (entry *Entry, err error) {
 		return empty_item, err
 	}
 
-	it := GuessImageType(&buf)
-	ext := ExtByImageType(it)
+	it := image.GuessType(&buf)
+	ext := image.ExtByType(it)
 	path := newPath(id, ext)
 
 	entry = &Entry{Id: id, Size: uint32(len(buf)), Path: path, Hashes: []string{hash}, Ids: []EntryId{*id}}

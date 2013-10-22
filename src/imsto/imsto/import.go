@@ -34,10 +34,18 @@ func runImport(args []string) bool {
 		}
 	}
 
-	ia, _ := image.ReadJpeg(args[0])
+	im, err := image.Open(args[0])
 
-	// ia := image.GetImageAttr(args[0])
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
 
+	defer im.Close()
+
+	ia := im.GetAttr()
+
+	fmt.Print("ia: ")
 	fmt.Println(ia)
 
 	file, err := os.Open(args[0])

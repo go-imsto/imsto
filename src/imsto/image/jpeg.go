@@ -14,28 +14,83 @@ import (
 	// "imsto"
 	"os"
 	// "strings"
+	"errors"
 	"unsafe"
 )
 
-type ImageAttr struct {
-	Width   uint32
-	Height  uint32
-	Quality uint8
+// jpeg simp_image
+type simpJPEG struct {
+	si   *C.Simp_Image
+	attr *ImageAttr
+	opt  *WriteOption
 }
 
-type WriteOption struct {
-	StripAll bool
-	Quality  uint8
+func newSimpJPEG() *simpJPEG {
+	o := &simpJPEG{}
+	return o
 }
 
-// export NewImageAttr
-func NewImageAttr(w, h C.UINT16, q C.UINT8) *ImageAttr {
-	return &ImageAttr{uint32(w), uint32(h), uint8(q)}
+func (self *simpJPEG) Open(filename string) error {
+	// fmt.Printf("simpJPEG.Open %s\n", filename)
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	cmode := C.CString("rb")
+	defer C.free(unsafe.Pointer(cmode))
+	infile := C.fdopen(C.int(file.Fd()), cmode)
+
+	// var ia C.struct_jpeg_attr
+	// r := C.read_jpeg_file(infile, &ia)
+
+	var si *C.Simp_Image
+	si = C.simp_open_stdio(infile)
+
+	if si == nil {
+		// fmt.Printf("simp_open_stdio failed\n")
+		return errors.New("simp_open_stdio failed")
+	}
+
+	self.si = si
+
+	// ia_ptr->width = (UINT16)im->in.w;
+	// ia_ptr->height = (UINT16)im->in.h;
+	// ia_ptr->quality = (UINT8)im->in.q;
+	// simp_close(im);
+	// fmt.Println(ia)
+	// fmt.Printf("C.Read_jpeg_file %d\n", r)
+	self.attr = NewImageAttr(uint(si.in.w), uint(si.in.h), uint8(si.in.q))
+	return nil
 }
 
-// custom error output, unfinished
-func my_error_exit(cinfo C.j_common_ptr) {
-	fmt.Println(cinfo.err)
+func (self *simpJPEG) Close() {
+	C.simp_close(self.si)
+	self.si = nil
+}
+
+func (self *simpJPEG) OpenBlob(blob []byte, length uint) error {
+	// TODO:
+
+	return nil
+}
+
+func (self *simpJPEG) GetAttr() *ImageAttr {
+	return self.attr
+}
+
+func (self *simpJPEG) Write(filename string) error {
+	// TODO:
+
+	return nil
+}
+
+func (self *simpJPEG) GetImageBlob() ([]byte, error) {
+	// TODO:
+
+	return nil, nil
 }
 
 func ReadJpegImage(file *os.File) (*ImageAttr, error) {
@@ -47,7 +102,7 @@ func ReadJpegImage(file *os.File) (*ImageAttr, error) {
 	r := C.read_jpeg_file(infile, &ia)
 	// fmt.Println(ia)
 	fmt.Printf("C.Read_jpeg_file %d\n", r)
-	return NewImageAttr(ia.width, ia.height, ia.quality), nil
+	return NewImageAttr(uint(ia.width), uint(ia.height), uint8(ia.quality)), nil
 }
 
 func ReadJpeg(filename string) (*ImageAttr, error) {
