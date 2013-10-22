@@ -35,6 +35,8 @@ type wandImpl struct {
 	filename string
 	width    string
 	height   string
+
+	wopt WriteOption
 }
 
 func init() {
@@ -80,8 +82,8 @@ func (self *wandImpl) Open(filename string) error {
 }
 
 // Reads an image or image sequence from a blob.
-func (self *wandImpl) OpenBlob(blob []byte, length uint) error {
-	status := C.MagickReadImageBlob(self.wand, unsafe.Pointer(&blob[0]), C.size_t(length))
+func (self *wandImpl) OpenBlob(blob []byte) error {
+	status := C.MagickReadImageBlob(self.wand, unsafe.Pointer(&blob[0]), C.size_t(len(blob)))
 
 	if status == C.MagickFalse {
 		return fmt.Errorf(`Could not open image from blob: %s`, self.Error())
@@ -109,6 +111,11 @@ func (self *wandImpl) SetFormat(format string) error {
 	}
 
 	return nil
+}
+
+func (self *wandImpl) SetOption(wopt WriteOption) {
+	self.wopt = wopt
+	self.SetQuality(wopt.Quality)
 }
 
 // Get image data as a byte array.
@@ -179,6 +186,17 @@ func (self *wandImpl) Resize(width uint, height uint) error {
 // Returns the compression quality of the image. Ranges from 1 (lowest) to 100 (highest).
 func (self *wandImpl) Quality() uint8 {
 	return uint8(C.MagickGetImageCompressionQuality(self.wand))
+}
+
+// Changes the compression quality of the canvas. Ranges from 1 (lowest) to 100 (highest).
+func (self *wandImpl) SetQuality(quality uint8) error {
+	success := C.MagickSetImageCompressionQuality(self.wand, C.size_t(quality))
+
+	if success == C.MagickFalse {
+		return fmt.Errorf("Could not set compression quality: %s", self.Error())
+	}
+
+	return nil
 }
 
 // Implements direct to memory image formats. It returns the image as a blob

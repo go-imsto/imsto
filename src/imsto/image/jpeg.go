@@ -22,7 +22,7 @@ import (
 type simpJPEG struct {
 	si   *C.Simp_Image
 	attr *ImageAttr
-	opt  *WriteOption
+	wopt *WriteOption
 }
 
 func newSimpJPEG() *simpJPEG {
@@ -67,12 +67,24 @@ func (self *simpJPEG) Open(filename string) error {
 }
 
 func (self *simpJPEG) Close() {
-	C.simp_close(self.si)
-	self.si = nil
+	if self.si != nil {
+		C.simp_close(self.si)
+		self.si = nil
+	}
 }
 
-func (self *simpJPEG) OpenBlob(blob []byte, length uint) error {
+func (self *simpJPEG) OpenBlob(blob []byte) error {
 	// TODO:
+	var si *C.Simp_Image
+	si = C.simp_open_mem((*C.uchar)(unsafe.Pointer(&blob[0])), C.uint(len(blob)))
+
+	if si == nil {
+		// fmt.Printf("simp_open_stdio failed\n")
+		return errors.New("simp_open_mem failed")
+	}
+
+	self.si = si
+	self.attr = NewImageAttr(uint(si.in.w), uint(si.in.h), uint8(si.in.q))
 
 	return nil
 }
@@ -81,16 +93,38 @@ func (self *simpJPEG) GetAttr() *ImageAttr {
 	return self.attr
 }
 
-func (self *simpJPEG) Write(filename string) error {
-	// TODO:
+func (self *simpJPEG) SetOption(wopt WriteOption) {
+	self.wopt = &wopt
+}
 
+func (self *simpJPEG) Write(filename string) error {
+	self.si.wopt.quality = C.UINT8(self.wopt.Quality)
+	file, err := os.Open(filename)
+
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	ocmode := C.CString("wb")
+	defer C.free(unsafe.Pointer(ocmode))
+	outfile := C.fdopen(C.int(file.Fd()), ocmode)
+
+	C.simp_output_file(self.si, outfile)
 	return nil
 }
 
 func (self *simpJPEG) GetImageBlob() ([]byte, error) {
-	// TODO:
+	self.si.wopt.quality = C.UINT8(self.wopt.Quality)
+	var blob []byte
+	// defer C.free(unsafe.Pointer(blob))
+	var size C.ulong
+	// defer C.free(unsafe.Pointer(size))
+	C.simp_output_mem(self.si, (**C.uchar)(unsafe.Pointer(&blob)), &size)
+	// TODO: exception
 
-	return nil, nil
+	return blob, nil
 }
 
 func ReadJpegImage(file *os.File) (*ImageAttr, error) {

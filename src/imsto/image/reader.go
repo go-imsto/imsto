@@ -32,8 +32,9 @@ type ThumbOption struct {
 
 type Image interface {
 	Open(filename string) error
-	OpenBlob(blob []byte, length uint) error
+	OpenBlob(blob []byte) error
 	GetAttr() *ImageAttr
+	SetOption(wopt WriteOption)
 	Write(filename string) error
 	GetImageBlob() ([]byte, error)
 	Close()

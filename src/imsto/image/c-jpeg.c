@@ -107,6 +107,7 @@ _simp_read_head(Simp_Image *im)
 #endif
 
 	im->in.q = estimate_jpeg_quality(&(im->in.ji));
+	im->wopt.quality = (UINT8)im->in.q;
 #ifdef IM_DEBUG
 	printf("quality: %d\n", im->in.q);
 #endif
@@ -215,7 +216,9 @@ _simp_write(Simp_Image *im)
 	im->out.ji.image_width=im->in.ji.image_width;
 	im->out.ji.image_height=im->in.ji.image_height;
 	jpeg_set_defaults(&(im->out.ji)); 
-	jpeg_set_quality(&(im->out.ji),(int)im->wopt.quality,TRUE);
+	if (im->wopt.quality > 0 && im->wopt.quality < 100)
+		jpeg_set_quality(&(im->out.ji),(int)im->wopt.quality,TRUE);
+	
 	if ( /*(*/im->in.ji.progressive_mode /*|| all_progressive) && !all_normal*/ )
 		jpeg_simple_progression(&(im->out.ji));
 	im->out.ji.optimize_coding = TRUE;
