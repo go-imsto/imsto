@@ -60,7 +60,7 @@ func runImport(args []string) bool {
 		entry *imsto.Entry
 	)
 
-	entry, err = imsto.NewEntryFromIo(file)
+	entry, err = imsto.NewEntryByReader(file)
 
 	if err != nil {
 		fmt.Println(err)

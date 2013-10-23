@@ -58,7 +58,7 @@ type Entry struct {
 
 var empty_item = &Entry{}
 
-func NewEntryFromIo(r io.Reader) (entry *Entry, err error) {
+func NewEntryByReader(r io.Reader) (entry *Entry, err error) {
 	var (
 		buf  []byte
 		hash string
