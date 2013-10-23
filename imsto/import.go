@@ -1,9 +1,9 @@
 package main
 
 import (
+	"calf/image"
+	"calf/storage"
 	"fmt"
-	"imsto"
-	"imsto/image"
 	"os"
 )
 
@@ -57,10 +57,10 @@ func runImport(args []string) bool {
 	}
 
 	var (
-		entry *imsto.Entry
+		entry *storage.Entry
 	)
 
-	entry, err = imsto.NewEntryByReader(file)
+	entry, err = storage.NewEntryByReader(file)
 
 	if err != nil {
 		fmt.Println(err)

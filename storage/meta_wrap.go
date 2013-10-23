@@ -1,4 +1,4 @@
-package imsto
+package storage
 
 import (
 	"database/sql"

@@ -1,4 +1,4 @@
-package imsto
+package storage
 
 import (
 	"testing"
@@ -10,13 +10,13 @@ var (
 )
 
 func TestEntryId(t *testing.T) {
-	new_id, err := NewEntryId(hash)
+	new_id, err := NewEntryIdFromHash(hash)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if string(new_id) != id {
+	if new_id.id != id {
 		t.Fatalf("unexpected result from BaseConvert:\n+ %v\n- %v", new_id, id)
 	}
 }

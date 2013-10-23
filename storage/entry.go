@@ -1,10 +1,10 @@
-package imsto
+package storage
 
 import (
+	"calf/base"
+	"calf/image"
 	"crypto/md5"
 	"fmt"
-	"imsto/base"
-	"imsto/image"
 	"io"
 	"io/ioutil"
 )

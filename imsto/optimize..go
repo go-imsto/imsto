@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	// "imsto"
-	"imsto/image"
+	"calf/image"
 	"os"
 )
 

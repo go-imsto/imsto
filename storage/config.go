@@ -1,4 +1,4 @@
-package imsto
+package storage
 
 import (
 	// "code.google.com/p/gcfg"
