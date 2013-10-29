@@ -48,7 +48,7 @@ type Entry struct {
 	Id        *EntryId
 	Name      string
 	Hashes    []string
-	Ids       []EntryId
+	Ids       *[]EntryId
 	Meta      *ImageAttr
 	Size      uint32
 	AppId     AppId
@@ -76,6 +76,7 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	id, err = NewEntryIdFromHash(hash)
 
 	hashes := []string{hash}
+	ids := []EntryId{*id}
 
 	if f, ok := r.(*os.File); ok {
 		f.Seek(0, 0)
@@ -97,8 +98,14 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	var size uint
 	data := im.Blob(&size)
 
-	hash = fmt.Sprintf("%x", md5.Sum(buf))
-	id2, err = NewEntryIdFromHash(hash)
+	var hash2 string
+	hash2 = fmt.Sprintf("%x", md5.Sum(data))
+	if hash2 != hash {
+		hashes = append(hashes, hash2)
+		var id2 *EntryId
+		id2, err = NewEntryIdFromHash(hash)
+		ids = append(ids, *id2)
+	}
 
 	if err != nil {
 		fmt.Println(err)
@@ -108,7 +115,7 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	ext := ia.Ext
 	path := newPath(id, ext)
 
-	entry = &Entry{Id: id, Size: uint32(size), Path: path, Hashes: []string{hash}, Ids: []EntryId{*id}}
+	entry = &Entry{Id: id, Size: uint32(size), Path: path, Hashes: hashes, Ids: &ids}
 
 	return
 }
