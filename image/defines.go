@@ -16,7 +16,7 @@ const (
 )
 
 const (
-	SIG_GIF = "GIF"
+	SIG_GIF = "GIF8"
 	SIG_JPG = "\xff\xd8\xff"
 	// SIG_PNG = "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a"
 	SIG_PNG = "\211PNG\r\n\032\n"

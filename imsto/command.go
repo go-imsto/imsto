@@ -2,9 +2,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"log"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -15,6 +19,9 @@ import (
 type Command struct {
 	Run                    func(args []string) bool
 	UsageLine, Short, Long string
+	// Flag is a set of flags specific to this command.
+	Flag    flag.FlagSet
+	IsDebug *bool
 }
 
 func (cmd *Command) Name() string {
@@ -26,7 +33,20 @@ func (cmd *Command) Name() string {
 	return name
 }
 
+func (cmd *Command) Usage() {
+	fmt.Fprintf(os.Stderr, "Example: weed %s\n", cmd.UsageLine)
+	fmt.Fprintf(os.Stderr, "Default Usage:\n")
+	cmd.Flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "Description:\n")
+	fmt.Fprintf(os.Stderr, "  %s\n", strings.TrimSpace(cmd.Long))
+	os.Exit(2)
+}
+
 type LoggedError struct{ error }
+
+const (
+	VERSION = "0.01"
+)
 
 // main
 var (
@@ -38,8 +58,8 @@ var (
 var commands = []*Command{
 	cmdImport,
 	cmdOptimize,
-	// cmdRun,
-	// cmdBuild,
+	cmdTiring,
+	cmdStage,
 	// cmdPackage,
 	// cmdClean,
 	cmdTest,
@@ -86,10 +106,13 @@ func main() {
 	// 		os.Exit(1)
 	// 	}
 	// }()
-
 	for _, cmd := range commands {
 		if cmd.Name() == args[0] && cmd.Run != nil {
-			if cmd.Run(args[1:]) {
+			cmd.Flag.Usage = func() { cmd.Usage() }
+			cmd.Flag.Parse(args[1:])
+			args = cmd.Flag.Args()
+			IsDebug = cmd.IsDebug
+			if cmd.Run(args) {
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 			exit()
@@ -151,4 +174,69 @@ func exit() {
 		f()
 	}
 	os.Exit(exitStatus)
+}
+
+func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
+	w.Header().Set("Content-Type", "application/javascript")
+	var bytes []byte
+	if r.FormValue("pretty") != "" {
+		bytes, err = json.MarshalIndent(obj, "", "  ")
+	} else {
+		bytes, err = json.Marshal(obj)
+	}
+	if err != nil {
+		return
+	}
+	callback := r.FormValue("callback")
+	if callback == "" {
+		_, err = w.Write(bytes)
+	} else {
+		if _, err = w.Write([]uint8(callback)); err != nil {
+			return
+		}
+		if _, err = w.Write([]uint8("(")); err != nil {
+			return
+		}
+		fmt.Fprint(w, string(bytes))
+		if _, err = w.Write([]uint8(")")); err != nil {
+			return
+		}
+	}
+	return
+}
+
+// wrapper for writeJson - just logs errors
+func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
+	if err := writeJson(w, r, obj); err != nil {
+		log.Printf("error writing JSON %s: %s", obj, err.Error())
+	}
+}
+func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
+	m := make(map[string]interface{})
+	m["error"] = err.Error()
+	writeJsonQuiet(w, r, m)
+}
+
+func debug(params ...interface{}) {
+	if *IsDebug {
+		log.Print(params)
+	}
+}
+func secure(whiteList []string, f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if len(whiteList) == 0 {
+			f(w, r)
+			return
+		}
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err == nil {
+			for _, ip := range whiteList {
+				if ip == host {
+					f(w, r)
+					return
+				}
+			}
+		}
+		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
+	}
 }

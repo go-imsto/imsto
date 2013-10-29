@@ -34,13 +34,26 @@ func runImport(args []string) bool {
 		}
 	}
 
-	im, err := image.Open(args[0])
+	var (
+		err  error
+		file *os.File
+		im   image.Image
+	)
+	file, err = os.Open(args[0])
 
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
 
+	im, err = image.Open(file)
+
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	file.Close()
 	defer im.Close()
 
 	ia := im.GetAttr()
@@ -48,7 +61,7 @@ func runImport(args []string) bool {
 	fmt.Print("ia: ")
 	fmt.Println(ia)
 
-	file, err := os.Open(args[0])
+	file, err = os.Open(args[0])
 	defer file.Close()
 
 	if err != nil {

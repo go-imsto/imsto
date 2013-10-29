@@ -6,23 +6,46 @@ package image
 // liut: add CFLAGS "-DIM_DEBUG" for debug output
 
 #include "c-jpeg.h"
+
+static unsigned char ** makeCharArray(int size) {
+    return calloc(sizeof(unsigned char*), size);
+}
+
+//static void setArrayString(char **a, char *s, int n) {
+//    a[n] = s;
+//}
+
+//static void freeCharArray(char **a, int size) {
+//    int i;
+//    for (i = 0; i < size; i++)
+//        free(a[i]);
+//    free(a);
+//}
+
 */
 import "C"
 
 import (
-	"fmt"
+	// "fmt"
 	// "imsto"
+	"io"
 	"os"
 	// "strings"
+	// "bufio"
 	"errors"
+	"io/ioutil"
+	"log"
 	"unsafe"
 )
+
+const jpeg_format = "JPEG"
 
 // jpeg simp_image
 type simpJPEG struct {
 	si   *C.Simp_Image
 	attr *ImageAttr
 	wopt *WriteOption
+	size uint32
 }
 
 func newSimpJPEG() *simpJPEG {
@@ -30,62 +53,61 @@ func newSimpJPEG() *simpJPEG {
 	return o
 }
 
-func (self *simpJPEG) Open(filename string) error {
-	// fmt.Printf("simpJPEG.Open %s\n", filename)
+func (self *simpJPEG) Format() string {
+	return jpeg_format
+}
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	cmode := C.CString("rb")
-	defer C.free(unsafe.Pointer(cmode))
-	infile := C.fdopen(C.int(file.Fd()), cmode)
-
-	// var ia C.struct_jpeg_attr
-	// r := C.read_jpeg_file(infile, &ia)
+func (self *simpJPEG) Open(r io.Reader) (err error) {
 
 	var si *C.Simp_Image
-	si = C.simp_open_stdio(infile)
 
-	if si == nil {
-		// fmt.Printf("simp_open_stdio failed\n")
-		return errors.New("simp_open_stdio failed")
+	if f, ok := r.(*os.File); ok {
+		log.Println("open file reader")
+		f.Seek(0, 0)
+		cmode := C.CString("rb")
+		defer C.free(unsafe.Pointer(cmode))
+		infile := C.fdopen(C.int(f.Fd()), cmode)
+		//defer C.fclose(infile)
+		si = C.simp_open_stdio(infile)
+		if si == nil {
+			return errors.New("simp_open_stdio failed")
+		}
+		fi, _ := f.Stat()
+		self.size = uint32(fi.Size())
+	} else {
+		// rr := bufio.NewReader(r)
+		var blob []byte
+		blob, err = ioutil.ReadAll(r)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Println(blob[0:8])
+
+		size := len(blob)
+		log.Printf("open mem buf len %d\n", size)
+		p := (*C.uchar)(unsafe.Pointer(&blob[0]))
+
+		si = C.simp_open_mem(p, C.uint(size))
+		if si == nil {
+			return errors.New("simp_open_mem failed")
+		}
+
+		self.size = uint32(size)
 	}
 
 	self.si = si
 
-	// ia_ptr->width = (UINT16)im->in.w;
-	// ia_ptr->height = (UINT16)im->in.h;
-	// ia_ptr->quality = (UINT8)im->in.q;
-	// simp_close(im);
-	// fmt.Println(ia)
-	// fmt.Printf("C.Read_jpeg_file %d\n", r)
 	self.attr = NewImageAttr(uint(si.in.w), uint(si.in.h), uint8(si.in.q))
 	return nil
 }
 
-func (self *simpJPEG) Close() {
+func (self *simpJPEG) Close() error {
 	if self.si != nil {
 		C.simp_close(self.si)
 		self.si = nil
 	}
-}
-
-func (self *simpJPEG) OpenBlob(blob []byte) error {
-	// TODO:
-	var si *C.Simp_Image
-	si = C.simp_open_mem((*C.uchar)(unsafe.Pointer(&blob[0])), C.uint(len(blob)))
-
-	if si == nil {
-		// fmt.Printf("simp_open_stdio failed\n")
-		return errors.New("simp_open_mem failed")
-	}
-
-	self.si = si
-	self.attr = NewImageAttr(uint(si.in.w), uint(si.in.h), uint8(si.in.q))
-
 	return nil
 }
 
@@ -97,36 +119,76 @@ func (self *simpJPEG) SetOption(wopt WriteOption) {
 	self.wopt = &wopt
 }
 
-func (self *simpJPEG) Write(filename string) error {
-	self.si.wopt.quality = C.UINT8(self.wopt.Quality)
-	file, err := os.Open(filename)
-
-	if err != nil {
-		return err
+func (self *simpJPEG) Write(out io.Writer) error {
+	if self.wopt != nil {
+		self.si.wopt.quality = C.UINT8(self.wopt.Quality)
+	} else {
+		self.si.wopt.quality = C.UINT8(self.si.in.q)
 	}
 
-	defer file.Close()
+	// log.Println("wopt quality ", self.si.wopt.quality)
 
-	ocmode := C.CString("wb")
-	defer C.free(unsafe.Pointer(ocmode))
-	outfile := C.fdopen(C.int(file.Fd()), ocmode)
+	if f, ok := out.(*os.File); ok {
+		log.Printf("write a file %s\n", f.Name())
 
-	C.simp_output_file(self.si, outfile)
+		ocmode := C.CString("wb")
+		defer C.free(unsafe.Pointer(ocmode))
+		outfile := C.fdopen(C.int(f.Fd()), ocmode)
+
+		r := C.simp_output_file(self.si, outfile)
+		if !r {
+			log.Println("simp out file error")
+			return errors.New("output error")
+		}
+
+	} else {
+		log.Println("write to buf")
+
+		cblob := (**C.uchar)(C.makeCharArray(C.int(self.size)))
+		*cblob = nil
+		defer C.free(unsafe.Pointer(cblob))
+		var size uint32
+
+		r := C.simp_output_mem(self.si, cblob, (*C.ulong)(unsafe.Pointer(&size)))
+
+		if !r {
+			log.Println("simp out mem error")
+			return errors.New("output error")
+		}
+
+		var blob []byte
+		if *cblob != nil {
+			blob = C.GoBytes(unsafe.Pointer(*cblob), C.int(size))
+		}
+
+		log.Printf("output %d bytes\n", size)
+		log.Println("output mem result:", r)
+
+		ret, err := out.Write(blob)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		log.Printf("writed %d\n", ret)
+	}
+
 	return nil
 }
 
-func (self *simpJPEG) GetImageBlob() ([]byte, error) {
-	self.si.wopt.quality = C.UINT8(self.wopt.Quality)
-	var blob []byte
-	// defer C.free(unsafe.Pointer(blob))
-	var size C.ulong
-	// defer C.free(unsafe.Pointer(size))
-	C.simp_output_mem(self.si, (**C.uchar)(unsafe.Pointer(&blob)), &size)
-	// TODO: exception
+// func (self *simpJPEG) GetImageBlob() ([]byte, error) {
+// 	self.si.wopt.quality = C.UINT8(self.wopt.Quality)
+// 	var blob []byte
+// 	// defer C.free(unsafe.Pointer(blob))
+// 	var size C.ulong
+// 	// defer C.free(unsafe.Pointer(size))
+// 	C.simp_output_mem(self.si, (**C.uchar)(unsafe.Pointer(&blob)), &size)
+// 	// TODO: exception
 
-	return blob, nil
-}
+// 	return blob, nil
+// }
 
+// @deprecated
 func ReadJpegImage(file *os.File) (*ImageAttr, error) {
 	cmode := C.CString("rb")
 	defer C.free(unsafe.Pointer(cmode))
@@ -134,11 +196,12 @@ func ReadJpegImage(file *os.File) (*ImageAttr, error) {
 
 	var ia C.struct_jpeg_attr
 	r := C.read_jpeg_file(infile, &ia)
-	// fmt.Println(ia)
-	fmt.Printf("C.Read_jpeg_file %d\n", r)
+	// log.Println(ia)
+	log.Printf("C.Read_jpeg_file %d\n", r)
 	return NewImageAttr(uint(ia.width), uint(ia.height), uint8(ia.quality)), nil
 }
 
+// @deprecated
 func ReadJpeg(filename string) (*ImageAttr, error) {
 	file, err := os.Open(filename)
 
@@ -150,17 +213,63 @@ func ReadJpeg(filename string) (*ImageAttr, error) {
 
 	return ReadJpegImage(file)
 
-	// fmt.Println("ReadJpeg: " + filename)
+	// log.Println("ReadJpeg: " + filename)
 	// csfilename := C.CString(filename)
 	// defer C.free(unsafe.Pointer(csfilename))
 	// // var cinfo C.j_decompress_ptr
 	// var ia C.jpeg_attr
 	// r := C.read_jpeg_file(csfilename, &ia)
-	// fmt.Println(ia)
-	// fmt.Printf("C.Read_jpeg_file %d\n", r)
+	// log.Println(ia)
+	// log.Printf("C.Read_jpeg_file %d\n", r)
 	// return NewImageAttr(ia.width, ia.height, ia.quality), nil
 }
 
+func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
+	var (
+		im              *simpJPEG
+		st_i, st_o      os.FileInfo
+		err             error
+		insize, outsize int64
+		ratio           float64
+	)
+
+	st_i, err = src.Stat()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	im = newSimpJPEG()
+
+	err = im.Open(src)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer im.Close()
+	im.SetOption(*wopt)
+
+	err = im.Write(dest)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	st_o, err = dest.Stat()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	insize = st_i.Size()
+	outsize = st_o.Size()
+	ratio = float64(insize-outsize) * 100.0 / float64(insize)
+	log.Printf("%d --> %d bytes (%0.2f%%), optimized.\n", insize, outsize, ratio)
+
+	return nil
+}
+
+// @deprecated
 func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
 	var (
 		st_i, st_o      os.FileInfo
@@ -191,7 +300,7 @@ func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
 
 	r := C.write_jpeg_file(infile, outfile, &opt)
 
-	fmt.Printf("C.write_jpeg_file %d\n", r)
+	log.Printf("C.write_jpeg_file %d\n", r)
 	st_o, err = dest.Stat()
 	if err != nil {
 		return err
@@ -199,8 +308,8 @@ func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
 	insize = st_i.Size()
 	outsize = st_o.Size()
 	ratio = float64(insize-outsize) * 100.0 / float64(insize)
-	fmt.Printf("%d --> %d bytes (%0.2f%%), optimized.\n", insize, outsize, ratio)
-	// fmt.Printf("src size: %d, dest size: %d \n", st_i.Size(), st_o.Size())
+	log.Printf("%d --> %d bytes (%0.2f%%), optimized.\n", insize, outsize, ratio)
+	// log.Printf("src size: %d, dest size: %d \n", st_i.Size(), st_o.Size())
 
 	return nil
 }

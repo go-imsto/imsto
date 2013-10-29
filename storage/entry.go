@@ -29,8 +29,6 @@ func (ei *EntryId) String() string {
 	return ei.id
 }
 
-type EntryName string
-
 type AppId uint16
 
 type Author uint16
@@ -46,6 +44,7 @@ type ImageAttr struct {
 
 type Entry struct {
 	Id        *EntryId
+	Name      string
 	Hashes    []string
 	Ids       []EntryId
 	Meta      *ImageAttr

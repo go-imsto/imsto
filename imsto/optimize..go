@@ -41,7 +41,7 @@ func runOptimize(args []string) bool {
 		return false
 	}
 	defer dest.Close()
-	image.RewriteJpeg(file, dest, &image.WriteOption{Quality: 75, StripAll: true})
+	image.OptimizeJpeg(file, dest, &image.WriteOption{Quality: 75, StripAll: true})
 
 	return true
 }

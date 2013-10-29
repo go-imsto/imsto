@@ -2,9 +2,10 @@ package image
 
 import (
 	// "imsto"
-	// "os"
+	"os"
 	// "errors"
-	"fmt"
+	"io"
+	"log"
 )
 
 type ImageAttr struct {
@@ -30,56 +31,75 @@ type ThumbOption struct {
 	wopt          WriteOption
 }
 
-type Image interface {
-	Open(filename string) error
-	OpenBlob(blob []byte) error
+type ImageReader interface {
+	Open(r io.Reader) error
 	GetAttr() *ImageAttr
-	SetOption(wopt WriteOption)
-	Write(filename string) error
-	GetImageBlob() ([]byte, error)
-	Close()
+	Format() string
 }
 
-func Open(filename string) (Image, error) {
+type ImageWriter interface {
+	SetOption(wopt WriteOption)
+	Write(w io.Writer) error
+}
 
-	data, err := readHeadFile(filename)
+type Image interface {
+	ImageReader
+	ImageWriter
+	io.Closer
+}
+
+func Open(r io.Reader) (im Image, err error) {
+
+	rr := asReader(r)
+	var data []byte
+	data, err = readHead(rr)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
-	// fmt.Print(data)
 
+	log.Println(data)
 	t := GuessType(&data)
 
-	fmt.Printf("GuessType: %d\n", t)
+	log.Printf("GuessType: %d\n", t)
 
 	if t == TYPE_NONE {
 		return nil, ErrorFormat
 	}
 
-	var im Image
-	if t == TYPE_JPEG {
-		im = newSimpJPEG()
+	im = getImageImpl(t)
+
+	if _, ok := r.(*os.File); ok {
+		err = im.Open(r)
 	} else {
-		im = newWandImage()
+		err = im.Open(rr)
 	}
-	err = im.Open(filename)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 
 	return im, nil
 }
 
-func Thumbnail(src, dest string, topt ThumbOption) error {
+func getImageImpl(t int) (im Image) {
+	if t == TYPE_JPEG {
+		im = newSimpJPEG()
+	} else {
+		im = newWandImage()
+	}
+
+	return
+}
+
+func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	im := newWandImage()
-	im.Open(src)
+	im.Open(r)
 	err := im.Thumbnail(topt)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 

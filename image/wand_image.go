@@ -15,6 +15,9 @@ import "C"
 import (
 	"fmt"
 	// "imsto"
+	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"unsafe"
@@ -53,26 +56,45 @@ func newWandImage() *wandImpl {
 }
 
 // Opens an image file, returns nil on success, error otherwise.
-func (self *wandImpl) Open(filename string) error {
-	stat, err := os.Stat(filename)
+func (self *wandImpl) Open(r io.Reader) error {
+	// stat, err := os.Stat(filename)
 
-	if err != nil {
-		return err
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if stat.IsDir() == true {
+	// 	return fmt.Errorf(`Could not open file "%s": it's a directory!`, filename)
+	// }
+	var status C.MagickBooleanType
+
+	if f, ok := r.(*os.File); ok {
+		f.Seek(0, 0)
+		// cfilename := C.CString(filename)
+		// status := C.MagickReadImage(self.wand, cfilename)
+		// C.free(unsafe.Pointer(cfilename))
+		cmode := C.CString("rb")
+		defer C.free(unsafe.Pointer(cmode))
+		file := C.fdopen(C.int(f.Fd()), cmode)
+		defer C.fclose(file)
+		status = C.MagickReadImageFile(self.wand, file)
+		self.filename = f.Name()
+	} else {
+		// var blob []byte
+		blob, err := ioutil.ReadAll(f)
+
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		status = C.MagickReadImageBlob(self.wand, unsafe.Pointer(&blob[0]), C.size_t(len(blob)))
 	}
-
-	if stat.IsDir() == true {
-		return fmt.Errorf(`Could not open file "%s": it's a directory!`, filename)
-	}
-
-	cfilename := C.CString(filename)
-	status := C.MagickReadImage(self.wand, cfilename)
-	C.free(unsafe.Pointer(cfilename))
-
 	if status == C.MagickFalse {
-		return fmt.Errorf(`Could not open image "%s": %s`, filename, self.Error())
+		return fmt.Errorf(`Could not open image: %s`, self.Error())
 	}
 
-	self.filename = filename
+	// self.filename = filename
 
 	// _im := C.GetImageFromMagickWand(self.wand)
 
@@ -160,16 +182,35 @@ func (self *wandImpl) Height() uint {
 }
 
 // Writes image to a file, returns nil on success.
-func (self *wandImpl) Write(filename string) error {
-	cfilename := C.CString(filename)
-	success := C.MagickWriteImage(self.wand, cfilename)
-	C.free(unsafe.Pointer(cfilename))
+func (self *wandImpl) Write(out io.Writer) error {
+	if f, ok := out.(*os.File); ok {
 
-	if success == C.MagickFalse {
-		return fmt.Errorf("Could not write: %s", self.Error())
+		cmode := C.CString("w+")
+		defer C.free(unsafe.Pointer(cmode))
+		file := C.fdopen(C.int(f.Fd()), cmode)
+		defer C.fclose(file)
+		success := C.MagickWriteImageFile(self.wand, file)
+
+		if success == C.MagickFalse {
+			return fmt.Errorf("Could not write: %s", self.Error())
+		}
+
+	} else {
+		var size *uint
+		blob := self.Blob(size)
+
+		log.Printf("blob %d bytes\n", size)
+		out.Write(blob)
 	}
-
 	return nil
+}
+
+// Implements direct to memory image formats. It returns the image as a blob
+func (self *wandImpl) Blob(length *uint) []byte {
+	ptr := unsafe.Pointer(C.MagickGetImageBlob(self.wand, (*C.size_t)(unsafe.Pointer(length))))
+	data := C.GoBytes(ptr, C.int(*length))
+	C.MagickRelinquishMemory(ptr)
+	return data
 }
 
 // Changes the size of the image, returns true on success.
@@ -199,14 +240,6 @@ func (self *wandImpl) SetQuality(quality uint8) error {
 	return nil
 }
 
-// Implements direct to memory image formats. It returns the image as a blob
-func (self *wandImpl) Blob(length *uint) []byte {
-	ptr := unsafe.Pointer(C.MagickGetImageBlob(self.wand, (*C.size_t)(unsafe.Pointer(length))))
-	data := C.GoBytes(ptr, C.int(*length))
-	C.MagickRelinquishMemory(ptr)
-	return data
-}
-
 // Destroys image.
 func (self *wandImpl) Destroy() error {
 
@@ -220,8 +253,9 @@ func (self *wandImpl) Destroy() error {
 	return nil
 }
 
-func (self *wandImpl) Close() {
+func (self *wandImpl) Close() error {
 	self.Destroy()
+	return nil
 }
 
 // Returns all metadata keys from the currently loaded image.

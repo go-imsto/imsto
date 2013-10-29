@@ -4,10 +4,25 @@
 #include <jpeglib.h>
 #include <setjmp.h>
 #include "c-jpeg.h"
-#include "_cgo_export.h"
+// #include "_cgo_export.h"
 
 void 		_simp_init      (Simp_Image *im);
 Simp_Image *_simp_read_head (Simp_Image *im);
+
+#ifdef IM_DEBUG
+static void 
+my_message_handle(j_common_ptr cinfo, int msg_level)
+{
+	char message[JMSG_LENGTH_MAX];
+	struct jpeg_error_mgr *err;
+
+	message[0]='\0';
+	err=cinfo->err;
+	(err->format_message)(cinfo, message);
+
+	printf(">\t%s\n", message);
+}
+#endif
 
 static void 
 my_error_exit (j_common_ptr cinfo)
@@ -45,7 +60,6 @@ simp_open_stdio(FILE *infile)
 		return NULL;
 	}
 
-	// im->wopt.quality = 75;
 	_simp_init(im);
 
 	if (im->in.f) jpeg_stdio_src(&(im->in.ji), infile);
@@ -56,7 +70,12 @@ simp_open_stdio(FILE *infile)
 Simp_Image *
 simp_open_mem(unsigned char *data, unsigned int size)
 {
+#ifdef IM_DEBUG
+	printf("[start simp_open_mem: %d]\n", size);
+#endif
+
 	Simp_Image *im;
+	im = calloc(1, sizeof(Simp_Image));
 	_simp_init(im);
 	jpeg_mem_src(&(im->in.ji), data, (unsigned long)size);
 	return _simp_read_head(im);
@@ -70,6 +89,9 @@ _simp_init(Simp_Image *im)
 #endif
 
 	im->in.ji.err = jpeg_std_error(&(im->jerr.pub));
+// #ifdef IM_DEBUG
+// 	im->jerr.pub.emit_message = my_message_handle;
+// #endif
 	im->jerr.pub.error_exit = my_error_exit;
 	
 	if (setjmp(im->jerr.setjmp_buffer)) {
@@ -78,7 +100,7 @@ _simp_init(Simp_Image *im)
 		im = NULL;
 		fprintf(stderr, "error\n");
 	}
-	
+
 	jpeg_create_decompress(&(im->in.ji));
 
 }
@@ -91,7 +113,15 @@ _simp_read_head(Simp_Image *im)
 	printf("[start _simp_read_head]\n");
 #endif
 
-	jpeg_read_header(&(im->in.ji), TRUE);
+	int rc;
+	rc = jpeg_read_header(&(im->in.ji), TRUE);
+
+	if (rc != 1) {
+		fprintf(stderr, "File does not seem to be a normal JPEG");
+		simp_close(im);
+		im = NULL;
+		return NULL;
+	}
 
 	im->in.w = im->in.ji.image_width;
 	im->in.h = im->in.ji.image_height;
@@ -121,7 +151,7 @@ simp_close(Simp_Image *im)
 {
 	if (im->in.f)      jpeg_destroy_decompress(&(im->in.ji));
 	if (im->in.f)      fclose(im->in.f);
-	if (im->buf)     free(im->buf);
+	if (im->buf)       free(im->buf);
 	if (im->out.f)     jpeg_destroy_compress(&(im->out.ji));
 	if (im->out.f)     fclose(im->out.f);
 	free(im);
@@ -216,9 +246,15 @@ _simp_write(Simp_Image *im)
 	im->out.ji.image_width=im->in.ji.image_width;
 	im->out.ji.image_height=im->in.ji.image_height;
 	jpeg_set_defaults(&(im->out.ji)); 
-	if (im->wopt.quality > 0 && im->wopt.quality < 100)
+	if (im->wopt.quality > 0 && im->wopt.quality < 100) {
+#ifdef IM_DEBUG
+	printf("[wopt quality %d]\n", im->wopt.quality);
+#endif
 		jpeg_set_quality(&(im->out.ji),(int)im->wopt.quality,TRUE);
-	
+	}
+	else
+		jpeg_set_quality(&(im->out.ji),(int)im->in.q,TRUE);
+
 	if ( /*(*/im->in.ji.progressive_mode /*|| all_progressive) && !all_normal*/ )
 		jpeg_simple_progression(&(im->out.ji));
 	im->out.ji.optimize_coding = TRUE;
@@ -241,6 +277,9 @@ _simp_write(Simp_Image *im)
 
 	jpeg_destroy_decompress(&im->in.ji);
 	jpeg_destroy_compress(&(im->out.ji));
+#ifdef IM_DEBUG
+	printf("[write OK %d lines]\n", j);
+#endif
 
 	return TRUE;
 }
