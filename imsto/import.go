@@ -1,7 +1,7 @@
 package main
 
 import (
-	"calf/image"
+	// "calf/image"
 	"calf/storage"
 	"fmt"
 	"os"
@@ -37,29 +37,29 @@ func runImport(args []string) bool {
 	var (
 		err  error
 		file *os.File
-		im   image.Image
+		// im   image.Image
 	)
-	file, err = os.Open(args[0])
+	// file, err = os.Open(args[0])
 
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return false
+	// }
 
-	im, err = image.Open(file)
+	// im, err = image.Open(file)
 
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return false
+	// }
 
-	file.Close()
-	defer im.Close()
+	// file.Close()
+	// defer im.Close()
 
-	ia := im.GetAttr()
+	// ia := im.GetAttr()
 
-	fmt.Print("ia: ")
-	fmt.Println(ia)
+	// fmt.Print("ia: ")
+	// fmt.Println(ia)
 
 	file, err = os.Open(args[0])
 	defer file.Close()
@@ -73,14 +73,14 @@ func runImport(args []string) bool {
 		entry *storage.Entry
 	)
 
-	entry, err = storage.NewEntryByReader(file)
+	entry, err = storage.NewEntry(file)
 
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
 
-	// fmt.Println(entry)
+	fmt.Println(entry)
 	fmt.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
 
 	return true

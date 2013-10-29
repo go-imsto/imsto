@@ -144,27 +144,14 @@ func (self *simpJPEG) Write(out io.Writer) error {
 	} else {
 		log.Println("write to buf")
 
-		cblob := (**C.uchar)(C.makeCharArray(C.int(self.size)))
-		*cblob = nil
-		defer C.free(unsafe.Pointer(cblob))
-		var size uint32
-
-		r := C.simp_output_mem(self.si, cblob, (*C.ulong)(unsafe.Pointer(&size)))
-
-		if !r {
-			log.Println("simp out mem error")
+		var size uint
+		data := self.Blob(&size)
+		if data == nil {
 			return errors.New("output error")
 		}
+		log.Printf("blob %d bytes\n", size)
 
-		var blob []byte
-		if *cblob != nil {
-			blob = C.GoBytes(unsafe.Pointer(*cblob), C.int(size))
-		}
-
-		log.Printf("output %d bytes\n", size)
-		log.Println("output mem result:", r)
-
-		ret, err := out.Write(blob)
+		ret, err := out.Write(data)
 		if err != nil {
 			log.Println(err)
 			return err
@@ -174,6 +161,30 @@ func (self *simpJPEG) Write(out io.Writer) error {
 	}
 
 	return nil
+}
+
+func (self *simpJPEG) Blob(size *uint) []byte {
+	cblob := (**C.uchar)(C.makeCharArray(C.int(self.size)))
+	*cblob = nil
+	defer C.free(unsafe.Pointer(cblob))
+
+	r := C.simp_output_mem(self.si, cblob, (*C.ulong)(unsafe.Pointer(size)))
+
+	if !r {
+		log.Println("simp out mem error")
+		// return errors.New("output error")
+		return nil
+	}
+
+	var data []byte
+	if *cblob != nil {
+		data = C.GoBytes(unsafe.Pointer(*cblob), C.int(*size))
+	}
+
+	log.Printf("output %d bytes\n", *size)
+	log.Println("output mem result:", r)
+
+	return data
 }
 
 func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {

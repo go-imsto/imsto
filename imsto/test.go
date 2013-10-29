@@ -75,17 +75,20 @@ func testApp(args []string) bool {
 
 	if al > 1 && args[0] == "imagetype" {
 
-		data, err := readImageHead(args[1])
+		file, err := os.Open(args[1])
 
 		if err != nil {
 			fmt.Println(err)
 			return false
 		}
+		defer file.Close()
+		var (
+			t   image.TypeId
+			ext string
+		)
+		t, ext, err = image.GuessType(file)
 
-		t := image.GuessType(&data)
-
-		fmt.Println(t)
-		fmt.Println(image.ExtByType(t))
+		fmt.Println(t, ext)
 	} else if al > 1 && args[0] == "mimetype" {
 
 		ext := path.Ext(args[1])

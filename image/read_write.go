@@ -12,6 +12,8 @@ type ImageAttr struct {
 	Width   uint32
 	Height  uint32
 	Quality uint8
+	Size    uint32
+	Ext     string
 }
 
 type WriteOption struct {
@@ -21,7 +23,7 @@ type WriteOption struct {
 
 // export NewImageAttr
 func NewImageAttr(w, h uint, q uint8) *ImageAttr {
-	return &ImageAttr{uint32(w), uint32(h), uint8(q)}
+	return &ImageAttr{uint32(w), uint32(h), uint8(q), uint32(0), ""}
 }
 
 type ThumbOption struct {
@@ -35,6 +37,7 @@ type ImageReader interface {
 	Open(r io.Reader) error
 	GetAttr() *ImageAttr
 	Format() string
+	Blob(length *uint) []byte
 }
 
 type ImageWriter interface {
@@ -51,18 +54,13 @@ type Image interface {
 func Open(r io.Reader) (im Image, err error) {
 
 	rr := asReader(r)
-	var data []byte
-	data, err = readHead(rr)
+	var (
+		t   TypeId
+		ext string
+	)
+	t, ext, err = GuessType(r)
 
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	log.Println(data)
-	t := GuessType(&data)
-
-	log.Printf("GuessType: %d\n", t)
+	log.Printf("GuessType: %d ext: %s\n", t, ext)
 
 	if t == TYPE_NONE {
 		return nil, ErrorFormat
@@ -80,10 +78,13 @@ func Open(r io.Reader) (im Image, err error) {
 		return nil, err
 	}
 
+	attr := im.GetAttr()
+	attr.Ext = ext
+
 	return im, nil
 }
 
-func getImageImpl(t int) (im Image) {
+func getImageImpl(t TypeId) (im Image) {
 	if t == TYPE_JPEG {
 		im = newSimpJPEG()
 	} else {

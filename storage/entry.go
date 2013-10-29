@@ -1,12 +1,14 @@
 package storage
 
 import (
+	"bytes"
 	"calf/base"
 	"calf/image"
 	"crypto/md5"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 )
 
 type EntryId struct {
@@ -57,11 +59,12 @@ type Entry struct {
 
 var empty_item = &Entry{}
 
-func NewEntryByReader(r io.Reader) (entry *Entry, err error) {
+func NewEntry(r io.Reader) (entry *Entry, err error) {
 	var (
 		buf  []byte
 		hash string
 		id   *EntryId
+		im   image.Image
 	)
 
 	buf, err = ioutil.ReadAll(r)
@@ -72,15 +75,40 @@ func NewEntryByReader(r io.Reader) (entry *Entry, err error) {
 	hash = fmt.Sprintf("%x", md5.Sum(buf))
 	id, err = NewEntryIdFromHash(hash)
 
+	hashes := []string{hash}
+
+	if f, ok := r.(*os.File); ok {
+		f.Seek(0, 0)
+	} else if rr, ok := r.(*bytes.Buffer); ok {
+		rr.Reset()
+	}
+
+	im, err = image.Open(r)
+
 	if err != nil {
+		fmt.Println(err)
 		return empty_item, err
 	}
 
-	it := image.GuessType(&buf)
-	ext := image.ExtByType(it)
+	defer im.Close()
+
+	ia := im.GetAttr()
+
+	var size uint
+	data := im.Blob(&size)
+
+	hash = fmt.Sprintf("%x", md5.Sum(buf))
+	id2, err = NewEntryIdFromHash(hash)
+
+	if err != nil {
+		fmt.Println(err)
+		return empty_item, err
+	}
+
+	ext := ia.Ext
 	path := newPath(id, ext)
 
-	entry = &Entry{Id: id, Size: uint32(len(buf)), Path: path, Hashes: []string{hash}, Ids: []EntryId{*id}}
+	entry = &Entry{Id: id, Size: uint32(size), Path: path, Hashes: []string{hash}, Ids: []EntryId{*id}}
 
 	return
 }
