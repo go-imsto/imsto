@@ -176,54 +176,6 @@ func (self *simpJPEG) Write(out io.Writer) error {
 	return nil
 }
 
-// func (self *simpJPEG) GetImageBlob() ([]byte, error) {
-// 	self.si.wopt.quality = C.UINT8(self.wopt.Quality)
-// 	var blob []byte
-// 	// defer C.free(unsafe.Pointer(blob))
-// 	var size C.ulong
-// 	// defer C.free(unsafe.Pointer(size))
-// 	C.simp_output_mem(self.si, (**C.uchar)(unsafe.Pointer(&blob)), &size)
-// 	// TODO: exception
-
-// 	return blob, nil
-// }
-
-// @deprecated
-func ReadJpegImage(file *os.File) (*ImageAttr, error) {
-	cmode := C.CString("rb")
-	defer C.free(unsafe.Pointer(cmode))
-	infile := C.fdopen(C.int(file.Fd()), cmode)
-
-	var ia C.struct_jpeg_attr
-	r := C.read_jpeg_file(infile, &ia)
-	// log.Println(ia)
-	log.Printf("C.Read_jpeg_file %d\n", r)
-	return NewImageAttr(uint(ia.width), uint(ia.height), uint8(ia.quality)), nil
-}
-
-// @deprecated
-func ReadJpeg(filename string) (*ImageAttr, error) {
-	file, err := os.Open(filename)
-
-	if err != nil {
-		return &ImageAttr{}, err
-	}
-
-	defer file.Close()
-
-	return ReadJpegImage(file)
-
-	// log.Println("ReadJpeg: " + filename)
-	// csfilename := C.CString(filename)
-	// defer C.free(unsafe.Pointer(csfilename))
-	// // var cinfo C.j_decompress_ptr
-	// var ia C.jpeg_attr
-	// r := C.read_jpeg_file(csfilename, &ia)
-	// log.Println(ia)
-	// log.Printf("C.Read_jpeg_file %d\n", r)
-	// return NewImageAttr(ia.width, ia.height, ia.quality), nil
-}
-
 func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
 	var (
 		im              *simpJPEG
@@ -265,51 +217,6 @@ func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
 	outsize = st_o.Size()
 	ratio = float64(insize-outsize) * 100.0 / float64(insize)
 	log.Printf("%d --> %d bytes (%0.2f%%), optimized.\n", insize, outsize, ratio)
-
-	return nil
-}
-
-// @deprecated
-func RewriteJpeg(src, dest *os.File, wo *WriteOption) error {
-	var (
-		st_i, st_o      os.FileInfo
-		err             error
-		insize, outsize int64
-		ratio           float64
-	)
-	st_i, err = src.Stat()
-	if err != nil {
-		return err
-	}
-	icmode := C.CString("rb")
-	defer C.free(unsafe.Pointer(icmode))
-	infile := C.fdopen(C.int(src.Fd()), icmode)
-
-	ocmode := C.CString("wb")
-	defer C.free(unsafe.Pointer(ocmode))
-	outfile := C.fdopen(C.int(dest.Fd()), ocmode)
-
-	var opt C.struct_jpeg_option
-
-	opt.quality = C.UINT8(wo.Quality)
-	if wo.StripAll {
-		opt.strip_all = C.boolean(1)
-	} else {
-		opt.strip_all = C.boolean(0)
-	}
-
-	r := C.write_jpeg_file(infile, outfile, &opt)
-
-	log.Printf("C.write_jpeg_file %d\n", r)
-	st_o, err = dest.Stat()
-	if err != nil {
-		return err
-	}
-	insize = st_i.Size()
-	outsize = st_o.Size()
-	ratio = float64(insize-outsize) * 100.0 / float64(insize)
-	log.Printf("%d --> %d bytes (%0.2f%%), optimized.\n", insize, outsize, ratio)
-	// log.Printf("src size: %d, dest size: %d \n", st_i.Size(), st_o.Size())
 
 	return nil
 }
