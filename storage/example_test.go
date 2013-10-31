@@ -1,6 +1,7 @@
 package storage
 
 import (
+	// "calf/config"
 	"testing"
 )
 
@@ -21,33 +22,21 @@ func TestEntryId(t *testing.T) {
 	}
 }
 
-func TestLoadConfig(t *testing.T) {
-	t.Logf("confDir: %v", GetConfDir())
+// func TestMetaBrowse(t *testing.T) {
+// 	t.Log("dsn: " + config.GetValue("imsto", "meta_dsn"))
+// 	mw, err := NewMetaWrapper("")
 
-	err := loadConfig("/opt/imsto/config")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	limit := 5
+// 	offset := 0
+// 	rows, err := mw.Browse(limit, offset)
 
-	t.Logf("confDir: %v", GetConfDir())
-}
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-func TestMetaBrowse(t *testing.T) {
-	t.Log("dsn: " + getConfig("imsto", "meta_dsn"))
-	mw, err := NewMetaWrapper("")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	limit := 5
-	offset := 0
-	rows, err := mw.Browse(limit, offset)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log(rows)
-}
+// 	t.Log(rows)
+// }

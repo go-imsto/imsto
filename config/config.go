@@ -1,4 +1,4 @@
-package storage
+package config
 
 import (
 	// "code.google.com/p/gcfg"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	// "sync"
 	// "errors"
+	// "flag"
 	"log"
 )
 
@@ -34,18 +35,29 @@ func GetConfDir() string {
 	return confDir
 }
 
-func initConfig() {
+func SetConfDir(dir string) {
+
+	if _, err := os.Stat(dir); err != nil {
+		log.Println(err)
+	}
+
+	confDir = dir
+}
+
+func init() {
 	defaultConfig, _ = ini.Load(strings.NewReader(defaultConfigIni))
 
 	confDir = os.Getenv("IMSTO_CONF_DIR")
 	if confDir == "" {
+		log.Println("env IMSTO_CONF_DIR not found")
 		confDir, _ = os.Getwd()
 		// panic(errors.New("env IMSTO_CONF_DIR not found"))
 	}
 
+	LoadConfig(confDir)
 }
 
-func getConfig(section, name string) string {
+func GetValue(section, name string) string {
 	var (
 		value string
 		ok    bool
@@ -63,9 +75,8 @@ func getConfig(section, name string) string {
 	return value
 }
 
-func loadConfig(dir string) error {
-	confDir = dir
-	cfgFile := path.Join(confDir, "imsto.ini")
+func LoadConfig(dir string) error {
+	cfgFile := path.Join(dir, "imsto.ini")
 	var err error
 
 	loadedConfig, err = ini.LoadFile(cfgFile)
@@ -77,4 +88,14 @@ func loadConfig(dir string) error {
 	}
 
 	return err
+}
+
+type option map[string]string
+
+func (opt option) Set(k, v string) {
+	opt[k] = v
+}
+
+func (opt option) Get(k string) (v string) {
+	return opt[k]
 }

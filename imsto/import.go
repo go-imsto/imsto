@@ -5,6 +5,7 @@ import (
 	"calf/storage"
 	"fmt"
 	"os"
+	"path"
 )
 
 var cmdImport = &Command{
@@ -68,6 +69,7 @@ func runImport(args []string) bool {
 		fmt.Println(err)
 		return false
 	}
+	name := path.Base(args[0])
 
 	var (
 		entry *storage.Entry
@@ -80,8 +82,20 @@ func runImport(args []string) bool {
 		return false
 	}
 
-	fmt.Println(entry)
+	entry.Name = name
+
+	// fmt.Println(entry)
 	fmt.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
+
+	var mw storage.MetaWrapper
+	mw = storage.NewMetaWrapper("")
+
+	mw.Store(entry)
+	fmt.Println(mw)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
 
 	return true
 }

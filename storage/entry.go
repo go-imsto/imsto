@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"mime"
 	"os"
 )
 
@@ -22,7 +24,7 @@ func NewEntryIdFromHash(hash string) (*EntryId, error) {
 	return &EntryId{id, hash}, err
 }
 
-func NewEntryIdById(id string) (*EntryId, error) {
+func NewEntryId(id string) (*EntryId, error) {
 	hash, err := base.BaseConvert(id, 36, 16)
 	return &EntryId{id, hash}, err
 }
@@ -31,30 +33,34 @@ func (ei *EntryId) String() string {
 	return ei.id
 }
 
+func (ei *EntryId) tip() string {
+	return ei.id[:1]
+}
+
 type AppId uint16
 
 type Author uint16
 
-type Mime string
-
-type ImageAttr struct {
-	Width   uint32 // image width
-	Height  uint32 // image height
-	Quality uint8  // image compression quality
-	Format  string // image format, like 'JPEG', 'PNG'
-}
+// type ImageAttr struct {
+// 	Width   uint32 // image width
+// 	Height  uint32 // image height
+// 	Quality uint8  // image compression quality
+// 	Format  string // image format, like 'JPEG', 'PNG'
+// }
 
 type Entry struct {
 	Id        *EntryId
 	Name      string
 	Hashes    []string
-	Ids       *[]EntryId
-	Meta      *ImageAttr
+	Ids       []string
+	Meta      *image.ImageAttr
 	Size      uint32
 	AppId     AppId
 	Author    Author
 	Path      string
+	Mime      string
 	imageType int
+	sev       hstore
 }
 
 var empty_item = &Entry{}
@@ -76,7 +82,7 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	id, err = NewEntryIdFromHash(hash)
 
 	hashes := []string{hash}
-	ids := []EntryId{*id}
+	ids := []string{id.String()}
 
 	if f, ok := r.(*os.File); ok {
 		f.Seek(0, 0)
@@ -87,14 +93,14 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	im, err = image.Open(r)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return empty_item, err
 	}
 
 	defer im.Close()
 
 	ia := im.GetAttr()
-
+	// log.Println(ia)
 	var size uint
 	data := im.Blob(&size)
 
@@ -103,20 +109,25 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	if hash2 != hash {
 		hashes = append(hashes, hash2)
 		var id2 *EntryId
-		id2, err = NewEntryIdFromHash(hash)
-		ids = append(ids, *id2)
+		id2, err = NewEntryIdFromHash(hash2)
+		ids = append(ids, id2.String())
+		id = id2 // 使用新的 Id 作为主键
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return empty_item, err
 	}
 
+	ia.Size = uint32(size) // 更新后的大小
+
 	ext := ia.Ext
 	path := newPath(id, ext)
+	mimetype := mime.TypeByExtension(ext)
 
-	entry = &Entry{Id: id, Size: uint32(size), Path: path, Hashes: hashes, Ids: &ids}
+	entry = &Entry{Id: id, Name: "", Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
 
+	// log.Println(ia2hstore(entry.Meta))
 	return
 }
 
@@ -125,4 +136,9 @@ func newPath(ei *EntryId, ext string) string {
 	p := string(r[0:2]) + "/" + string(r[2:4]) + "/" + string(r[4:]) + ext
 
 	return p
+}
+
+func ia2hstore(ia image.KVMapper) (m hstore) {
+	m = hstore(ia.Maps())
+	return
 }

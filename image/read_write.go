@@ -8,12 +8,29 @@ import (
 	"log"
 )
 
+type KVMapper interface {
+	Maps() map[string]interface{}
+}
+
 type ImageAttr struct {
 	Width   uint32
 	Height  uint32
 	Quality uint8
 	Size    uint32
 	Ext     string
+}
+
+var attr_keys = []string{"width", "height", "quality", "size", "ext"}
+
+func (ia *ImageAttr) Maps() (m map[string]interface{}) {
+	m = map[string]interface{}{
+		"width":   ia.Width,
+		"height":  ia.Height,
+		"quality": ia.Quality,
+		"size":    ia.Size,
+		"ext":     ia.Ext,
+	}
+	return
 }
 
 type WriteOption struct {
@@ -25,6 +42,16 @@ type WriteOption struct {
 func NewImageAttr(w, h uint, q uint8) *ImageAttr {
 	return &ImageAttr{uint32(w), uint32(h), uint8(q), uint32(0), ""}
 }
+
+// func NewImageAttrByMap(m map[string]interface{}) *ImageAttr {
+// 	ia := &ImageAttr{}
+// 	for key := range attr_keys {
+// 		if v, ok = m[key]; ok {
+
+// 		}
+// 	}
+
+// }
 
 type ThumbOption struct {
 	Width, Height int

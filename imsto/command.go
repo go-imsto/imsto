@@ -60,7 +60,7 @@ var commands = []*Command{
 	cmdOptimize,
 	cmdTiring,
 	cmdStage,
-	// cmdPackage,
+	cmdView,
 	// cmdClean,
 	cmdTest,
 }
