@@ -68,7 +68,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	entry := Entry{Id: &id}
 	row := db.QueryRow(sql, id.String())
 
-	var meta string
+	var meta Hstore
 	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta)
 
 	if err != nil {
@@ -76,7 +76,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 		return &entry, err
 	}
 	// entry.Meta = image.
-	// 	log.Println(meta)
+	log.Println("meta:", meta)
 
 	log.Printf("name: %s, path: %s, size: %d, mime: %s\n", entry.Name, entry.Path, entry.Size, entry.Mime)
 

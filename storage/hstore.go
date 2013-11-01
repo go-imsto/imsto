@@ -3,13 +3,15 @@ package storage
 import (
 	"database/sql/driver"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 )
 
-type hstore map[string]interface{}
+type Hstore map[string]interface{}
 
-func (h hstore) String() string {
+// hstore map 转成 string 值
+func (h Hstore) String() string {
 	var a = make([]string, len(h))
 	r := strings.NewReplacer("\\", "\\\\", "'", "''", "\"", "\\\"")
 	i := 0
@@ -26,12 +28,27 @@ func (h hstore) String() string {
 	return strings.Join(a, ",")
 }
 
+func (h *Hstore) Scan(src interface{}) (err error) {
+	switch s := src.(type) {
+	case string:
+		*h, err = newHstore(s)
+		return
+	case []byte:
+		*h, err = newHstore(string(s))
+		return
+	case map[string]interface{}:
+		*h = Hstore(s)
+		return
+	}
+	return
+}
+
 // text := `"ext"=>".jpg", "size"=>"34508", "width"=>"758", "height"=>"140", "quality"=>"93"`
-func newHstore(text string) (hstore, error) {
+func newHstore(text string) (Hstore, error) {
 	re := regexp.MustCompile("\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9-_\\.]*)\"),?")
 	r := strings.NewReplacer("\\\"", "\"")
 	matches := re.FindAllStringSubmatch(text, -1)
-	h := make(hstore)
+	h := make(Hstore)
 	for i, s := range matches {
 		k, v := s[1], s[2]
 		k = r.Replace(k)
@@ -47,14 +64,33 @@ func newHstore(text string) (hstore, error) {
 	return h, nil
 }
 
+type Hstorer interface {
+	Hstore() Hstore
+}
+
+func structToHstore(i interface{}) Hstore {
+	h := make(Hstore)
+	iVal := reflect.ValueOf(i)
+	typ := iVal.Type()
+	for i := 0; i < iVal.NumField(); i++ {
+		f := iVal.Field(i)
+		k := strings.ToLower(typ.Field(i).Name)
+		switch v := f.Interface().(type) {
+		default:
+			h[k] = v
+		}
+	}
+	return h
+}
+
 type NullHstore struct {
-	Hstore hstore
+	Hstore Hstore
 	Valid  bool // Valid is true if Hstore is not NULL
 }
 
 // Scan implements the Scanner interface.
 func (n *NullHstore) Scan(value interface{}) error {
-	n.Hstore, n.Valid = value.(hstore)
+	n.Hstore, n.Valid = value.(Hstore)
 	return nil
 }
 

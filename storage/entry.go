@@ -60,7 +60,7 @@ type Entry struct {
 	Path      string
 	Mime      string
 	imageType int
-	sev       hstore
+	sev       Hstore
 }
 
 var empty_item = &Entry{}
@@ -138,7 +138,7 @@ func newPath(ei *EntryId, ext string) string {
 	return p
 }
 
-func ia2hstore(ia image.KVMapper) (m hstore) {
-	m = hstore(ia.Maps())
+func ia2hstore(ia image.KVMapper) (m Hstore) {
+	m = Hstore(ia.Maps())
 	return
 }
