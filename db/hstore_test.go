@@ -5,7 +5,7 @@ import (
 )
 
 func TestHstoreNew(t *testing.T) {
-	text := `"ext"=>"", "size"=>"34508", "width"=>"758", "height"=>"140", "quality"=>"93", "no"=>NULL`
+	text := `"name"=>"test", "ext"=>"", "size"=>"34508", "nov"=>NULL`
 
 	var h = make(Hstore)
 	err := h.Scan(text)

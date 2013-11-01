@@ -8,7 +8,19 @@ import (
 	"strings"
 )
 
+var hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9-_\\.]*)\"),?"
+
 type Hstore map[string]interface{}
+
+// text := `"ext"=>".jpg", "size"=>"34508", "width"=>"758", "height"=>"140", "quality"=>"93"`
+func NewHstore(text string) (Hstore, error) {
+	h := make(Hstore)
+	err := h.fill(text)
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
+}
 
 // hstore map 转成 string 值
 func (h Hstore) String() string {
@@ -37,10 +49,10 @@ func (h Hstore) Value() (driver.Value, error) {
 func (h *Hstore) Scan(src interface{}) (err error) {
 	switch s := src.(type) {
 	case string:
-		*h, err = newHstore(s)
+		*h, err = NewHstore(s)
 		return
 	case []byte:
-		*h, err = newHstore(string(s))
+		*h, err = NewHstore(string(s))
 		return
 	case map[string]interface{}:
 		*h = Hstore(s)
@@ -49,25 +61,36 @@ func (h *Hstore) Scan(src interface{}) (err error) {
 	return
 }
 
-// text := `"ext"=>".jpg", "size"=>"34508", "width"=>"758", "height"=>"140", "quality"=>"93"`
-func newHstore(text string) (Hstore, error) {
-	re := regexp.MustCompile("\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9-_\\.]*)\"),?")
+func (h Hstore) Get(k string) (v interface{}) {
+	v = h[k]
+	return
+}
+
+func (h Hstore) Set(k string, v interface{}) {
+	h[k] = v
+}
+
+func (h *Hstore) fill(text string) error {
+	re, err := regexp.Compile(hstore_pattern)
+	if err != nil {
+		return err
+	}
 	r := strings.NewReplacer("\\\"", "\"")
 	matches := re.FindAllStringSubmatch(text, -1)
-	h := make(Hstore)
 	for _, s := range matches {
 		k, v := s[1], s[2]
 		k = r.Replace(k)
 		if v != "NULL" {
 			v = r.Replace(s[3])
-			h[k] = v
+			// h[k] = v
+			h.Set(k, v)
 		} else {
-			h[k] = nil
+			// h[k] = nil
+			h.Set(k, nil)
 		}
 		// fmt.Println(i, k, v)
 	}
-
-	return h, nil
+	return nil
 }
 
 type Hstorer interface {
