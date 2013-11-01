@@ -28,6 +28,12 @@ func (h Hstore) String() string {
 	return strings.Join(a, ",")
 }
 
+// driver.Valuer 用于向数据库中保存
+func (h Hstore) Value() (driver.Value, error) {
+	return h.String(), nil
+}
+
+// driver.Scanner 用于从数据库中取值
 func (h *Hstore) Scan(src interface{}) (err error) {
 	switch s := src.(type) {
 	case string:
