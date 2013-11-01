@@ -4,7 +4,7 @@ import (
 	"../image"
 	"bytes"
 	"encoding/base64"
-	// "io/ioutil"
+	"io/ioutil"
 	// "os"
 	"strings"
 	"testing"
@@ -12,8 +12,13 @@ import (
 
 func TestJpegReadWrite(t *testing.T) {
 	r := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpeg_data))
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := bytes.NewBuffer(buf)
 
-	im, err := image.Open(r)
+	im, err := image.Open(rr)
 	// data, err := ioutil.ReadAll(r)
 
 	if err != nil {
@@ -28,8 +33,8 @@ func TestJpegReadWrite(t *testing.T) {
 	// var dir string
 	// dir, err = os.Getwd()
 
-	var buf []byte
-	out := bytes.NewBuffer(buf)
+	var data []byte
+	out := bytes.NewBuffer(data)
 
 	err = im.Write(out)
 	if err != nil {

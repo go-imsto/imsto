@@ -3,8 +3,10 @@ package storage
 import (
 	"bytes"
 	"calf/base"
+	"calf/db"
 	"calf/image"
 	"crypto/md5"
+	// "errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -60,7 +62,7 @@ type Entry struct {
 	Path      string
 	Mime      string
 	imageType int
-	sev       Hstore
+	sev       db.Hstore
 }
 
 var empty_item = &Entry{}
@@ -78,19 +80,23 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	if err != nil {
 		return empty_item, err
 	}
-	hash = fmt.Sprintf("%x", md5.Sum(buf))
-	id, err = NewEntryIdFromHash(hash)
-
-	hashes := []string{hash}
-	ids := []string{id.String()}
 
 	if f, ok := r.(*os.File); ok {
+		log.Println("open from file")
 		f.Seek(0, 0)
+		im, err = image.Open(r)
 	} else if rr, ok := r.(*bytes.Buffer); ok {
+		log.Println("open from buf")
 		rr.Reset()
+		im, err = image.Open(r)
+	} else {
+		log.Println("open from other")
+		// im, err = image.Open(r)
+		//log.Fatal("unsupport format")
+		//return empty_item, errors.New("unsupport format")
+		rr := bytes.NewBuffer(buf)
+		im, err = image.Open(rr)
 	}
-
-	im, err = image.Open(r)
 
 	if err != nil {
 		log.Println(err)
@@ -98,6 +104,12 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	}
 
 	defer im.Close()
+
+	hash = fmt.Sprintf("%x", md5.Sum(buf))
+	id, err = NewEntryIdFromHash(hash)
+
+	hashes := []string{hash}
+	ids := []string{id.String()}
 
 	ia := im.GetAttr()
 	// log.Println(ia)
@@ -127,7 +139,6 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 
 	entry = &Entry{Id: id, Name: "", Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
 
-	// log.Println(ia2hstore(entry.Meta))
 	return
 }
 
@@ -136,9 +147,4 @@ func newPath(ei *EntryId, ext string) string {
 	p := string(r[0:2]) + "/" + string(r[2:4]) + "/" + string(r[4:]) + ext
 
 	return p
-}
-
-func ia2hstore(ia image.KVMapper) (m Hstore) {
-	m = Hstore(ia.Maps())
-	return
 }

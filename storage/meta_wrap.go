@@ -2,6 +2,7 @@ package storage
 
 import (
 	"calf/config"
+	cdb "calf/db"
 	// "calf/image"
 	"database/sql"
 	_ "database/sql/driver"
@@ -68,7 +69,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	entry := Entry{Id: &id}
 	row := db.QueryRow(sql, id.String())
 
-	var meta Hstore
+	var meta cdb.Hstore
 	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta)
 
 	if err != nil {
@@ -91,7 +92,7 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	log.Println("table", table)
 	hashes := "{" + strings.Join(entry.Hashes, ",") + "}"
 	ids := "{" + strings.Join(entry.Ids, ",") + "}"
-	meta := ia2hstore(entry.Meta).String()
+	meta := entry.Meta.Hstore()
 	log.Println(meta)
 	tx, err := db.Begin()
 	if err != nil {

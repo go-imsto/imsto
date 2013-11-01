@@ -1,4 +1,4 @@
-package storage
+package db
 
 import (
 	"database/sql/driver"
@@ -49,7 +49,7 @@ func newHstore(text string) (Hstore, error) {
 	r := strings.NewReplacer("\\\"", "\"")
 	matches := re.FindAllStringSubmatch(text, -1)
 	h := make(Hstore)
-	for i, s := range matches {
+	for _, s := range matches {
 		k, v := s[1], s[2]
 		k = r.Replace(k)
 		if v != "NULL" {
@@ -58,7 +58,7 @@ func newHstore(text string) (Hstore, error) {
 		} else {
 			h[k] = nil
 		}
-		fmt.Println(i, k, v)
+		// fmt.Println(i, k, v)
 	}
 
 	return h, nil
@@ -68,7 +68,7 @@ type Hstorer interface {
 	Hstore() Hstore
 }
 
-func structToHstore(i interface{}) Hstore {
+func StructToHstore(i interface{}) Hstore {
 	h := make(Hstore)
 	iVal := reflect.ValueOf(i)
 	typ := iVal.Type()

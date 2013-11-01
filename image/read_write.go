@@ -4,13 +4,12 @@ import (
 	// "imsto"
 	"os"
 	// "errors"
+	"bytes"
+	"calf/db"
 	"io"
 	"log"
+	"reflect"
 )
-
-type KVMapper interface {
-	Maps() map[string]interface{}
-}
 
 type ImageAttr struct {
 	Width   uint32
@@ -22,15 +21,8 @@ type ImageAttr struct {
 
 var attr_keys = []string{"width", "height", "quality", "size", "ext"}
 
-func (ia *ImageAttr) Maps() (m map[string]interface{}) {
-	m = map[string]interface{}{
-		"width":   ia.Width,
-		"height":  ia.Height,
-		"quality": ia.Quality,
-		"size":    ia.Size,
-		"ext":     ia.Ext,
-	}
-	return
+func (ia *ImageAttr) Hstore() db.Hstore {
+	return db.StructToHstore(*ia)
 }
 
 type WriteOption struct {
@@ -80,7 +72,6 @@ type Image interface {
 
 func Open(r io.Reader) (im Image, err error) {
 
-	rr := asReader(r)
 	var (
 		t   TypeId
 		ext string
@@ -95,11 +86,22 @@ func Open(r io.Reader) (im Image, err error) {
 
 	im = getImageImpl(t)
 
-	if _, ok := r.(*os.File); ok {
-		err = im.Open(r)
-	} else {
+	if f, ok := r.(*os.File); ok {
+		log.Println("open from file")
+		f.Seek(0, 0)
+		err = im.Open(f)
+	} else if rr, ok := r.(*bytes.Buffer); ok {
+		log.Println("open from buf")
+		rr.Reset()
 		err = im.Open(rr)
+	} else {
+		// log.Println("open from other", reflect.TypeOf(r))
+		// rr := bufio.NewReader(r)
+		// rr.Reset()
+		// err = im.Open(rr)
+		log.Panicln("unsupport reader ", reflect.TypeOf(r))
 	}
+
 	if err != nil {
 		log.Println(err)
 		return nil, err
