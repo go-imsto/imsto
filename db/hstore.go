@@ -3,12 +3,13 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"regexp"
 	"strings"
 )
 
-var hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9-_\\.]*)\"),?"
+const hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9-_\\.]*)\"),?"
 
 type Hstore map[string]interface{}
 
@@ -40,12 +41,12 @@ func (h Hstore) String() string {
 	return strings.Join(a, ",")
 }
 
-// driver.Valuer 用于向数据库中保存
+// driver.Valuer for sql value save
 func (h Hstore) Value() (driver.Value, error) {
 	return h.String(), nil
 }
 
-// driver.Scanner 用于从数据库中取值
+// driver.Scanner for sql value load
 func (h *Hstore) Scan(src interface{}) (err error) {
 	switch s := src.(type) {
 	case string:
@@ -91,6 +92,21 @@ func (h *Hstore) fill(text string) error {
 		// fmt.Println(i, k, v)
 	}
 	return nil
+}
+
+func (h Hstore) ToStruct(i interface{}) error {
+	config := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		WeaklyTypedInput: true,
+		Result:           i,
+	}
+
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(h)
 }
 
 type Hstorer interface {

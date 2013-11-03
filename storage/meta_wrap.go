@@ -3,7 +3,7 @@ package storage
 import (
 	"calf/config"
 	cdb "calf/db"
-	// "calf/image"
+	"calf/image"
 	"database/sql"
 	_ "database/sql/driver"
 	_ "github.com/lib/pq"
@@ -78,6 +78,13 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	}
 	// entry.Meta = image.
 	log.Println("meta:", meta)
+	var ia image.ImageAttr
+	err = meta.ToStruct(&ia)
+	if err != nil {
+		log.Println(err)
+		return &entry, err
+	}
+	log.Println(ia.Width)
 
 	log.Printf("name: %s, path: %s, size: %d, mime: %s\n", entry.Name, entry.Path, entry.Size, entry.Mime)
 
