@@ -86,6 +86,8 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	}
 	log.Println(ia.Width)
 
+	entry.Meta = &ia
+
 	log.Printf("name: %s, path: %s, size: %d, mime: %s\n", entry.Name, entry.Path, entry.Size, entry.Mime)
 
 	return &entry, nil
