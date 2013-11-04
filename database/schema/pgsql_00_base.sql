@@ -17,13 +17,13 @@ GRANT im_visitor TO im_reader;
 
 -- 账户相关
 
-CREATE ROLE im_storage LOGIN PASSWORD 'aside26,dicx';
-CREATE DATABASE im_storage WITH OWNER = im_storage ENCODING = 'UTF8';
-GRANT ALL ON DATABASE im_storage TO im_storage;
-ALTER ROLE im_storage SET client_encoding=utf8;
-GRANT CONNECT ON DATABASE im_storage TO public;
-GRANT CONNECT, TEMPORARY ON DATABASE im_storage TO GROUP wp_keeper;
-GRANT CONNECT, TEMPORARY ON DATABASE im_storage TO GROUP wp_visitor;
+CREATE ROLE imsto LOGIN PASSWORD 'aside26,dicx';
+CREATE DATABASE imsto WITH OWNER = imsto ENCODING = 'UTF8';
+GRANT ALL ON DATABASE imsto TO imsto;
+ALTER ROLE imsto SET client_encoding=utf8;
+GRANT CONNECT ON DATABASE imsto TO public;
+GRANT CONNECT, TEMPORARY ON DATABASE imsto TO GROUP im_keeper;
+GRANT CONNECT, TEMPORARY ON DATABASE imsto TO GROUP im_visitor;
 
 
 END;

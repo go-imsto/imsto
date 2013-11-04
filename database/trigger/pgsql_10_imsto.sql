@@ -2,7 +2,7 @@
 
 BEGIN;
 
-set search_path = im_storage;
+set search_path = imsto;
 
 
 CREATE TRIGGER hash_insert_trigger BEFORE INSERT ON hash_template

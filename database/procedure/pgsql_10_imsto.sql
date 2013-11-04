@@ -2,11 +2,11 @@
 
 BEGIN;
 
-set search_path = im_storage, public;
+set search_path = imsto, public;
 
 -- 初始化 hash 表
 
-CREATE OR REPLACE FUNCTION im_storage.hash_tables_init()
+CREATE OR REPLACE FUNCTION imsto.hash_tables_init()
 RETURNS int AS
 $$
 DECLARE
@@ -20,17 +20,17 @@ BEGIN
 FOR i IN 0..15 LOOP
 	-- some computations here
 	suffix := to_hex(i%16);
-	tbname := 'im_storage.hash_' || suffix;
+	tbname := 'imsto.hash_' || suffix;
 	
 	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE 
-		schemaname = 'im_storage' AND tablename = tbname) THEN
+		schemaname = 'imsto' AND tablename = tbname) THEN
 	RAISE NOTICE 'tb is %', tbname;
 	EXECUTE 'CREATE TABLE ' || tbname || '
 	(
-		LIKE im_storage.hash_template INCLUDING ALL , 
+		LIKE imsto.hash_template INCLUDING ALL , 
 		CHECK (hashed LIKE ' || quote_literal(suffix||'%') || ')
 	) 
-	INHERITS (im_storage.hash_template)
+	INHERITS (imsto.hash_template)
 	WITHOUT OIDS ;';
 	count := count + 1;
 	END IF;
@@ -43,7 +43,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 -- 初始化 mapping 表
 
-CREATE OR REPLACE FUNCTION im_storage.mapping_tables_init()
+CREATE OR REPLACE FUNCTION imsto.mapping_tables_init()
 RETURNS int AS
 $$
 DECLARE
@@ -59,18 +59,18 @@ BEGIN
 FOR i IN 1..36 LOOP
 	-- some computations here
 	suffix := substr(basestr, i, 1);
-	tbname := 'im_storage.mapping_' || suffix;
+	tbname := 'imsto.mapping_' || suffix;
 
 	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE 
-		schemaname = 'im_storage' AND tablename = tbname) THEN
+		schemaname = 'imsto' AND tablename = tbname) THEN
 	RAISE NOTICE 'tb is %', tbname;
 	
 	EXECUTE 'CREATE TABLE ' || tbname || '
 	(
-		LIKE im_storage.map_template INCLUDING ALL , 
+		LIKE imsto.map_template INCLUDING ALL , 
 		CHECK (id LIKE ' || quote_literal(suffix||'%') || ')
 	) 
-	INHERITS (im_storage.map_template)
+	INHERITS (imsto.map_template)
 	WITHOUT OIDS ;';
 	count := count + 1;
 	END IF;
@@ -83,7 +83,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 保存 hash 记录
-CREATE OR REPLACE FUNCTION im_storage.hash_save(a_hashed varchar, a_item_id varchar, a_path varchar, a_prefix varchar)
+CREATE OR REPLACE FUNCTION imsto.hash_save(a_hashed varchar, a_item_id varchar, a_path varchar, a_prefix varchar)
 
 RETURNS int AS
 $$
@@ -93,7 +93,7 @@ DECLARE
 BEGIN
 
 	suffix := substr(a_hashed, 1, 1);
-	tbname := 'im_storage.hash_'||suffix;
+	tbname := 'imsto.hash_'||suffix;
 
 	EXECUTE 'SELECT created FROM '||tbname||' WHERE hashed = '||quote_literal(a_hashed)|| ' LIMIT 1';
 
@@ -127,7 +127,8 @@ LANGUAGE plpgsql;
 
 
 -- 保存 map 记录
-CREATE OR REPLACE FUNCTION im_storage.map_save(a_id varchar, a_name varchar, a_path varchar, a_mime varchar, a_size, a_sev hstore)
+CREATE OR REPLACE FUNCTION imsto.map_save(
+	a_id varchar, a_name varchar, a_path varchar, a_mime varchar, a_size int, a_sev hstore)
 
 RETURNS int AS
 $$
@@ -137,7 +138,7 @@ DECLARE
 BEGIN
 
 	suffix := substr(a_id, 1, 1);
-	tbname := 'im_storage.map_'||suffix;
+	tbname := 'imsto.map_'||suffix;
 
 	EXECUTE 'SELECT created FROM '||tbname||' WHERE id = '||quote_literal(a_id)|| ' LIMIT 1';
 
@@ -158,9 +159,9 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 保存某条完整 entry 信息
-CREATE OR REPLACE FUNCTION im_storage.entry_save
-(a_id varchar, a_name varchar, a_path varchar, a_mime varchar, a_size, a_sev hstore
-	, a_hashes []varchar, a_ids []varchar)
+CREATE OR REPLACE FUNCTION imsto.entry_save (
+	a_id varchar, a_name varchar, a_path varchar, a_mime varchar, a_size int
+	, a_sev hstore, a_hashes varchar[], a_ids varchar[])
 
 RETURNS int AS
 $$

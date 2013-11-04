@@ -4,11 +4,11 @@
 
 BEGIN;
 
-CREATE SCHEMA im_storage;
-COMMENT ON SCHEMA im_storage IS '存储相关';
-GRANT ALL ON SCHEMA im_storage TO wp_content;
+CREATE SCHEMA imsto;
+COMMENT ON SCHEMA imsto IS '存储相关';
+GRANT ALL ON SCHEMA imsto TO imsto;
 
-set search_path = im_storage, public;
+set search_path = imsto, public;
 
 CREATE SEQUENCE hash_id_seq;
 
