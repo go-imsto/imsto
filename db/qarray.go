@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -20,6 +21,7 @@ func NewQarray(text string) (Qarray, error) {
 		return q, nil
 	}
 
+	log.Println("invalid Qarray format")
 	return Qarray{}, nil
 }
 
