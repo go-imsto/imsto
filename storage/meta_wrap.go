@@ -8,7 +8,7 @@ import (
 	_ "database/sql/driver"
 	_ "github.com/lib/pq"
 	"log"
-	"strings"
+	// "strings"
 )
 
 type MetaWrapper interface {
@@ -65,12 +65,12 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	defer db.Close()
 
 	table := mw.table
-	sql := "SELECT name, path, size, mime, meta FROM " + table + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT name, path, size, mime, meta, ids, hashes FROM " + table + " WHERE id = $1 LIMIT 1"
 	entry := Entry{Id: &id}
 	row := db.QueryRow(sql, id.String())
 
 	var meta cdb.Hstore
-	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta)
+	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta, &entry.Hashes, &entry.Ids)
 
 	if err != nil {
 		log.Println(err)
@@ -96,9 +96,11 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	defer db.Close()
 
 	table := mw.table
-	log.Println("table", table)
-	hashes := "{" + strings.Join(entry.Hashes, ",") + "}"
-	ids := "{" + strings.Join(entry.Ids, ",") + "}"
+	log.Println("table:", table)
+	log.Printf("hashes: %s\n", entry.Hashes.String())
+	log.Printf("ids: %s\n", entry.Ids.String())
+	// hashes := "{" + strings.Join(entry.Hashes, ",") + "}"
+	// ids := "{" + strings.Join(entry.Ids, ",") + "}"
 	meta := entry.Meta.Hstore()
 	log.Println(meta)
 	tx, err := db.Begin()
@@ -109,7 +111,7 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	}
 
 	sql := "INSERT INTO " + table + "(id, name, hashes, ids, meta, path, size, mime) VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
-	result, err := tx.Exec(sql, entry.Id.String(), entry.Name, hashes, ids, meta, entry.Path, entry.Size, entry.Mime)
+	result, err := tx.Exec(sql, entry.Id.String(), entry.Name, entry.Hashes.String(), entry.Ids.String(), meta, entry.Path, entry.Size, entry.Mime)
 
 	if err != nil {
 		log.Fatal(err)

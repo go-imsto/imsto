@@ -3,7 +3,7 @@ package storage
 import (
 	"bytes"
 	"calf/base"
-	"calf/db"
+	cdb "calf/db"
 	"calf/image"
 	"crypto/md5"
 	// "errors"
@@ -53,8 +53,8 @@ type Author uint16
 type Entry struct {
 	Id        *EntryId
 	Name      string
-	Hashes    []string
-	Ids       []string
+	Hashes    cdb.Qarray
+	Ids       cdb.Qarray
 	Meta      *image.ImageAttr
 	Size      uint32
 	AppId     AppId
@@ -62,7 +62,7 @@ type Entry struct {
 	Path      string
 	Mime      string
 	imageType int
-	sev       db.Hstore
+	sev       cdb.Hstore
 }
 
 var empty_item = &Entry{}
@@ -108,8 +108,8 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	hash = fmt.Sprintf("%x", md5.Sum(buf))
 	id, err = NewEntryIdFromHash(hash)
 
-	hashes := []string{hash}
-	ids := []string{id.String()}
+	hashes := cdb.Qarray{hash}
+	ids := cdb.Qarray{id.String()}
 
 	ia := im.GetAttr()
 	// log.Println(ia)

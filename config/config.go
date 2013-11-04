@@ -13,8 +13,8 @@ import (
 )
 
 const defaultConfigIni = `
-meta_dsn = postgres://wp_content@localhost?sslmode=disable
-meta_table = wp_storage.meta_wpitem
+meta_dsn = postgres://imsto@localhost?sslmode=disable
+meta_table = imsto.meta_wpitem
 engine = mongodb
 db_name = storage
 thumb_path = /thumb
