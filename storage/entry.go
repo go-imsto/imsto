@@ -116,6 +116,8 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	var size uint
 	data := im.Blob(&size)
 
+	// TODO: 添加最小优化比率判断，如果过小，就忽略
+
 	var hash2 string
 	hash2 = fmt.Sprintf("%x", md5.Sum(data))
 	if hash2 != hash {
@@ -136,6 +138,7 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	ext := ia.Ext
 	path := newPath(id, ext)
 	mimetype := mime.TypeByExtension(ext)
+	ia.Mime = mimetype
 
 	entry = &Entry{Id: id, Name: "", Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
 

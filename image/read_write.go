@@ -17,6 +17,7 @@ type ImageAttr struct {
 	Quality uint8
 	Size    uint32
 	Ext     string
+	Mime    string
 }
 
 var attr_keys = []string{"width", "height", "quality", "size", "ext"}
@@ -32,7 +33,7 @@ type WriteOption struct {
 
 // export NewImageAttr
 func NewImageAttr(w, h uint, q uint8) *ImageAttr {
-	return &ImageAttr{uint32(w), uint32(h), uint8(q), uint32(0), ""}
+	return &ImageAttr{uint32(w), uint32(h), uint8(q), uint32(0), "", ""}
 }
 
 // func NewImageAttrByMap(m map[string]interface{}) *ImageAttr {

@@ -11,6 +11,10 @@ import (
 	// "strings"
 )
 
+const (
+	meta_table_prefix = "meta_"
+)
+
 type MetaWrapper interface {
 	Browse(limit int, offset int) (*sql.Rows, error)
 	Store(entry *Entry) error
@@ -23,7 +27,7 @@ type MetaWrap struct {
 	// section string
 	// prefix  string
 
-	table string
+	table_suffix string
 }
 
 func newMetaWrap(section string) *MetaWrap {
@@ -31,8 +35,8 @@ func newMetaWrap(section string) *MetaWrap {
 		section = "common"
 	}
 	dsn := config.GetValue(section, "meta_dsn")
-	table := config.GetValue(section, "meta_table")
-	mw := &MetaWrap{dsn: dsn, table: table}
+	table := config.GetValue(section, "meta_table_suffix")
+	mw := &MetaWrap{dsn: dsn, table_suffix: table}
 
 	return mw
 }
@@ -40,6 +44,10 @@ func newMetaWrap(section string) *MetaWrap {
 func NewMetaWrapper(section string) (mw MetaWrapper) {
 	mw = newMetaWrap(section)
 	return mw
+}
+
+func (mw *MetaWrap) table() string {
+	return meta_table_prefix + mw.table_suffix
 }
 
 func (mw *MetaWrap) Browse(limit int, offset int) (rows *sql.Rows, err error) {
@@ -52,9 +60,7 @@ func (mw *MetaWrap) Browse(limit int, offset int) (rows *sql.Rows, err error) {
 
 	db := mw.getDb()
 
-	table := mw.table
-
-	rows, err = db.Query("SELECT * FROM "+table+" LIMIT $1 OFFSET $2", limit, offset)
+	rows, err = db.Query("SELECT * FROM "+mw.table()+" LIMIT $1 OFFSET $2", limit, offset)
 
 	log.Print(rows)
 	return rows, err
@@ -64,8 +70,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	db := mw.getDb()
 	defer db.Close()
 
-	table := mw.table
-	sql := "SELECT name, path, size, mime, meta, ids, hashes FROM " + table + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT name, path, size, mime, meta, ids, hashes FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 	entry := Entry{Id: &id}
 	row := db.QueryRow(sql, id.String())
 
@@ -99,8 +104,6 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	db := mw.getDb()
 	defer db.Close()
 
-	table := mw.table
-	log.Println("table:", table)
 	log.Printf("hashes: %s\n", entry.Hashes)
 	log.Printf("ids: %s\n", entry.Ids)
 	// hashes := "{" + strings.Join(entry.Hashes, ",") + "}"
@@ -114,25 +117,38 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 		return err
 	}
 
-	sql := "INSERT INTO " + table + "(id, name, hashes, ids, meta, path, size, mime) VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
-	result, err := tx.Exec(sql, entry.Id.String(), entry.Name, entry.Hashes, entry.Ids, meta, entry.Path, entry.Size, entry.Mime)
+	/*
+	   a_section varchar,
+	   	a_id varchar, a_path varchar, a_name varchar, a_mime varchar, a_size int
+	   	, a_meta hstore, a_sev hstore, a_hashes varchar[], a_ids varchar[]
+	*/
+	// sql := "INSERT INTO " + mw.table() + "(id, name, hashes, ids, meta, path, size, mime) VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
+	// result, err := tx.Exec(sql, entry.Id.String(), entry.Name, entry.Hashes, entry.Ids, meta, entry.Path, entry.Size, entry.Mime)
+	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
+	row := tx.QueryRow(sql, mw.table_suffix,
+		entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, meta, entry.sev, entry.Hashes, entry.Ids)
+
+	var ret int
+	err = row.Scan(&ret)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var ra int64
-	ra, err = result.RowsAffected()
+	log.Printf("entry save ret: %v\n", ret)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	// var ra int64
+	// ra, err = result.RowsAffected()
 
-	log.Println("RowsAffected ", ra)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// log.Println("RowsAffected ", ra)
 
 	tx.Commit()
 
-	return nil
+	return err
 }
 
 func (mw *MetaWrap) Delete(id EntryId) error {

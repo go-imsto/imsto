@@ -14,7 +14,7 @@ import (
 
 const defaultConfigIni = `
 meta_dsn = postgres://imsto@localhost?sslmode=disable
-meta_table = imsto.meta_wpitem
+meta_table_suffix = wpitem
 engine = mongodb
 db_name = storage
 thumb_path = /thumb
