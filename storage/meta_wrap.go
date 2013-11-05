@@ -70,12 +70,14 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	row := db.QueryRow(sql, id.String())
 
 	var meta cdb.Hstore
-	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta, &entry.Hashes, &entry.Ids)
+	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta, &entry.Ids, &entry.Hashes)
 
 	if err != nil {
 		log.Println(err)
 		return &entry, err
 	}
+
+	log.Println("first id:", entry.Ids[0])
 	// entry.Meta = image.
 	log.Println("meta:", meta)
 	var ia image.ImageAttr
