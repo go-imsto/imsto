@@ -25,15 +25,15 @@ func NewQarray(text string) (Qarray, error) {
 	return Qarray{}, nil
 }
 
-func (q *Qarray) String() string {
-	if len(*q) == 0 {
+func (q Qarray) String() string {
+	if len(q) == 0 {
 		return "{}"
 	}
 
-	var s = make([]string, len(*q))
+	var s = make([]string, len(q))
 	r := strings.NewReplacer("\\", "\\\\", "'", "''", "\"", "\\\"")
 
-	for i, v := range *q {
+	for i, v := range q {
 		sv := reflect.ValueOf(v)
 		switch sv.Kind() {
 		default:
@@ -51,7 +51,7 @@ func (q *Qarray) String() string {
 }
 
 // driver.Valuer for sql value save
-func (q *Qarray) Value() (driver.Value, error) {
+func (q Qarray) Value() (driver.Value, error) {
 	return q.String(), nil
 }
 

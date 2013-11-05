@@ -99,8 +99,8 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 
 	table := mw.table
 	log.Println("table:", table)
-	log.Printf("hashes: %s\n", entry.Hashes.String())
-	log.Printf("ids: %s\n", entry.Ids.String())
+	log.Printf("hashes: %s\n", entry.Hashes)
+	log.Printf("ids: %s\n", entry.Ids)
 	// hashes := "{" + strings.Join(entry.Hashes, ",") + "}"
 	// ids := "{" + strings.Join(entry.Ids, ",") + "}"
 	meta := entry.Meta.Hstore()
@@ -113,7 +113,7 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	}
 
 	sql := "INSERT INTO " + table + "(id, name, hashes, ids, meta, path, size, mime) VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
-	result, err := tx.Exec(sql, entry.Id.String(), entry.Name, entry.Hashes.String(), entry.Ids.String(), meta, entry.Path, entry.Size, entry.Mime)
+	result, err := tx.Exec(sql, entry.Id.String(), entry.Name, entry.Hashes, entry.Ids, meta, entry.Path, entry.Size, entry.Mime)
 
 	if err != nil {
 		log.Fatal(err)
