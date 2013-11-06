@@ -129,6 +129,8 @@ LANGUAGE plpgsql;
 -- CREATE TRIGGER hash_insert_trigger BEFORE INSERT ON hash_template
 -- FOR EACH ROW EXECUTE PROCEDURE hash_insert_trigger();
 
+-- check hash exists
+-- CREATE OR REPLACE FUNCTION imsto.hash_exists(a_hashed varchar)
 
 -- 保存 map 记录
 CREATE OR REPLACE FUNCTION imsto.map_save(

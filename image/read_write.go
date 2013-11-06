@@ -20,7 +20,7 @@ type ImageAttr struct {
 	Mime    string
 }
 
-var attr_keys = []string{"width", "height", "quality", "size", "ext"}
+// var attr_keys = []string{"width", "height", "quality", "size", "ext"}
 
 func (ia *ImageAttr) Hstore() db.Hstore {
 	return db.StructToHstore(*ia)
@@ -88,11 +88,11 @@ func Open(r io.Reader) (im Image, err error) {
 	im = getImageImpl(t)
 
 	if f, ok := r.(*os.File); ok {
-		log.Println("open from file")
+		log.Println("rw: open from file")
 		f.Seek(0, 0)
 		err = im.Open(f)
 	} else if rr, ok := r.(*bytes.Buffer); ok {
-		log.Println("open from buf")
+		log.Println("rw: open from buf")
 		rr.Reset()
 		err = im.Open(rr)
 	} else {
@@ -100,7 +100,7 @@ func Open(r io.Reader) (im Image, err error) {
 		// rr := bufio.NewReader(r)
 		// rr.Reset()
 		// err = im.Open(rr)
-		log.Panicln("unsupport reader ", reflect.TypeOf(r))
+		log.Panicln("rw: unsupport reader ", reflect.TypeOf(r))
 	}
 
 	if err != nil {
@@ -110,13 +110,15 @@ func Open(r io.Reader) (im Image, err error) {
 
 	attr := im.GetAttr()
 	attr.Ext = ext
-
+	// log.Println(im.GetAttr())
 	return im, nil
 }
 
 func getImageImpl(t TypeId) (im Image) {
 	if t == TYPE_JPEG {
 		im = newSimpJPEG()
+	} else if t == TYPE_PNG {
+		im = newSimpPNG()
 	} else {
 		im = newWandImage()
 	}

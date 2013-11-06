@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9-_\\.]*)\"),?"
+const hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9_/\\.-]*)\"),?"
 
 type Hstore map[string]interface{}
 

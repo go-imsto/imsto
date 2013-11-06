@@ -9,9 +9,12 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	// "strings"
+	"fmt"
 )
 
 const (
+	hash_table_prefix = "hash_"
+	map_table_prefix  = "mapping_"
 	meta_table_prefix = "meta_"
 )
 
@@ -70,12 +73,12 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	db := mw.getDb()
 	defer db.Close()
 
-	sql := "SELECT name, path, size, mime, meta, ids, hashes FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT name, path, size, meta, sev, ids, hashes FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 	entry := Entry{Id: &id}
 	row := db.QueryRow(sql, id.String())
 
-	var meta cdb.Hstore
-	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &entry.Mime, &meta, &entry.Ids, &entry.Hashes)
+	var meta, sev cdb.Hstore
+	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &meta, &sev, &entry.Ids, &entry.Hashes)
 
 	if err != nil {
 		log.Println(err)
@@ -94,6 +97,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	log.Println(ia.Width)
 
 	entry.Meta = &ia
+	entry.Mime = fmt.Sprint(meta.Get("mime"))
 
 	log.Printf("name: %s, path: %s, size: %d, mime: %s\n", entry.Name, entry.Path, entry.Size, entry.Mime)
 
@@ -106,10 +110,9 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 
 	log.Printf("hashes: %s\n", entry.Hashes)
 	log.Printf("ids: %s\n", entry.Ids)
-	// hashes := "{" + strings.Join(entry.Hashes, ",") + "}"
-	// ids := "{" + strings.Join(entry.Ids, ",") + "}"
+
 	meta := entry.Meta.Hstore()
-	log.Println(meta)
+	log.Println("meta: ", meta)
 	tx, err := db.Begin()
 	if err != nil {
 		log.Println(err)
@@ -117,13 +120,6 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 		return err
 	}
 
-	/*
-	   a_section varchar,
-	   	a_id varchar, a_path varchar, a_name varchar, a_mime varchar, a_size int
-	   	, a_meta hstore, a_sev hstore, a_hashes varchar[], a_ids varchar[]
-	*/
-	// sql := "INSERT INTO " + mw.table() + "(id, name, hashes, ids, meta, path, size, mime) VALUES($1, $2, $3, $4, $5, $6, $7, $8)"
-	// result, err := tx.Exec(sql, entry.Id.String(), entry.Name, entry.Hashes, entry.Ids, meta, entry.Path, entry.Size, entry.Mime)
 	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
 	row := tx.QueryRow(sql, mw.table_suffix,
 		entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, meta, entry.sev, entry.Hashes, entry.Ids)
@@ -137,18 +133,37 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 
 	log.Printf("entry save ret: %v\n", ret)
 
-	// var ra int64
-	// ra, err = result.RowsAffected()
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// log.Println("RowsAffected ", ra)
-
 	tx.Commit()
 
 	return err
+}
+
+func (mw *MetaWrap) ExistHash(hash string) string {
+	db := mw.getDb()
+	defer db.Close()
+	var id string
+	sql := "SELECT item_id FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
+	row := db.QueryRow(sql, hash)
+	err := row.Scan(&id)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return id
+}
+
+func (mw *MetaWrap) ExistMap(id string) string {
+	db := mw.getDb()
+	defer db.Close()
+	var eid string
+	sql := "SELECT id FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
+	row := db.QueryRow(sql, id)
+	err := row.Scan(&eid)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return eid
 }
 
 func (mw *MetaWrap) Delete(id EntryId) error {
@@ -163,4 +178,12 @@ func (mw *MetaWrap) getDb() *sql.DB {
 		log.Fatal(err)
 	}
 	return db
+}
+
+func tableHash(s string) string {
+	return hash_table_prefix + s[:1]
+}
+
+func tableMap(s string) string {
+	return map_table_prefix + s[:1]
 }

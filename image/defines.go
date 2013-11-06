@@ -36,7 +36,7 @@ type format struct {
 var formats = []format{
 	format{TYPE_GIF, "GIF8?a", ".gif"},
 	format{TYPE_JPEG, "\xff\xd8\xff", ".jpg"},
-	format{TYPE_PNG, "\x89PNG\r\n\x1a\n", ".jpg"}, // SIG_PNG = "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a"
+	format{TYPE_PNG, "\x89PNG\r\n\x1a\n", ".png"}, // SIG_PNG = "\x89\x50\x4e\x47\x0d\x0a\x1a\x0a"
 }
 
 func registerFormat(t TypeId, sign, ext string) {

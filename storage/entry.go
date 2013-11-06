@@ -140,6 +140,8 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	mimetype := mime.TypeByExtension(ext)
 	ia.Mime = mimetype
 
+	log.Printf("ext: %s, mime: %s\n", ext, mimetype)
+
 	entry = &Entry{Id: id, Name: "", Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
 
 	return
