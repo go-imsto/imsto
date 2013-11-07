@@ -105,6 +105,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	m["status"] = "ok"
 
 	writeJsonQuiet(w, r, m)
 }
