@@ -87,15 +87,19 @@ func Open(r io.Reader) (im Image, err error) {
 
 	im = getImageImpl(t)
 
+	if rr, ok := r.(io.Seeker); ok {
+		rr.Seek(0, 0)
+	}
+
 	if f, ok := r.(*os.File); ok {
 		log.Println("rw: open from file")
-		f.Seek(0, 0)
+		// f.Seek(0, 0)
 		err = im.Open(f)
-	} else if rr, ok := r.(*bytes.Buffer); ok {
-		log.Println("rw: open from buf")
-		rr.Reset()
+	} else if rr, ok := r.(*bytes.Reader); ok {
+		// rr.Seek(0, 0)
+		log.Printf("rw: open from buf, size: %d", rr.Len())
 		err = im.Open(rr)
-	} else {
+	} else { // 目前只支持从文件或二进制数据读取
 		// log.Println("open from other", reflect.TypeOf(r))
 		// rr := bufio.NewReader(r)
 		// rr.Reset()

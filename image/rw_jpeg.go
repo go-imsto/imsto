@@ -75,7 +75,6 @@ func (self *simpJPEG) Open(r io.Reader) (err error) {
 		fi, _ := f.Stat()
 		self.size = uint32(fi.Size())
 	} else {
-		// rr := bufio.NewReader(r)
 		var blob []byte
 		blob, err = ioutil.ReadAll(r)
 

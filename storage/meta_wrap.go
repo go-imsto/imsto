@@ -94,7 +94,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 		log.Println(err)
 		return &entry, err
 	}
-	log.Println(ia.Width)
+	log.Println("ia:", ia)
 
 	entry.Meta = &ia
 	entry.Mime = fmt.Sprint(meta.Get("mime"))

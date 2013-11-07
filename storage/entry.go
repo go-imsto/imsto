@@ -7,12 +7,13 @@ import (
 	"calf/image"
 	"crypto/md5"
 	// "errors"
+	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
+	// "io"
+	// "io/ioutil"
 	"log"
 	"mime"
-	"os"
+	// "os"
 )
 
 type EntryId struct {
@@ -35,6 +36,14 @@ func (ei *EntryId) String() string {
 	return ei.id
 }
 
+// func (ei *EntryId) MarshalJSON() ([]byte, error) {
+// 	return []byte(ei.id), nil
+// }
+
+func (ei *EntryId) Hashed() string {
+	return ei.hash
+}
+
 func (ei *EntryId) tip() string {
 	return ei.id[:1]
 }
@@ -51,7 +60,7 @@ type Author uint16
 // }
 
 type Entry struct {
-	Id        *EntryId
+	Id        *EntryId //`json:"id,omitempty"`
 	Name      string
 	Hashes    cdb.Qarray
 	Ids       cdb.Qarray
@@ -67,36 +76,23 @@ type Entry struct {
 
 var empty_item = &Entry{}
 
-func NewEntry(r io.Reader) (entry *Entry, err error) {
+const (
+	min_size = 43
+)
+
+func NewEntry(data []byte) (entry *Entry, err error) {
+	if len(data) < min_size {
+		err = errors.New("data is too small, maybe not a valid image")
+		return
+	}
 	var (
-		buf  []byte
 		hash string
 		id   *EntryId
 		im   image.Image
 	)
 
-	buf, err = ioutil.ReadAll(r)
-
-	if err != nil {
-		return empty_item, err
-	}
-
-	if f, ok := r.(*os.File); ok {
-		log.Println("open from file")
-		f.Seek(0, 0)
-		im, err = image.Open(r)
-	} else if rr, ok := r.(*bytes.Buffer); ok {
-		log.Println("open from buf")
-		rr.Reset()
-		im, err = image.Open(r)
-	} else {
-		log.Println("open from other")
-		// im, err = image.Open(r)
-		//log.Fatal("unsupport format")
-		//return empty_item, errors.New("unsupport format")
-		rr := bytes.NewBuffer(buf)
-		im, err = image.Open(rr)
-	}
+	rd := bytes.NewReader(data)
+	im, err = image.Open(rd)
 
 	if err != nil {
 		log.Println(err)
@@ -105,7 +101,7 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 
 	defer im.Close()
 
-	hash = fmt.Sprintf("%x", md5.Sum(buf))
+	hash = HashContent(data)
 	id, err = NewEntryIdFromHash(hash)
 
 	hashes := cdb.Qarray{hash}
@@ -114,12 +110,12 @@ func NewEntry(r io.Reader) (entry *Entry, err error) {
 	ia := im.GetAttr()
 	// log.Println(ia)
 	var size uint
-	data := im.Blob(&size)
+	data = im.Blob(&size) // tack new data
 
 	// TODO: 添加最小优化比率判断，如果过小，就忽略
 
 	var hash2 string
-	hash2 = fmt.Sprintf("%x", md5.Sum(data))
+	hash2 = HashContent(data)
 	if hash2 != hash {
 		hashes = append(hashes, hash2)
 		var id2 *EntryId
@@ -152,4 +148,8 @@ func newPath(ei *EntryId, ext string) string {
 	p := string(r[0:2]) + "/" + string(r[2:4]) + "/" + string(r[4:]) + ext
 
 	return p
+}
+
+func HashContent(data []byte) string {
+	return fmt.Sprintf("%x", md5.Sum(data))
 }

@@ -45,7 +45,7 @@ func runView(args []string) bool {
 			fmt.Println(err)
 		}
 
-		fmt.Println(entry)
+		fmt.Println("entry:", entry)
 
 	}
 
