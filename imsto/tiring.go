@@ -102,6 +102,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	err = mw.Store(entry)
 	// fmt.Println("mw", mw)
 	if err != nil {
+		m["error"] = err
 		log.Println(err)
 		return
 	}

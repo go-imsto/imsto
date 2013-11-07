@@ -1,9 +1,9 @@
-package storage
+package engine
 
 type EntryMapper interface {
-	Get(key string) (Entry, error)
+	Get(key string) ([]byte, error)
 	Put(key string, data []byte) error
-	Exists(key string)
+	Exists(key string) bool
 }
 
 var engines = make(map[string]EntryMapper)
