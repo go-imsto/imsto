@@ -55,12 +55,27 @@ CREATE TABLE meta_template (
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (created) ;
 
-CREATE TABLE meta_common
+CREATE TABLE meta_demo
 (
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
 
 CREATE TABLE meta_wpitem
+(
+	LIKE meta_template INCLUDING ALL
+) WITHOUT OIDS;
+
+CREATE TABLE meta_crafts
+(
+	LIKE meta_template INCLUDING ALL
+) WITHOUT OIDS;
+
+CREATE TABLE meta_avatar
+(
+	LIKE meta_template INCLUDING ALL
+) WITHOUT OIDS;
+
+CREATE TABLE meta_wpcms
 (
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;

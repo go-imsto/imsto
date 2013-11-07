@@ -13,10 +13,10 @@ import (
 )
 
 const defaultConfigIni = `
-meta_dsn = postgres://imsto@localhost?sslmode=disable
-meta_table_suffix = wpitem
-engine = mongodb
-db_name = storage
+meta_dsn = postgres://imsto@localhost/imsto?sslmode=disable
+meta_table_suffix = demo
+engine = s3
+bucket_name = imsto-demo
 thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
 tmp_dir = /tmp/
@@ -73,6 +73,14 @@ func GetValue(section, name string) string {
 	}
 
 	return value
+}
+
+func Section(sname string) (section ini.Section) {
+	if section = loadedConfig.Section(sname); len(section) > 0 {
+		return section
+	}
+
+	return defaultConfig.Section("")
 }
 
 func LoadConfig(dir string) error {

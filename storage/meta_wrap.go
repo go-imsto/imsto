@@ -138,35 +138,36 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	return err
 }
 
-func (mw *MetaWrap) ExistHash(hash string) string {
+func (mw *MetaWrap) ExistHash(hash string) (string, string, error) {
 	db := mw.getDb()
 	defer db.Close()
-	var id string
-	sql := "SELECT item_id FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
+	var id, path string
+	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
 	row := db.QueryRow(sql, hash)
-	err := row.Scan(&id)
+	err := row.Scan(&id, &path)
 	if err != nil {
 		log.Println(err)
-		return ""
+		return "", "", err
 	}
-	return id
+	return id, path, nil
 }
 
-func (mw *MetaWrap) ExistMap(id string) string {
+func (mw *MetaWrap) ExistMap(id string) (string, error) {
 	db := mw.getDb()
 	defer db.Close()
-	var eid string
-	sql := "SELECT id FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
+	var path string
+	sql := "SELECT path FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id)
-	err := row.Scan(&eid)
+	err := row.Scan(&path)
 	if err != nil {
 		log.Println(err)
-		return ""
+		return "", err
 	}
-	return eid
+	return path, nil
 }
 
 func (mw *MetaWrap) Delete(id EntryId) error {
+	// TODO:
 	return nil
 }
 
