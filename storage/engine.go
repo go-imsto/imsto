@@ -1,26 +1,25 @@
-package engine
+package storage
 
 import (
 	"calf/config"
-	"calf/storage"
 	"errors"
 )
 
 type engine struct {
 	name string
-	farm func(string) (EntryMapper, error)
+	farm func(string) (Wagoner, error)
 }
 
-type EntryMapper interface {
+type Wagoner interface {
 	Get(key string) ([]byte, error)
-	Put(entry storage.Entry, data []byte) error
+	Put(entry *Entry, data []byte) error
 	Exists(key string) bool
 	Del(key string) error
 }
 
 var engines = make(map[string]engine)
 
-func Register(name string, farm func(string) (EntryMapper, error)) {
+func RegisterEngine(name string, farm func(string) (Wagoner, error)) {
 	if farm == nil {
 		panic("imsto: Register engine is nil")
 	}
@@ -30,7 +29,7 @@ func Register(name string, farm func(string) (EntryMapper, error)) {
 	engines[name] = engine{name, farm}
 }
 
-func Farm(sn string) (em EntryMapper, err error) {
+func FarmEngine(sn string) (em Wagoner, err error) {
 	name := config.GetValue(sn, "engine")
 
 	if engine, ok := engines[name]; ok {

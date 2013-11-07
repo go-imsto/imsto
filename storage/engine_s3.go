@@ -1,8 +1,7 @@
-package engine
+package storage
 
 import (
 	"calf/config"
-	"calf/storage"
 	"errors"
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
@@ -19,10 +18,10 @@ var (
 )
 
 func init() {
-	Register("s3", s3Dial)
+	RegisterEngine("s3", s3Dial)
 }
 
-func s3Dial(sn string) (EntryMapper, error) {
+func s3Dial(sn string) (Wagoner, error) {
 
 	var (
 		access, secret, bucket string
@@ -94,12 +93,13 @@ func (c *s3Conn) Get(key string) (data []byte, err error) {
 	return data, nil
 }
 
-func (c *s3Conn) Put(entry storage.Entry, data []byte) (err error) {
+func (c *s3Conn) Put(entry *Entry, data []byte) (err error) {
 
 	err = c.b.Put(entry.Path, data, entry.Mime, s3.Private)
 	if err != nil {
 		log.Print("s3 Put:", err)
 	}
+	log.Print("s3 Put done")
 
 	return
 }
