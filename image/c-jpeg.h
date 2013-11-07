@@ -17,7 +17,7 @@ struct jpeg_attr {
 	UINT8  quality;
 };
 
-typedef struct jpeg_option * jpeg_option_ptr;
+typedef struct jpeg_option  * jpeg_option_ptr;
 
 struct jpeg_option {
 	UINT8   quality;
@@ -27,11 +27,11 @@ struct jpeg_option {
 typedef struct my_error_mgr * my_error_ptr;
 
 struct my_error_mgr {
-	struct jpeg_error_mgr   pub;
-	jmp_buf                 setjmp_buffer;
+	struct jpeg_error_mgr     pub;
+	jmp_buf                   setjmp_buffer;
 };
 
-typedef struct _Simp_Image     	Simp_Image;
+typedef struct _Simp_Image    Simp_Image;
 
 struct _Simp_Image {
 	struct my_error_mgr             jerr;
@@ -60,5 +60,9 @@ bool         simp_output_mem    (Simp_Image *im, unsigned char **data, unsigned 
 int 		 estimate_jpeg_quality(j_decompress_ptr jpeg_info);
 int          read_jpeg_file (FILE * infile, jpeg_attr_ptr ia_ptr);
 int          write_jpeg_file (FILE * infile, FILE * outfile, jpeg_option_ptr option);
+int 		 simp_get_width     (Simp_Image *im);
+int 		 simp_get_height    (Simp_Image *im);
+int 		 simp_get_quality   (Simp_Image *im);
+void 		 simp_set_quality   (Simp_Image *im, int quality);
 
 #endif

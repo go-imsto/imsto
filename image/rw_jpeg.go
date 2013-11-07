@@ -99,8 +99,11 @@ func (self *simpJPEG) Open(r io.Reader) (err error) {
 	}
 
 	self.si = si
+	w := C.simp_get_width(self.si)
+	h := C.simp_get_height(self.si)
+	q := C.simp_get_quality(self.si)
 
-	self.attr = NewImageAttr(uint(si.in.w), uint(si.in.h), uint8(si.in.q))
+	self.attr = NewImageAttr(uint(w), uint(h), uint8(q))
 	return nil
 }
 
@@ -122,12 +125,9 @@ func (self *simpJPEG) SetOption(wopt WriteOption) {
 
 func (self *simpJPEG) Write(out io.Writer) error {
 	if self.wopt != nil {
-		self.si.wopt.quality = C.UINT8(self.wopt.Quality)
-	} else {
-		self.si.wopt.quality = C.UINT8(self.si.in.q)
+		C.simp_set_quality(self.si, C.int(self.wopt.Quality))
+		// self.si.wopt.quality = C.UINT8(self.wopt.Quality)
 	}
-
-	// log.Println("wopt quality ", self.si.wopt.quality)
 
 	if f, ok := out.(*os.File); ok {
 		log.Printf("write a file %s\n", f.Name())

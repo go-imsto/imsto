@@ -143,6 +143,36 @@ _simp_read_head(Simp_Image *im)
 	return im;
 }
 
+int
+simp_get_width(Simp_Image *im)
+{
+	return im->in.w;
+}
+
+int
+simp_get_height(Simp_Image *im)
+{
+	return im->in.w;
+}
+
+int
+simp_get_quality(Simp_Image *im)
+{
+	return im->in.q;
+}
+
+void
+simp_set_quality(Simp_Image *im, int quality)
+{
+	if (quality > 0 && quality <= 100) {
+		im->wopt.quality = quality;
+	}
+#ifdef IM_DEBUG
+	else
+		printf("invalid quality: %d\n", quality);
+#endif
+
+}
 
 void
 simp_close(Simp_Image *im)
