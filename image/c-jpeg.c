@@ -48,13 +48,11 @@ simp_open_stdio(FILE *infile)
 		fprintf(stderr, "infile is null\n");
 		return NULL;
 	}
-#ifdef IM_DEBUG
-	printf("infile %x\n", (int)infile);
-#endif
-	im->in.f = infile;
+
 #ifdef IM_DEBUG
 	printf("start set in.f\n");
 #endif
+	im->in.f = infile;
 	if (!im->in.f) {
 		simp_close(im);
 		return NULL;

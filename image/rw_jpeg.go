@@ -1,8 +1,10 @@
 package image
 
 /*
-#cgo CFLAGS: -I/opt/local/include -DIM_DEBUG
-#cgo LDFLAGS: -ljpeg -L/opt/local/lib
+#cgo linux CFLAGS: -I/usr/include
+#cgo linux LDFLAGS: -ljpeg -L/usr/lib
+#cgo darwin CFLAGS: -I/opt/local/include -DIM_DEBUG
+#cgo darwin LDFLAGS: -ljpeg -L/opt/local/lib
 // liut: add CFLAGS "-DIM_DEBUG" for debug output
 
 #include "c-jpeg.h"
