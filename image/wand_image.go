@@ -1,7 +1,8 @@
 package image
 
 /*
-#cgo pkg-config: MagickWand-6.Q16
+#cgo linux pkg-config: MagickWand
+#cgo darwin pkg-config: MagickWand-6.Q16
 
 #include <wand/MagickWand.h>
 
