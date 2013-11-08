@@ -77,8 +77,9 @@ type Image interface {
 func Open(r io.Reader) (im Image, err error) {
 
 	var (
-		t   TypeId
-		ext string
+		t    TypeId
+		ext  string
+		size Size
 	)
 	t, ext, err = GuessType(r)
 
@@ -97,9 +98,14 @@ func Open(r io.Reader) (im Image, err error) {
 	if f, ok := r.(*os.File); ok {
 		log.Println("rw: open from file")
 		// f.Seek(0, 0)
+		var fi os.FileInfo
+		if fi, err = f.Stat(); err != nil {
+			size = Size(fi.Size())
+		}
 		err = im.Open(f)
 	} else if rr, ok := r.(*bytes.Reader); ok {
 		// rr.Seek(0, 0)
+		size = Size(rr.Len())
 		log.Printf("rw: open from buf, size: %d", rr.Len())
 		err = im.Open(rr)
 	} else { // 目前只支持从文件或二进制数据读取
@@ -117,6 +123,9 @@ func Open(r io.Reader) (im Image, err error) {
 
 	attr := im.GetAttr()
 	attr.Ext = ext
+	if size > Size(0) {
+		attr.Size = size
+	}
 	// log.Println(im.GetAttr())
 	return im, nil
 }
