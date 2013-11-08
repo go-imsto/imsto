@@ -152,7 +152,7 @@ simp_get_width(Simp_Image *im)
 int
 simp_get_height(Simp_Image *im)
 {
-	return im->in.w;
+	return im->in.h;
 }
 
 int

@@ -44,8 +44,15 @@ func newMetaWrap(section string) *MetaWrap {
 	return mw
 }
 
+var meta_wrappers = make(map[string]MetaWrapper)
+
 func NewMetaWrapper(section string) (mw MetaWrapper) {
-	mw = newMetaWrap(section)
+	var ok bool
+	if mw, ok = meta_wrappers[section]; !ok {
+		mw = newMetaWrap(section)
+		meta_wrappers[section] = mw
+	}
+
 	return mw
 }
 

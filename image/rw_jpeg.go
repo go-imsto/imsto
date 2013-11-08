@@ -102,6 +102,7 @@ func (self *simpJPEG) Open(r io.Reader) (err error) {
 	w := C.simp_get_width(self.si)
 	h := C.simp_get_height(self.si)
 	q := C.simp_get_quality(self.si)
+	log.Printf("image open, w: %d, h: %d, q: %d", w, h, q)
 
 	self.attr = NewImageAttr(uint(w), uint(h), uint8(q))
 	return nil

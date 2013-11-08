@@ -70,6 +70,7 @@ type Entry struct {
 	Modified  uint64
 	b         []byte
 	h         string
+	_treked   bool
 }
 
 const (
@@ -105,7 +106,11 @@ func newEntry(data []byte, name string) (e *Entry, err error) {
 }
 
 // 处理图片信息并填充
-func (e *Entry) trek(section string) (err error) {
+func (e *Entry) Trek(section string) (err error) {
+	if e._treked {
+		return
+	}
+	e._treked = true
 	var im image.Image
 	rd := bytes.NewReader(e.b)
 	im, err = image.Open(rd)

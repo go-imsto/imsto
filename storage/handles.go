@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+func LoadRequest(r *http.Request) error {
+	// TODO:
+	return nil
+}
+
 func StoredFile(filename string, section string) (entry *Entry, err error) {
 	var fi os.FileInfo
 	if fi, err = os.Stat(filename); err != nil {
@@ -35,8 +40,7 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 		return
 	}
 	entry.Modified = uint64(fi.ModTime().Unix())
-	err = entry.trek(section)
-	log.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
+	// err = entry.trek(section)
 
 	err = store(entry, section)
 	if err != nil {
@@ -73,8 +77,7 @@ func StoredRequest(r *http.Request) (entry *Entry, err error) {
 	}
 	entry.Modified = lastModified
 	section := r.FormValue("section")
-	err = entry.trek(section)
-	log.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
+	// err = entry.Trek(section)
 
 	err = store(entry, section)
 	if err != nil {
@@ -86,6 +89,12 @@ func StoredRequest(r *http.Request) (entry *Entry, err error) {
 }
 
 func store(e *Entry, section string) (err error) {
+	err = e.Trek(section)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
 
 	data := e.Blob()
 	log.Printf("blob length: %d", len(data))
