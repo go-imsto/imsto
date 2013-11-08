@@ -46,7 +46,7 @@ const jpeg_format = "JPEG"
 type simpJPEG struct {
 	si   *C.Simp_Image
 	attr *ImageAttr
-	wopt *WriteOption
+	wopt WriteOption
 	size uint32
 }
 
@@ -120,15 +120,16 @@ func (self *simpJPEG) GetAttr() *ImageAttr {
 }
 
 func (self *simpJPEG) SetOption(wopt WriteOption) {
-	self.wopt = &wopt
+	self.wopt = wopt
+	log.Printf("setOption: q %d, s %v", self.wopt.Quality, self.wopt.StripAll)
+	if self.wopt.Quality > 0 && self.attr.Quality > self.wopt.Quality {
+		C.simp_set_quality(self.si, C.int(self.wopt.Quality))
+		log.Printf("set quality: %d", self.wopt.Quality)
+	}
+
 }
 
 func (self *simpJPEG) Write(out io.Writer) error {
-	if self.wopt != nil {
-		C.simp_set_quality(self.si, C.int(self.wopt.Quality))
-		// self.si.wopt.quality = C.UINT8(self.wopt.Quality)
-	}
-
 	if f, ok := out.(*os.File); ok {
 		log.Printf("write a file %s\n", f.Name())
 

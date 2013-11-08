@@ -93,9 +93,9 @@ func (c *s3Conn) Get(key string) (data []byte, err error) {
 	return data, nil
 }
 
-func (c *s3Conn) Put(entry *Entry, data []byte) (err error) {
-
-	err = c.b.Put(entry.Path, data, entry.Mime, s3.Private)
+func (c *s3Conn) Put(key string, data []byte, mime string) (err error) {
+	log.Printf("s3 Put: %s %s size %d\n", key, mime, len(data))
+	err = c.b.Put(key, data, mime, s3.Private)
 	if err != nil {
 		log.Print("s3 Put:", err)
 	}

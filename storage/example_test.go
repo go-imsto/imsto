@@ -1,7 +1,6 @@
 package storage
 
 import (
-	// "calf/config"
 	"testing"
 )
 

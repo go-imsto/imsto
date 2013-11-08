@@ -12,7 +12,7 @@ type engine struct {
 
 type Wagoner interface {
 	Get(key string) ([]byte, error)
-	Put(entry *Entry, data []byte) error
+	Put(key string, data []byte, mime string) error
 	Exists(key string) bool
 	Del(key string) error
 }

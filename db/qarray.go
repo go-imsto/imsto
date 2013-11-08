@@ -10,19 +10,23 @@ import (
 
 type Qarray []interface{}
 
-func NewQarray(text string) (Qarray, error) {
+func NewQarrayText(text string) (Qarray, error) {
 	if strings.HasPrefix(text, "{") && strings.HasSuffix(text, "}") {
 		s := strings.Trim(text, "{}")
 		a := strings.Split(s, ",")
-		q := make(Qarray, len(a))
-		for i := 0; i < len(a); i++ {
-			q[i] = a[i]
-		}
-		return q, nil
+		return NewQarray(a)
 	}
 
 	log.Println("invalid Qarray format")
 	return Qarray{}, nil
+}
+
+func NewQarray(a []string) (Qarray, error) {
+	q := make(Qarray, len(a))
+	for i := 0; i < len(a); i++ {
+		q[i] = a[i]
+	}
+	return q, nil
 }
 
 func (q Qarray) String() string {
@@ -59,10 +63,10 @@ func (q Qarray) Value() (driver.Value, error) {
 func (q *Qarray) Scan(src interface{}) (err error) {
 	switch s := src.(type) {
 	case string:
-		*q, err = NewQarray(s)
+		*q, err = NewQarrayText(s)
 		return
 	case []byte:
-		*q, err = NewQarray(string(s))
+		*q, err = NewQarrayText(string(s))
 		return
 	case []interface{}:
 		*q = Qarray(s)

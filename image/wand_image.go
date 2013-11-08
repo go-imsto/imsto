@@ -231,7 +231,7 @@ func (self *wandImpl) Quality() uint8 {
 }
 
 // Changes the compression quality of the canvas. Ranges from 1 (lowest) to 100 (highest).
-func (self *wandImpl) SetQuality(quality uint8) error {
+func (self *wandImpl) SetQuality(quality Quality) error {
 	success := C.MagickSetImageCompressionQuality(self.wand, C.size_t(quality))
 
 	if success == C.MagickFalse {

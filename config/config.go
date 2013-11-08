@@ -17,6 +17,7 @@ meta_dsn = postgres://imsto@localhost/imsto?sslmode=disable
 meta_table_suffix = demo
 engine = s3
 bucket_name = imsto-demo
+max_quality = 88
 thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
 tmp_dir = /tmp/

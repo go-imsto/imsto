@@ -11,13 +11,16 @@ import (
 	"reflect"
 )
 
+type Dimension uint32
+type Size uint32
+type Quality uint8
+
 type ImageAttr struct {
-	Width   uint32
-	Height  uint32
-	Quality uint8
-	Size    uint32
-	Ext     string
-	Mime    string
+	Width, Height Dimension
+	Quality       Quality
+	Size          Size
+	Ext           string
+	Mime          string
 }
 
 // var attr_keys = []string{"width", "height", "quality", "size", "ext"}
@@ -28,12 +31,12 @@ func (ia *ImageAttr) Hstore() db.Hstore {
 
 type WriteOption struct {
 	StripAll bool
-	Quality  uint8
+	Quality  Quality
 }
 
 // export NewImageAttr
 func NewImageAttr(w, h uint, q uint8) *ImageAttr {
-	return &ImageAttr{uint32(w), uint32(h), uint8(q), uint32(0), "", ""}
+	return &ImageAttr{Dimension(w), Dimension(h), Quality(q), Size(0), "", ""}
 }
 
 // func NewImageAttrByMap(m map[string]interface{}) *ImageAttr {

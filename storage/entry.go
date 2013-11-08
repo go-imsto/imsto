@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"calf/base"
+	"calf/config"
 	cdb "calf/db"
 	"calf/image"
 	"crypto/md5"
@@ -14,6 +15,7 @@ import (
 	"log"
 	"mime"
 	// "os"
+	"strconv"
 )
 
 type EntryId struct {
@@ -52,13 +54,6 @@ type AppId uint16
 
 type Author uint16
 
-// type ImageAttr struct {
-// 	Width   uint32 // image width
-// 	Height  uint32 // image height
-// 	Quality uint8  // image compression quality
-// 	Format  string // image format, like 'JPEG', 'PNG'
-// }
-
 type Entry struct {
 	Id        *EntryId //`json:"id,omitempty"`
 	Name      string
@@ -77,13 +72,11 @@ type Entry struct {
 	h         string
 }
 
-var empty_item = &Entry{}
-
 const (
 	min_size = 43
 )
 
-func NewEntry(data []byte, name string) (e *Entry, err error) {
+func newEntry(data []byte, name string) (e *Entry, err error) {
 	if len(data) < min_size {
 		err = errors.New("data is too small, maybe not a valid image")
 		return
@@ -95,7 +88,7 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 
 	if err != nil {
 		log.Println(err)
-		return empty_item, err
+		return
 	}
 
 	e = &Entry{
@@ -111,8 +104,8 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 	return
 }
 
-// 处理图片信息
-func (e *Entry) Trek() (err error) {
+// 处理图片信息并填充
+func (e *Entry) trek(section string) (err error) {
 	var im image.Image
 	rd := bytes.NewReader(e.b)
 	im, err = image.Open(rd)
@@ -129,6 +122,14 @@ func (e *Entry) Trek() (err error) {
 
 	ia := im.GetAttr()
 	// log.Println(ia)
+
+	mq, _ := strconv.ParseUint(config.GetValue(section, "max_quality"), 10, 8)
+
+	max_quality := image.Quality(mq)
+	// log.Printf("max_quality: %d\b", max_quality)
+	if ia.Quality > max_quality {
+		im.SetOption(image.WriteOption{Quality: max_quality, StripAll: true})
+	}
 	var size uint
 	data := im.Blob(&size) // tack new data
 
@@ -152,7 +153,7 @@ func (e *Entry) Trek() (err error) {
 		return
 	}
 
-	ia.Size = uint32(size) // 更新后的大小
+	ia.Size = image.Size(size) // 更新后的大小
 
 	ext := ia.Ext
 	path := newPath(e.Id, ext)

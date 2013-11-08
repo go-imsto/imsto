@@ -29,13 +29,13 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 		return
 	}
 
-	entry, err = NewEntry(data, path.Base(filename))
+	entry, err = newEntry(data, path.Base(filename))
 
 	if err != nil {
 		return
 	}
 	entry.Modified = uint64(fi.ModTime().Unix())
-	err = entry.Trek()
+	err = entry.trek(section)
 	log.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
 
 	err = store(entry, section)
@@ -66,16 +66,16 @@ func StoredRequest(r *http.Request) (entry *Entry, err error) {
 
 	name, data, mime, lastModified, err = ParseUpload(r)
 	log.Printf("post %s (%s) size %d %v\n", name, mime, len(data), lastModified)
-	entry, err = NewEntry(data, name)
+	entry, err = newEntry(data, name)
 
 	if err != nil {
 		return
 	}
 	entry.Modified = lastModified
-	err = entry.Trek()
+	section := r.FormValue("section")
+	err = entry.trek(section)
 	log.Printf("new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
 
-	section := r.FormValue("section")
 	err = store(entry, section)
 	if err != nil {
 		log.Println(err)
@@ -87,6 +87,9 @@ func StoredRequest(r *http.Request) (entry *Entry, err error) {
 
 func store(e *Entry, section string) (err error) {
 
+	data := e.Blob()
+	log.Printf("blob length: %d", len(data))
+
 	mw := NewMetaWrapper(section)
 
 	var em Wagoner
@@ -96,8 +99,7 @@ func store(e *Entry, section string) (err error) {
 		log.Println(err)
 		return
 	}
-
-	err = em.Put(e, e.Blob())
+	err = em.Put(e.Path, data, e.Mime)
 
 	if err != nil {
 		log.Println(err)

@@ -39,7 +39,7 @@ func runImport(args []string) bool {
 		return false
 	}
 
-	fmt.Println("entry stored: %s\n", entry.Id)
+	fmt.Printf("entry stored: %s\n", entry.Id)
 
 	// var mw storage.MetaWrapper
 	// mw = storage.NewMetaWrapper("")
