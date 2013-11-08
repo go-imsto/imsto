@@ -2,6 +2,7 @@ package storage
 
 import (
 	"calf/config"
+	"calf/db"
 	"errors"
 	"launchpad.net/goamz/aws"
 	"launchpad.net/goamz/s3"
@@ -93,12 +94,14 @@ func (c *s3Conn) Get(key string) (data []byte, err error) {
 	return data, nil
 }
 
-func (c *s3Conn) Put(key string, data []byte, mime string) (err error) {
+func (c *s3Conn) Put(key string, data []byte, mime string) (sev db.Hstore, err error) {
+	// sev = make(db.Hstore)
 	log.Printf("s3 Put: %s %s size %d\n", key, mime, len(data))
 	err = c.b.Put(key, data, mime, s3.Private)
 	if err != nil {
 		log.Print("s3 Put:", err)
 	}
+	sev = db.Hstore{"engine": "s3", "bucket": c.b.Name}
 	log.Print("s3 Put done")
 
 	return

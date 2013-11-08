@@ -2,6 +2,7 @@ package storage
 
 import (
 	"calf/config"
+	"calf/db"
 	"errors"
 )
 
@@ -12,7 +13,7 @@ type engine struct {
 
 type Wagoner interface {
 	Get(key string) ([]byte, error)
-	Put(key string, data []byte, mime string) error
+	Put(key string, data []byte, mime string) (db.Hstore, error)
 	Exists(key string) bool
 	Del(key string) error
 }

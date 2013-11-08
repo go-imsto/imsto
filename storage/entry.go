@@ -5,7 +5,7 @@ import (
 	"calf/base"
 	"calf/config"
 	cdb "calf/db"
-	"calf/image"
+	iimg "calf/image"
 	"crypto/md5"
 	// "errors"
 	"errors"
@@ -59,7 +59,7 @@ type Entry struct {
 	Name      string
 	Hashes    cdb.Qarray
 	Ids       cdb.Qarray
-	Meta      *image.ImageAttr
+	Meta      *iimg.ImageAttr
 	Size      uint32
 	AppId     AppId
 	Author    Author
@@ -111,9 +111,9 @@ func (e *Entry) Trek(section string) (err error) {
 		return
 	}
 	e._treked = true
-	var im image.Image
+	var im iimg.Image
 	rd := bytes.NewReader(e.b)
-	im, err = image.Open(rd)
+	im, err = iimg.Open(rd)
 
 	if err != nil {
 		log.Println(err)
@@ -130,10 +130,10 @@ func (e *Entry) Trek(section string) (err error) {
 
 	mq, _ := strconv.ParseUint(config.GetValue(section, "max_quality"), 10, 8)
 
-	max_quality := image.Quality(mq)
+	max_quality := iimg.Quality(mq)
 	// log.Printf("max_quality: %d\b", max_quality)
 	if ia.Quality > max_quality {
-		im.SetOption(image.WriteOption{Quality: max_quality, StripAll: true})
+		im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 	}
 	var size uint
 	data := im.Blob(&size) // tack new data
@@ -158,7 +158,7 @@ func (e *Entry) Trek(section string) (err error) {
 		return
 	}
 
-	ia.Size = image.Size(size) // 更新后的大小
+	ia.Size = iimg.Size(size) // 更新后的大小
 
 	ext := ia.Ext
 	path := newPath(e.Id, ext)

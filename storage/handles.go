@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"calf/db"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -103,17 +104,19 @@ func store(e *Entry, section string) (err error) {
 
 	var em Wagoner
 	em, err = FarmEngine(section)
-
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	err = em.Put(e.Path, data, e.Mime)
 
+	var sev db.Hstore
+	sev, err = em.Put(e.Path, data, e.Mime)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	e.sev = sev
 
 	err = mw.Store(e)
 	// fmt.Println("mw", mw)

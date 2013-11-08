@@ -93,8 +93,9 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 	}
 
 	log.Println("first id:", entry.Ids[0])
-	// entry.Meta = image.
+
 	log.Println("meta:", meta)
+	log.Println("sev:", sev)
 	var ia image.ImageAttr
 	err = meta.ToStruct(&ia)
 	if err != nil {
