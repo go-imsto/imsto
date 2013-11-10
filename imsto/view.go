@@ -1,18 +1,8 @@
 package main
 
 import (
-	// "bufio"
-	"fmt"
-	// "io/ioutil"
-	// "imsto"
-	// "bytes"
-	// "calf/image"
 	"calf/storage"
-	// "encoding/base64"
-	// "mime"
-	// "os"
-	// "path"
-	// "strings"
+	"fmt"
 )
 
 var cmdView = &Command{
@@ -39,7 +29,7 @@ func runView(args []string) bool {
 		mw = storage.NewMetaWrapper("")
 
 		var entry *storage.Entry
-		entry, err = mw.Get(*id)
+		entry, err = mw.GetMeta(*id)
 
 		if err != nil {
 			fmt.Println(err)

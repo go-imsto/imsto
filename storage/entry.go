@@ -13,7 +13,7 @@ import (
 	// "io"
 	// "io/ioutil"
 	"log"
-	"mime"
+	// "mime"
 	// "os"
 	"strconv"
 )
@@ -160,17 +160,17 @@ func (e *Entry) Trek(section string) (err error) {
 
 	ia.Size = iimg.Size(size) // 更新后的大小
 
-	ext := ia.Ext
-	path := newPath(e.Id, ext)
-	mimetype := mime.TypeByExtension(ext)
-	ia.Mime = mimetype
+	// ext := ia.Ext
+	path := newPath(e.Id, ia.Ext)
+	// mimetype := mime.TypeByExtension(ext)
+	// ia.Mime = mimetype
 
-	log.Printf("ext: %s, mime: %s\n", ext, mimetype)
+	log.Printf("ext: %s, mime: %s\n", ia.Ext, ia.Mime)
 
 	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
 	e.Meta = ia
 	e.Path = path
-	e.Mime = mimetype
+	e.Mime = ia.Mime
 	e.Hashes = hashes
 	e.Ids = ids
 	return

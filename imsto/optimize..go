@@ -15,6 +15,11 @@ import from a image file
 `,
 }
 
+var (
+	quality = cmdOptimize.Flag.Int("q", 88, "max quality")
+	strip   = cmdOptimize.Flag.String("s", "all", "strip [all]")
+)
+
 func init() {
 	cmdOptimize.Run = runOptimize
 }
@@ -45,7 +50,11 @@ func runOptimize(args []string) bool {
 	}
 
 	defer im.Close()
-	im.SetOption(image.WriteOption{Quality: 75, StripAll: true})
+	wopt := image.WriteOption{Quality: 88, StripAll: true}
+	if *quality > 60 && *quality < 100 {
+		wopt.Quality = image.Quality(*quality)
+	}
+	im.SetOption(wopt)
 
 	// write
 	dest, err := os.Create(args[1])

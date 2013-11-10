@@ -21,7 +21,9 @@ const (
 type MetaWrapper interface {
 	Browse(limit int, offset int) (*sql.Rows, error)
 	Store(entry *Entry) error
-	Get(id EntryId) (*Entry, error)
+	GetMeta(id EntryId) (*Entry, error)
+	GetHash(hash string) (*ehash, error)
+	GetMap(id EntryId) (*emap, error)
 	Delete(id EntryId) error
 }
 
@@ -76,7 +78,7 @@ func (mw *MetaWrap) Browse(limit int, offset int) (rows *sql.Rows, err error) {
 	return rows, err
 }
 
-func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
+func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	db := mw.getDb()
 	defer db.Close()
 
@@ -89,7 +91,7 @@ func (mw *MetaWrap) Get(id EntryId) (*Entry, error) {
 
 	if err != nil {
 		log.Println(err)
-		return &entry, err
+		return nil, err
 	}
 
 	log.Println("first id:", entry.Ids[0])
@@ -146,32 +148,45 @@ func (mw *MetaWrap) Store(entry *Entry) error {
 	return err
 }
 
-func (mw *MetaWrap) ExistHash(hash string) (string, string, error) {
-	db := mw.getDb()
-	defer db.Close()
-	var id, path string
-	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
-	row := db.QueryRow(sql, hash)
-	err := row.Scan(&id, &path)
-	if err != nil {
-		log.Println(err)
-		return "", "", err
-	}
-	return id, path, nil
+type ehash struct {
+	hash, path, id string
 }
 
-func (mw *MetaWrap) ExistMap(id string) (string, error) {
+func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	db := mw.getDb()
 	defer db.Close()
-	var path string
-	sql := "SELECT path FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
-	row := db.QueryRow(sql, id)
-	err := row.Scan(&path)
+	var e ehash
+	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
+	row := db.QueryRow(sql, hash)
+	err := row.Scan(&e.id, &e.path)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
-	return path, nil
+	e.hash = hash
+	return &e, nil
+}
+
+type emap struct {
+	id               EntryId
+	name, path, mime string
+	size             uint32
+	sev              cdb.Hstore
+	status           uint16
+}
+
+func (mw *MetaWrap) GetMap(id EntryId) (*emap, error) {
+	db := mw.getDb()
+	defer db.Close()
+	sql := "SELECT name, path, mime, size, sev, status FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
+	row := db.QueryRow(sql, id.String())
+	var e = emap{id: id}
+	err := row.Scan(&e.name, &e.path, &e.mime, &e.size, &e.sev, &e.status)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return &e, nil
 }
 
 func (mw *MetaWrap) Delete(id EntryId) error {

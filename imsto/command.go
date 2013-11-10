@@ -112,6 +112,9 @@ func main() {
 			cmd.Flag.Parse(args[1:])
 			args = cmd.Flag.Args()
 			IsDebug = cmd.IsDebug
+			// if IsDebug != nil && *IsDebug {
+			log.SetFlags(log.LstdFlags | log.Lshortfile)
+			// }
 			if cmd.Run(args) {
 				fmt.Fprintf(os.Stderr, "\n")
 			}

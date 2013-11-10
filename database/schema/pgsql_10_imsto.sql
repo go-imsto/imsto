@@ -46,7 +46,7 @@ CREATE TABLE meta_template (
 	-- mime varCHAR(64) NOT NULL DEFAULT '' , 
 	size int NOT NULL DEFAULT 0,
 	sev hstore,
-	-- exif hstore, -- exif info
+	exif hstore, -- exif info
 	app_id int NOT NULL DEFAULT 0,
 	author int NOT NULL DEFAULT 0,
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted

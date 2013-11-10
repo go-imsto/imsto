@@ -125,6 +125,7 @@ func (self *simpJPEG) SetOption(wopt WriteOption) {
 	log.Printf("setOption: q %d, s %v", self.wopt.Quality, self.wopt.StripAll)
 	if self.wopt.Quality > 0 && self.attr.Quality > self.wopt.Quality {
 		C.simp_set_quality(self.si, C.int(self.wopt.Quality))
+		self.attr.Quality = self.wopt.Quality
 		log.Printf("set quality: %d", self.wopt.Quality)
 	}
 

@@ -95,6 +95,10 @@ func (h *Hstore) fill(text string) error {
 }
 
 func (h Hstore) ToStruct(i interface{}) error {
+	return MapToStruct(h, i)
+}
+
+func MapToStruct(h map[string]interface{}, i interface{}) error {
 	config := &mapstructure.DecoderConfig{
 		Metadata:         nil,
 		WeaklyTypedInput: true,

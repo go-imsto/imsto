@@ -1,13 +1,12 @@
 package image
 
 import (
-	// "imsto"
-	"os"
-	// "errors"
 	"bytes"
 	"calf/db"
 	"io"
 	"log"
+	"mime"
+	"os"
 	"reflect"
 )
 
@@ -38,16 +37,6 @@ type WriteOption struct {
 func NewImageAttr(w, h uint, q uint8) *ImageAttr {
 	return &ImageAttr{Dimension(w), Dimension(h), Quality(q), Size(0), "", ""}
 }
-
-// func NewImageAttrByMap(m map[string]interface{}) *ImageAttr {
-// 	ia := &ImageAttr{}
-// 	for key := range attr_keys {
-// 		if v, ok = m[key]; ok {
-
-// 		}
-// 	}
-
-// }
 
 type ThumbOption struct {
 	Width, Height int
@@ -121,13 +110,14 @@ func Open(r io.Reader) (im Image, err error) {
 		return nil, err
 	}
 
-	attr := im.GetAttr()
-	attr.Ext = ext
+	ia := im.GetAttr()
+	ia.Ext = ext
+	ia.Mime = mime.TypeByExtension(ext)
 	if size > Size(0) {
-		attr.Size = size
+		ia.Size = size
 	}
-	// log.Println(im.GetAttr())
-	return im, nil
+
+	return
 }
 
 func getImageImpl(t TypeId) (im Image) {

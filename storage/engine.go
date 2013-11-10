@@ -13,8 +13,8 @@ type engine struct {
 
 type Wagoner interface {
 	Get(key string) ([]byte, error)
-	Put(key string, data []byte, mime string) (db.Hstore, error)
-	Exists(key string) bool
+	Put(key string, data []byte, meta db.Hstore) (db.Hstore, error)
+	Exists(key string) (bool, error)
 	Del(key string) error
 }
 

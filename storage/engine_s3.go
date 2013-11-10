@@ -4,8 +4,9 @@ import (
 	"calf/config"
 	"calf/db"
 	"errors"
-	"launchpad.net/goamz/aws"
-	"launchpad.net/goamz/s3"
+	"fmt"
+	"github.com/crowdmob/goamz/aws"
+	"github.com/crowdmob/goamz/s3"
 	"log"
 	"os"
 )
@@ -76,8 +77,9 @@ func (c *s3Conn) list(prefix, delim string, max int) (*s3.ListResp, error) {
 	return ret, nil
 }
 
-func (c *s3Conn) Exists(key string) bool {
-	return false
+func (c *s3Conn) Exists(key string) (exist bool, err error) {
+	exist, err = c.b.Exists(key)
+	return
 }
 
 func (c *s3Conn) Get(key string) (data []byte, err error) {
@@ -94,10 +96,18 @@ func (c *s3Conn) Get(key string) (data []byte, err error) {
 	return data, nil
 }
 
-func (c *s3Conn) Put(key string, data []byte, mime string) (sev db.Hstore, err error) {
+func hstoreToMaps(h db.Hstore) (m map[string][]string) {
+	m = make(map[string][]string)
+	for k, v := range h {
+		m[k] = []string{fmt.Sprint(v)}
+	}
+	return
+}
+
+func (c *s3Conn) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore, err error) {
 	// sev = make(db.Hstore)
-	log.Printf("s3 Put: %s %s size %d\n", key, mime, len(data))
-	err = c.b.Put(key, data, mime, s3.Private)
+	log.Printf("s3 Put: %s %s size %d\n", key, meta, len(data))
+	err = c.b.Put(key, data, fmt.Sprint(meta.Get("mime")), s3.Private, s3.Options{Meta: hstoreToMaps(meta)})
 	if err != nil {
 		log.Print("s3 Put:", err)
 	}

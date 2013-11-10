@@ -184,12 +184,12 @@ BEGIN
 
 	tb_meta := 'meta_' || a_section;
 
-	EXECUTE 'SELECT created FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	EXECUTE 'SELECT path FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
 	INTO t_path
 	USING a_id;
 
 	IF t_path IS NOT NULL THEN
-		RAISE NOTICE 'exists meta %', t_path;
+		RAISE WARNING 'exists meta %', t_path;
 		RETURN -1;
 	END IF;
 
