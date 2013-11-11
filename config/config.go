@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const defaultConfigIni = `
+const defaultConfigIni = `[common]
 meta_dsn = postgres://imsto@localhost/imsto?sslmode=disable
 meta_table_suffix = demo
 engine = s3
@@ -65,7 +65,7 @@ func GetValue(section, name string) string {
 
 	value, ok = loadedConfig.Get(section, name)
 	if !ok {
-		value, ok = defaultConfig.Get("", name)
+		value, ok = defaultConfig.Get("common", name)
 		if !ok {
 			log.Printf("'%v' variable missing from '%v' section", name, section)
 			return ""
