@@ -19,7 +19,7 @@ const (
 )
 
 type MetaWrapper interface {
-	Browse(limit int, offset int) (*sql.Rows, error)
+	Browse(limit, offset int) ([]Entry, int, error)
 	Store(entry *Entry) error
 	GetMeta(id EntryId) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
@@ -62,7 +62,7 @@ func (mw *MetaWrap) table() string {
 	return meta_table_prefix + mw.table_suffix
 }
 
-func (mw *MetaWrap) Browse(limit int, offset int) (rows *sql.Rows, err error) {
+func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 	if limit < 1 {
 		limit = 1
 	}
@@ -71,11 +71,52 @@ func (mw *MetaWrap) Browse(limit int, offset int) (rows *sql.Rows, err error) {
 	}
 
 	db := mw.getDb()
+	defer db.Close()
 
-	rows, err = db.Query("SELECT * FROM "+mw.table()+" LIMIT $1 OFFSET $2", limit, offset)
+	t = 0
+	err = db.QueryRow("SELECT COUNT(id) FROM " + mw.table() + "").Scan(&t)
+	if err != nil {
+		return
+	}
 
-	log.Print(rows)
-	return rows, err
+	if t == 0 {
+		log.Print("empty meta")
+		return
+	}
+
+	var r *sql.Rows
+	r, err = db.Query("SELECT id, name, path, size, meta, sev, ids, hashes FROM "+mw.table()+" LIMIT $1 OFFSET $2", limit, offset)
+	if err != nil {
+		return
+	}
+
+	defer r.Close()
+
+	for r.Next() {
+		e := Entry{}
+		var id string
+		var meta, sev cdb.Hstore
+		err = r.Scan(&id, &e.Name, &e.Path, &e.Size, &meta, &sev, &e.Ids, &e.Hashes)
+		if err != nil {
+			return
+		}
+		e.Id, err = NewEntryId(id)
+		if err != nil {
+			return
+		}
+
+		var ia image.ImageAttr
+		err = meta.ToStruct(&ia)
+		if err != nil {
+			return
+		}
+
+		e.Meta = &ia
+		e.Mime = fmt.Sprint(meta.Get("mime"))
+
+		a = append(a, e)
+	}
+	return
 }
 
 func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
@@ -86,8 +127,8 @@ func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	entry := Entry{Id: &id}
 	row := db.QueryRow(sql, id.String())
 
-	var meta, sev cdb.Hstore
-	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &meta, &sev, &entry.Ids, &entry.Hashes)
+	var meta cdb.Hstore
+	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &meta, &entry.sev, &entry.Ids, &entry.Hashes)
 
 	if err != nil {
 		log.Println(err)
@@ -97,7 +138,7 @@ func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	log.Println("first id:", entry.Ids[0])
 
 	log.Println("meta:", meta)
-	log.Println("sev:", sev)
+	log.Println("sev:", entry.sev)
 	var ia image.ImageAttr
 	err = meta.ToStruct(&ia)
 	if err != nil {

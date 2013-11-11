@@ -1,15 +1,11 @@
 package config
 
 import (
-	// "code.google.com/p/gcfg"
 	"github.com/vaughan0/go-ini"
+	"log"
 	"os"
 	"path"
 	"strings"
-	// "sync"
-	// "errors"
-	// "flag"
-	"log"
 )
 
 const defaultConfigIni = `
@@ -55,7 +51,10 @@ func init() {
 		// panic(errors.New("env IMSTO_CONF_DIR not found"))
 	}
 
-	LoadConfig(confDir)
+	if confDir != "" {
+		LoadConfig(confDir)
+	}
+
 }
 
 func GetValue(section, name string) string {
@@ -76,12 +75,25 @@ func GetValue(section, name string) string {
 	return value
 }
 
-func Section(sname string) (section ini.Section) {
+func GetSection(sname string) (section ini.Section) {
 	if section = loadedConfig.Section(sname); len(section) > 0 {
 		return section
 	}
 
 	return defaultConfig.Section("")
+}
+
+func Sections() []string {
+	a := []string{}
+	for name, _ := range loadedConfig {
+		if name != "common" {
+			a = append(a, name)
+		}
+	}
+	if len(a) == 0 {
+		a = append(a, "default")
+	}
+	return a
 }
 
 func LoadConfig(dir string) error {
@@ -99,12 +111,12 @@ func LoadConfig(dir string) error {
 	return err
 }
 
-type option map[string]string
+// type option map[string]string
 
-func (opt option) Set(k, v string) {
-	opt[k] = v
-}
+// func (opt option) Set(k, v string) {
+// 	opt[k] = v
+// }
 
-func (opt option) Get(k string) (v string) {
-	return opt[k]
-}
+// func (opt option) Get(k string) (v string) {
+// 	return opt[k]
+// }

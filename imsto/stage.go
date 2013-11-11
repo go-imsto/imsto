@@ -8,18 +8,23 @@ import (
 )
 
 var cmdStage = &Command{
-	UsageLine: "stage [filename] [destname]",
-	Short:     "import data from imsto old version or file",
+	UsageLine: "stage -port 5580",
+	Short:     "stage is a image handler",
 	Long: `
-import from a image file
+stage is a image handler.
 `,
 }
+
+var (
+	sport = cmdStage.Flag.Int("port", 5580, "tcp listen port")
+)
 
 func init() {
 	cmdStage.Run = runStage
 }
 
 func runStage(args []string) bool {
+	// TODO:
 	fmt.Println(cmdStage.Name())
 	return false
 }

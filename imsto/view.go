@@ -21,6 +21,20 @@ func runView(args []string) bool {
 	al := len(args)
 	if al == 0 {
 		fmt.Println("noting")
+	} else if args[0] == "browse" {
+		var mw storage.MetaWrapper
+		mw = storage.NewMetaWrapper("")
+		limit := 5
+		offset := 0
+		a, t, err := mw.Browse(limit, offset)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("total: %d\n", t)
+		// fmt.Printf("rows: %s", a)
+		for _, e := range a {
+			fmt.Printf("entry %s %s %d %s\n", e.Id, e.Path, e.Size, e.Mime)
+		}
 	} else {
 		id, err := storage.NewEntryId(args[0])
 		fmt.Println(id)

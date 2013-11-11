@@ -1,13 +1,10 @@
 package main
 
 import (
-	// "bytes"
+	"calf/config"
 	"calf/storage"
-	// "io/ioutil"
 	"log"
-	// "mime"
 	"net/http"
-	// "path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -35,8 +32,15 @@ func init() {
 	cmdTiring.IsDebug = cmdTiring.Flag.Bool("debug", false, "enable debug mode")
 }
 
+func sectionsHandler(w http.ResponseWriter, r *http.Request) {
+	m := make(map[string]interface{})
+	m["sections"] = config.Sections()
+	writeJsonQuiet(w, r, m)
+}
+
 func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
+
 	m["Version"] = VERSION
 	writeJsonQuiet(w, r, m)
 }
@@ -67,18 +71,12 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 
 	m := make(map[string]interface{})
 
-	// fmt.Println(entry)
 	log.Printf("post new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
 
 	m["id"] = entry.Id.String()
 	m["path"] = entry.Path
 	m["size"] = entry.Size
 
-	// var mw storage.MetaWrapper
-	// mw = storage.NewMetaWrapper("")
-
-	// err = mw.Store(entry)
-	// fmt.Println("mw", mw)
 	if err != nil {
 		m["error"] = err
 		log.Println(err)
@@ -104,8 +102,9 @@ func runTiring(args []string) bool {
 	}
 
 	var e error
-	http.HandleFunc("/", storeHandler)
-	http.HandleFunc("/meta", browseHandler)
+	http.HandleFunc("/imsto/", storeHandler)
+	http.HandleFunc("/imsto/meta", browseHandler)
+	http.HandleFunc("/imsto/sections", sectionsHandler)
 	// http.HandleFunc("/status", storeHandler)
 
 	log.Print("Start Tiring service ", VERSION, " at port ", strconv.Itoa(*mport))

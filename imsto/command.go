@@ -45,7 +45,7 @@ func (cmd *Command) Usage() {
 type LoggedError struct{ error }
 
 const (
-	VERSION = "0.01"
+	VERSION = "0.0.2"
 )
 
 // main
@@ -136,7 +136,7 @@ func errorf(format string, args ...interface{}) {
 }
 
 const header = `
-imsto portal
+Welcome
 
 `
 
@@ -216,6 +216,7 @@ func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 }
 func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 	m := make(map[string]interface{})
+	m["status"] = "fail"
 	m["error"] = err.Error()
 	writeJsonQuiet(w, r, m)
 }

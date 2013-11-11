@@ -17,11 +17,12 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
-	default_db_name := "storage"
+	meta_table_suffix := "demo"
 	section := ""
-	db_name := GetValue(section, "db_name")
+	table_suffix := GetValue(section, "meta_table_suffix")
 
-	if db_name != default_db_name {
-		t.Fatalf("unexpected result from db_name:\n+ %v\n- %v", db_name, default_db_name)
+	if table_suffix != meta_table_suffix {
+
+		t.Fatalf("unexpected result from table_suffix:\n+ %v\n- %v", table_suffix, meta_table_suffix)
 	}
 }
