@@ -40,8 +40,30 @@ func sectionsHandler(w http.ResponseWriter, r *http.Request) {
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
+	section := r.FormValue("roof")
+	limit, _ := strconv.ParseUint(r.FormValue("rows"), 10, 32)
+	if limit < 1 {
+		limit = 1
+	}
+	page, _ := strconv.ParseUint(r.FormValue("page"), 10, 32)
+	if page < 1 {
+		page = 1
+	}
+	offset := limit * (page - 1)
 
-	m["Version"] = VERSION
+	m["rows"] = limit
+	m["page"] = page
+
+	mw := storage.NewMetaWrapper(section)
+	a, t, err := mw.Browse(int(limit), int(offset))
+	if err != nil {
+		writeJsonError(w, r, err)
+		return
+	}
+	m["items"] = a
+	m["total"] = t
+	log.Printf("total: %d\n", t)
+	m["version"] = VERSION
 	writeJsonQuiet(w, r, m)
 }
 

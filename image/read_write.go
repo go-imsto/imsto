@@ -15,11 +15,12 @@ type Size uint32
 type Quality uint8
 
 type ImageAttr struct {
-	Width, Height Dimension
-	Quality       Quality
-	Size          Size
-	Ext           string
-	Mime          string
+	Width   Dimension `json:"width"`
+	Height  Dimension `json:"height"`
+	Quality Quality   `json:"quality"`
+	Size    Size      `json:"size"`
+	Ext     string    `json:"ext,omitempty"`
+	Mime    string    `json:"mime,omitempty"`
 }
 
 // var attr_keys = []string{"width", "height", "quality", "size", "ext"}

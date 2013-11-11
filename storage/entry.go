@@ -7,14 +7,10 @@ import (
 	cdb "calf/db"
 	iimg "calf/image"
 	"crypto/md5"
-	// "errors"
+	"encoding/json"
 	"errors"
 	"fmt"
-	// "io"
-	// "io/ioutil"
 	"log"
-	// "mime"
-	// "os"
 	"strconv"
 )
 
@@ -38,9 +34,9 @@ func (ei *EntryId) String() string {
 	return ei.id
 }
 
-// func (ei *EntryId) MarshalJSON() ([]byte, error) {
-// 	return []byte(ei.id), nil
-// }
+func (ei *EntryId) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ei.id)
+}
 
 func (ei *EntryId) Hashed() string {
 	return ei.hash
@@ -55,19 +51,20 @@ type AppId uint16
 type Author uint16
 
 type Entry struct {
-	Id        *EntryId //`json:"id,omitempty"`
-	Name      string
-	Hashes    cdb.Qarray
-	Ids       cdb.Qarray
-	Meta      *iimg.ImageAttr
-	Size      uint32
-	AppId     AppId
-	Author    Author
-	Path      string
-	Mime      string
+	Id        *EntryId        `json:"id,omitempty"`
+	Name      string          `json:"name"`
+	Hashes    cdb.Qarray      `json:"-"`
+	Ids       cdb.Qarray      `json:"-"`
+	Meta      *iimg.ImageAttr `json:"meta,omitempty"`
+	Size      uint32          `json:"size"`
+	AppId     AppId           `json:"-"`
+	Author    Author          `json:"-"`
+	Path      string          `json:"path"`
+	Mime      string          `json:"mime"`
+	Modified  uint64          `json:"modified"`
 	imageType int
 	sev       cdb.Hstore
-	Modified  uint64
+	exif      cdb.Hstore
 	b         []byte
 	h         string
 	_treked   bool
