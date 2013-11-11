@@ -6,13 +6,18 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 	// "os"
+	"log"
 	"strings"
 	"testing"
 )
 
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+}
+
 func TestJpegReadWrite(t *testing.T) {
-	r := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpeg_data))
-	buf, err := ioutil.ReadAll(r)
+	rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpeg_data))
+	buf, err := ioutil.ReadAll(rd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,6 +59,37 @@ func TestJpegReadWrite(t *testing.T) {
 	if ia.Size != iimg.Size(wrote_len) {
 		t.Fatalf("unexpected size:\n+ %v\n- %v", ia.Size, wrote_len)
 	}
+	// t.Fatal("fail")
+}
+
+func TestThumbnail(t *testing.T) {
+	rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpeg_data))
+
+	var data []byte
+	out := bytes.NewBuffer(data)
+	var topt = iimg.ThumbOption{Width: 60, Height: 60, IsFit: true}
+	err := iimg.Thumbnail(rd, out, topt)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := bytes.NewReader(out.Bytes())
+
+	im, err := iimg.Open(rr)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer im.Close()
+
+	ia := im.GetAttr()
+
+	t.Log("ia: ", ia)
+
+	if ia.Height != 60 {
+		t.Fatalf("unexpected result:\n+ %v\n- %v", ia.Height, 60)
+	}
+
 	// t.Fatal("fail")
 }
 

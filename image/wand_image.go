@@ -16,6 +16,7 @@ import "C"
 import (
 	"fmt"
 	// "imsto"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -34,13 +35,10 @@ func cargv(b [][]byte) **C.char {
 
 // Image object
 type wandImpl struct {
-	wand *C.MagickWand
-
-	filename string
-	width    string
-	height   string
-
-	wopt WriteOption
+	wand          *C.MagickWand
+	filename      string
+	width, height uint
+	wopt          WriteOption
 }
 
 func init() {
@@ -58,22 +56,14 @@ func newWandImage() *wandImpl {
 
 // Opens an image file, returns nil on success, error otherwise.
 func (self *wandImpl) Open(r io.Reader) error {
-	// stat, err := os.Stat(filename)
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if stat.IsDir() == true {
-	// 	return fmt.Errorf(`Could not open file "%s": it's a directory!`, filename)
-	// }
 	var status C.MagickBooleanType
 
+	if rr, ok := r.(io.Seeker); ok {
+		rr.Seek(0, 0)
+	}
+
 	if f, ok := r.(*os.File); ok {
-		f.Seek(0, 0)
-		// cfilename := C.CString(filename)
-		// status := C.MagickReadImage(self.wand, cfilename)
-		// C.free(unsafe.Pointer(cfilename))
+		// f.Seek(0, 0)
 		cmode := C.CString("rb")
 		defer C.free(unsafe.Pointer(cmode))
 		file := C.fdopen(C.int(f.Fd()), cmode)
@@ -81,8 +71,7 @@ func (self *wandImpl) Open(r io.Reader) error {
 		status = C.MagickReadImageFile(self.wand, file)
 		self.filename = f.Name()
 	} else {
-		// var blob []byte
-		blob, err := ioutil.ReadAll(f)
+		blob, err := ioutil.ReadAll(r)
 
 		if err != nil {
 			log.Println(err)
@@ -94,12 +83,6 @@ func (self *wandImpl) Open(r io.Reader) error {
 	if status == C.MagickFalse {
 		return fmt.Errorf(`Could not open image: %s`, self.Error())
 	}
-
-	// self.filename = filename
-
-	// _im := C.GetImageFromMagickWand(self.wand)
-
-	// fmt.Println(_im.columns)
 
 	return nil
 }
@@ -156,18 +139,90 @@ func (self *wandImpl) GetImageBlob() ([]byte, error) {
 	return blob, nil
 }
 
-// Converts the current image into a thumbnail of the specified
-// width and height preserving ratio. It uses Crop() to clip the
-// image to the specified area.
-//
-// If width or height are bigger than the current image, a centered
-// thumbnail will be produced.
-//
-// Is width and height are smaller than the current image, the image
-// will be resized and cropped, if needed.
+// 缩略图方法
+// 合并了原 imsto 相关方法
 func (self *wandImpl) Thumbnail(topt ThumbOption) error {
+	ow := self.Width()
+	oh := self.Height()
+	log.Printf("ow: %d, oh: %d", ow, oh)
+	if topt.Width >= ow && topt.Height >= oh {
+		return nil
+	}
+	log.Printf("topt: %v", topt)
 
-	// TODO:
+	if topt.IsFit {
+		if topt.IsCrop {
+			ratio_x := float32(topt.Width) / float32(ow)
+			ratio_y := float32(topt.Height) / float32(oh)
+
+			var new_width, new_height uint
+			if ratio_x > ratio_y {
+				new_width = topt.Width
+				new_height = uint(ratio_x * float32(oh))
+			} else {
+				new_height = topt.Height
+				new_width = uint(ratio_y * float32(ow))
+			}
+			if C.MagickFalse == C.MagickThumbnailImage(self.wand, C.size_t(new_width), C.size_t(new_height)) {
+				return fmt.Errorf("magick thumbnail error: %s", self.Error())
+			}
+
+			if new_width == topt.Width && new_height == topt.Height {
+				return nil
+			}
+
+			crop_x := int(float32(new_width-topt.Width) / 2)
+			crop_y := int(float32(new_height-topt.Height) / 2)
+
+			log.Printf("crop_x: %d, crop_y: %d", crop_x, crop_y)
+
+			err := self.Crop(topt.Width, topt.Height, crop_x, crop_y)
+
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		rel := float32(ow) / float32(oh)
+		if topt.MaxWidth > 0 && topt.Width > topt.MaxWidth {
+			topt.Width = topt.MaxWidth
+			topt.Height = uint(float32(topt.Width) / rel)
+		} else if topt.MaxHeight > 0 && topt.Height > topt.MaxHeight {
+			topt.Height = topt.MaxHeight
+			topt.Width = uint(float32(topt.Height) * rel)
+		} else {
+			bounds := float32(topt.Width) / float32(topt.Height)
+			if rel >= bounds {
+				topt.Height = uint(float32(topt.Width) / rel)
+			} else {
+				topt.Width = uint(float32(topt.Height) * rel)
+			}
+		}
+	}
+
+	if topt.IsCrop {
+		err := self.Crop(topt.Width, topt.Height, int(int(ow-topt.Width)/2), int(int(ow-topt.Height)/2))
+
+		if err != nil {
+			return err
+		}
+	}
+	ret := C.MagickThumbnailImage(self.wand, C.size_t(topt.Width), C.size_t(topt.Height))
+	log.Printf("magick thumb ret: %v", ret)
+	if ret == C.MagickFalse {
+		return fmt.Errorf("magick thumbnail error: %s", self.Error())
+	}
+
+	return nil
+}
+
+func (self *wandImpl) Crop(width, height uint, x, y int) error {
+	ret := C.MagickCropImage(self.wand, C.size_t(width), C.size_t(height), C.ssize_t(x), C.ssize_t(y))
+
+	if ret == C.MagickFalse {
+		return fmt.Errorf("crop error: %s", self.Error())
+	}
 
 	return nil
 }
@@ -183,7 +238,7 @@ func (self *wandImpl) Height() uint {
 }
 
 // Writes image to a file, returns nil on success.
-func (self *wandImpl) Write(out io.Writer) error {
+func (self *wandImpl) Write(out io.Writer) (err error) {
 	if f, ok := out.(*os.File); ok {
 
 		cmode := C.CString("w+")
@@ -197,21 +252,39 @@ func (self *wandImpl) Write(out io.Writer) error {
 		}
 
 	} else {
-		var size *uint
-		blob := self.Blob(size)
+		var blob []byte
+		blob, err = self.GetBlob()
+		if err != nil {
+			log.Print(err)
+			return err
+		}
 
-		log.Printf("blob %d bytes\n", size)
-		out.Write(blob)
+		log.Printf("blob %d bytes\n", len(blob))
+		var wrote int
+		wrote, err = out.Write(blob)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+		log.Printf("wrote: %d", wrote)
 	}
 	return nil
 }
 
 // Implements direct to memory image formats. It returns the image as a blob
-func (self *wandImpl) Blob(length *uint) []byte {
-	ptr := unsafe.Pointer(C.MagickGetImageBlob(self.wand, (*C.size_t)(unsafe.Pointer(length))))
-	data := C.GoBytes(ptr, C.int(*length))
-	C.MagickRelinquishMemory(ptr)
-	return data
+func (self *wandImpl) GetBlob() ([]byte, error) {
+	var size C.size_t = 0
+
+	p := unsafe.Pointer(C.MagickGetImageBlob(self.wand, &size))
+	if size == 0 {
+		return nil, errors.New("Could not get image blob.")
+	}
+
+	blob := C.GoBytes(p, C.int(size))
+
+	C.MagickRelinquishMemory(p)
+
+	return blob, nil
 }
 
 // Changes the size of the image, returns true on success.

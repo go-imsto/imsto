@@ -135,12 +135,19 @@ func (e *Entry) Trek(section string) (err error) {
 	if ia.Quality > max_quality {
 		im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 	}
-	var size uint
-	data := im.Blob(&size) // tack new data
+
+	var data []byte
+	data, err = im.GetBlob() // tack new data
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	// TODO: 添加最小优化比率判断，如果过小，就忽略
 
 	var hash2 string
+	size := len(data)
 	hash2 = HashContent(data)
 	if hash2 != e.h {
 		hashes = append(hashes, hash2)

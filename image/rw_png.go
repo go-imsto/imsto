@@ -43,16 +43,15 @@ func (self *simpPNG) GetAttr() *ImageAttr {
 	return self.attr
 }
 
-func (self *simpPNG) Blob(length *uint) []byte {
+func (self *simpPNG) GetBlob() ([]byte, error) {
 	var buf bytes.Buffer
 	err := png.Encode(&buf, self.m)
 	if err != nil {
 		log.Println(err)
+		return nil, err
 	}
 
-	*length = uint(buf.Len())
-
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 func (self *simpPNG) SetOption(wopt WriteOption) {
@@ -60,15 +59,19 @@ func (self *simpPNG) SetOption(wopt WriteOption) {
 }
 
 func (self *simpPNG) Write(w io.Writer) error {
-	var length uint
-	data := self.Blob(&length)
+	data, err := self.GetBlob()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
 	size, err := w.Write(data)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
-	if size != int(length) {
+	if size != len(data) {
 		log.Println("write error", size)
 	}
 	return nil

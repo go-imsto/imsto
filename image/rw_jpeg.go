@@ -59,7 +59,7 @@ func (self *simpJPEG) Format() string {
 	return jpeg_format
 }
 
-func (self *simpJPEG) Open(r io.Reader) (err error) {
+func (self *simpJPEG) Open(r io.Reader) error {
 
 	var si *C.Simp_Image
 
@@ -77,14 +77,14 @@ func (self *simpJPEG) Open(r io.Reader) (err error) {
 		fi, _ := f.Stat()
 		self.size = uint32(fi.Size())
 	} else {
-		var blob []byte
-		blob, err = ioutil.ReadAll(r)
+		blob, err := ioutil.ReadAll(r)
 
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
+			return err
 		}
 
-		log.Println(blob[0:8])
+		log.Println("jpeg blob head:", blob[0:8])
 
 		size := len(blob)
 		log.Printf("open mem buf len %d\n", size)
@@ -148,16 +148,15 @@ func (self *simpJPEG) Write(out io.Writer) error {
 	} else {
 		log.Println("write to buf")
 
-		var size uint
-		data := self.Blob(&size)
-		if data == nil {
-			return errors.New("output error")
+		data, err := self.GetBlob()
+		if err != nil {
+			return err
 		}
-		log.Printf("blob %d bytes\n", size)
+		// log.Printf("blob %d bytes\n", len(data))
 
 		ret, err := out.Write(data)
 		if err != nil {
-			log.Println(err)
+			// log.Println(err)
 			return err
 		}
 
@@ -167,28 +166,21 @@ func (self *simpJPEG) Write(out io.Writer) error {
 	return nil
 }
 
-func (self *simpJPEG) Blob(size *uint) []byte {
+func (self *simpJPEG) GetBlob() ([]byte, error) {
 	cblob := (**C.uchar)(C.makeCharArray(C.int(self.size)))
 	*cblob = nil
 	defer C.free(unsafe.Pointer(cblob))
 
-	r := C.simp_output_mem(self.si, cblob, (*C.ulong)(unsafe.Pointer(size)))
+	var size C.ulong
+	r := C.simp_output_mem(self.si, cblob, &size)
 
-	if !r {
+	if !r || *cblob == nil {
 		log.Println("simp out mem error")
 		// return errors.New("output error")
-		return nil
+		return nil, errors.New("output error")
 	}
-
-	var data []byte
-	if *cblob != nil {
-		data = C.GoBytes(unsafe.Pointer(*cblob), C.int(*size))
-	}
-
-	log.Printf("output %d bytes\n", *size)
-	log.Println("output mem result:", r)
-
-	return data
+	log.Printf("c output %d bytes\n", size)
+	return C.GoBytes(unsafe.Pointer(*cblob), C.int(size)), nil
 }
 
 func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
@@ -202,7 +194,7 @@ func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
 
 	st_i, err = src.Stat()
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return err
 	}
 
@@ -210,7 +202,7 @@ func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
 
 	err = im.Open(src)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return err
 	}
 	defer im.Close()
@@ -218,13 +210,13 @@ func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
 
 	err = im.Write(dest)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return err
 	}
 
 	st_o, err = dest.Stat()
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return err
 	}
 

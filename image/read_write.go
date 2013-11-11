@@ -39,21 +39,22 @@ func NewImageAttr(w, h uint, q uint8) *ImageAttr {
 }
 
 type ThumbOption struct {
-	Width, Height int
-	IsFit         bool
-	IsCrop        bool
-	wopt          WriteOption
+	Width, Height       uint
+	MaxWidth, MaxHeight uint
+	IsFit               bool
+	IsCrop              bool
+	wopt                WriteOption
 }
 
 type ImageReader interface {
 	Open(r io.Reader) error
 	GetAttr() *ImageAttr
 	Format() string
-	Blob(length *uint) []byte
 }
 
 type ImageWriter interface {
 	SetOption(wopt WriteOption)
+	GetBlob() ([]byte, error)
 	Write(w io.Writer) error
 }
 
@@ -138,7 +139,14 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	err := im.Thumbnail(topt)
 
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
+		return err
+	}
+
+	err = im.Write(w)
+
+	if err != nil {
+		// log.Println(err)
 		return err
 	}
 
