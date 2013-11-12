@@ -3,6 +3,7 @@ package storage
 import (
 	"calf/config"
 	"calf/db"
+	iimg "calf/image"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -35,6 +36,11 @@ func (ie ErrHttpFound) Error() string {
 	return "Found " + ie.Path
 }
 
+type outItem struct {
+	DestPath, DestFile, Mime string
+	Size                     int
+}
+
 type harg map[string]string
 
 func parsePath(s string) (m harg, err error) {
@@ -53,7 +59,7 @@ func parsePath(s string) (m harg, err error) {
 	return
 }
 
-func LoadPath(url, section string) (err error) {
+func LoadPath(url, section string) (item outItem, err error) {
 	var m harg
 	m, err = parsePath(url)
 	if err != nil {
@@ -123,7 +129,7 @@ func LoadPath(url, section string) (err error) {
 		dst_file = org_file
 	} else {
 		dst_path = fmt.Sprintf("%s/%s", m["size"], org_path)
-		dst_file = fmt.Sprintf("%s/%s", thumb_root, dst_path)
+		dst_file = path.Join(thumb_root, dst_path)
 
 		mode := m["size"][0:1]
 		dimension := m["size"][1:]
@@ -133,10 +139,45 @@ func LoadPath(url, section string) (err error) {
 			err = ErrUnsupportSize
 			return
 		}
+		var width, height uint
+		if m["x"] == "" {
+			var d uint64
+			d, _ = strconv.ParseUint(dimension, 10, 32)
+			width = uint(d)
+			height = uint(d)
+		} else {
+			a := strings.Split(dimension, "x")
+			var dw, dh uint64
+			dw, _ = strconv.ParseUint(a[0], 10, 32)
+			dh, _ = strconv.ParseUint(a[1], 10, 32)
+			width = uint(dw)
+			height = uint(dh)
+		}
+
+		var topt = iimg.ThumbOption{Width: width, Height: height, IsFit: true}
+		if mode == "c" {
+			topt.IsCrop = true
+		} else if mode == "w" {
+			topt.MaxWidth = width
+		} else if mode == "h" {
+			topt.MaxHeight = height
+		}
+		err = iimg.ThumbnailFile(org_file, dst_file, topt)
+		if err != nil {
+			log.Print(err)
+			return
+		}
+
+		// if fi, _ := os.Stat(dst_file); fi.Size() == 0 {
+		// 	log.Print("thumbnail dst_file fail")
+		// }
 	}
 	log.Printf("dst_path: %s, dst_file: %s", dst_path, dst_file)
 
-	// TODO:
+	item = outItem{}
+	item.DestPath = dst_path
+	item.DestFile = dst_file
+
 	return
 }
 
@@ -240,9 +281,8 @@ func store(e *Entry, section string) (err error) {
 	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
 
 	data := e.Blob()
-	log.Printf("blob length: %d", len(data))
-
-	mw := NewMetaWrapper(section)
+	size := len(data)
+	log.Printf("blob length: %d", size)
 
 	var em Wagoner
 	em, err = FarmEngine(section)
@@ -260,6 +300,7 @@ func store(e *Entry, section string) (err error) {
 
 	e.sev = sev
 
+	mw := NewMetaWrapper(section)
 	err = mw.Store(e)
 	// fmt.Println("mw", mw)
 	if err != nil {

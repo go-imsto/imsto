@@ -50,7 +50,7 @@ func TestJpegReadWrite(t *testing.T) {
 	var data []byte
 	out := bytes.NewBuffer(data)
 
-	err = im.Write(out)
+	err = im.WriteTo(out)
 	if err != nil {
 		t.Fatal(err)
 	}

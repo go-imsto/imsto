@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
+	"time"
 )
 
 type EntryId struct {
@@ -62,6 +62,7 @@ type Entry struct {
 	Path      string          `json:"path"`
 	Mime      string          `json:"mime"`
 	Modified  uint64          `json:"modified"`
+	Created   time.Time       `json:"created"`
 	imageType int
 	sev       cdb.Hstore
 	exif      cdb.Hstore
@@ -125,12 +126,10 @@ func (e *Entry) Trek(section string) (err error) {
 	ia := im.GetAttr()
 	// log.Println(ia)
 
-	mq, _ := strconv.ParseUint(config.GetValue(section, "max_quality"), 10, 8)
-
-	max_quality := iimg.Quality(mq)
-	// log.Printf("max_quality: %d\b", max_quality)
+	max_quality := iimg.Quality(config.GetInt(section, "max_quality"))
 	if ia.Quality > max_quality {
 		im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
+		log.Printf("set quality to max_quality %d", max_quality)
 	}
 
 	var data []byte
@@ -145,11 +144,20 @@ func (e *Entry) Trek(section string) (err error) {
 
 	var hash2 string
 	size := len(data)
+	if max_file_size := config.GetInt(section, "max_file_size"); size > max_file_size {
+		err = errors.New(fmt.Sprintf("file: %s size %d is too big, max is %d", e.Name))
+		return
+	}
+
 	hash2 = HashContent(data)
 	if hash2 != e.h {
 		hashes = append(hashes, hash2)
 		var id2 *EntryId
 		id2, err = NewEntryIdFromHash(hash2)
+		if err != nil {
+			// log.Println(err)
+			return
+		}
 		ids = append(ids, id2.String())
 		e.Id = id2 // 使用新的 Id 作为主键
 		e.h = hash2
@@ -157,21 +165,12 @@ func (e *Entry) Trek(section string) (err error) {
 		e.Size = uint32(size)
 	}
 
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
 	ia.Size = iimg.Size(size) // 更新后的大小
 
-	// ext := ia.Ext
 	path := newPath(e.Id, ia.Ext)
-	// mimetype := mime.TypeByExtension(ext)
-	// ia.Mime = mimetype
 
 	log.Printf("ext: %s, mime: %s\n", ia.Ext, ia.Mime)
 
-	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
 	e.Meta = ia
 	e.Path = path
 	e.Mime = ia.Mime

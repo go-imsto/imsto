@@ -35,11 +35,12 @@ func testApp(args []string) bool {
 	if *url != "" {
 		fmt.Println("url: ", *url)
 		section := ""
-		err := storage.LoadPath(*url, section)
+		item, err := storage.LoadPath(*url, section)
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false
 		}
+		fmt.Print(item)
 	}
 
 	al := len(args)

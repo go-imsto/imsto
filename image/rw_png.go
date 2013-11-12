@@ -58,7 +58,7 @@ func (self *simpPNG) SetOption(wopt WriteOption) {
 
 }
 
-func (self *simpPNG) Write(w io.Writer) error {
+func (self *simpPNG) WriteTo(w io.Writer) error {
 	data, err := self.GetBlob()
 	if err != nil {
 		log.Println(err)

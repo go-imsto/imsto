@@ -22,7 +22,7 @@ serve tiring tcp service
 var (
 	mport           = cmdTiring.Flag.Int("port", 5564, "tcp listen port")
 	mReadTimeout    = cmdTiring.Flag.Int("readTimeout", 3, "connection read timeout in seconds")
-	vMaxCpu         = cmdTiring.Flag.Int("maxCpu", 0, "maximum number of CPUs. 0 means all available CPUs")
+	mMaxCpu         = cmdTiring.Flag.Int("maxCpu", 0, "maximum number of CPUs. 0 means all available CPUs")
 	whiteListOption = cmdTiring.Flag.String("whiteList", "", "comma separated Ip addresses having write permission. No limit if empty.")
 	whiteList       []string
 )
@@ -41,6 +41,7 @@ func sectionsHandler(w http.ResponseWriter, r *http.Request) {
 func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
 	section := r.FormValue("roof")
+	log.Printf("section: %s", section)
 	limit, _ := strconv.ParseUint(r.FormValue("rows"), 10, 32)
 	if limit < 1 {
 		limit = 1
@@ -113,10 +114,10 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func runTiring(args []string) bool {
-	if *vMaxCpu < 1 {
-		*vMaxCpu = runtime.NumCPU()
+	if *mMaxCpu < 1 {
+		*mMaxCpu = runtime.NumCPU()
 	}
-	runtime.GOMAXPROCS(*vMaxCpu)
+	runtime.GOMAXPROCS(*mMaxCpu)
 	// fmt.Println(cmdTiring.Name())
 
 	if *whiteListOption != "" {

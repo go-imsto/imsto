@@ -7,6 +7,7 @@ import (
 	"log"
 	"mime"
 	"os"
+	"path"
 	"reflect"
 )
 
@@ -56,7 +57,7 @@ type ImageReader interface {
 type ImageWriter interface {
 	SetOption(wopt WriteOption)
 	GetBlob() ([]byte, error)
-	Write(w io.Writer) error
+	WriteTo(w io.Writer) error
 }
 
 type Image interface {
@@ -140,16 +141,48 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	err := im.Thumbnail(topt)
 
 	if err != nil {
-		// log.Println(err)
 		return err
 	}
 
-	err = im.Write(w)
+	err = im.WriteTo(w)
 
 	if err != nil {
-		// log.Println(err)
+		log.Print(err)
 		return err
 	}
 
 	return nil
+}
+
+func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
+	var in *os.File
+	in, err = os.Open(src)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	defer in.Close()
+	im := newWandImage()
+	im.Open(in)
+	err = im.Thumbnail(topt)
+	if err != nil {
+		return err
+	}
+
+	dir := path.Dir(dest)
+	err = os.MkdirAll(dir, os.FileMode(0755))
+	if err != nil {
+		return
+	}
+
+	return im.WriteFile(dest)
+
+	// out, err = os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0644))
+	// if err != nil {
+	// 	log.Print(err)
+	// 	return
+	// }
+	// defer out.Close()
+
+	// return Thumbnail(in, out, topt)
 }

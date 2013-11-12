@@ -65,7 +65,7 @@ func runOptimize(args []string) bool {
 	defer dest.Close()
 	// image.OptimizeJpeg(file, dest, &image.WriteOption{Quality: 75, StripAll: true})
 
-	err = im.Write(dest)
+	err = im.WriteTo(dest)
 
 	if err != nil {
 		fmt.Println(err)

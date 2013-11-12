@@ -5,7 +5,10 @@ package image
 #cgo linux LDFLAGS: -ljpeg -L/usr/lib
 #cgo darwin CFLAGS: -I/opt/local/include -DIM_DEBUG
 #cgo darwin LDFLAGS: -ljpeg -L/opt/local/lib
-// liut: add CFLAGS "-DIM_DEBUG" for debug output
+
+// debug CFLAGS:
+// -DIM_DEBUG for simp_image output
+// -DJPEG_DEBUG for jpeg output, depend IM_DEBUG
 
 #include "c-jpeg.h"
 
@@ -84,9 +87,10 @@ func (self *simpJPEG) Open(r io.Reader) error {
 			return err
 		}
 
-		log.Println("jpeg blob head:", blob[0:8])
-
 		size := len(blob)
+		log.Printf("jpeg blob head: %x", blob[0:8])
+		log.Printf("jpeg blob tail: %x", blob[size-2:size])
+
 		log.Printf("open mem buf len %d\n", size)
 		p := (*C.uchar)(unsafe.Pointer(&blob[0]))
 
@@ -131,7 +135,7 @@ func (self *simpJPEG) SetOption(wopt WriteOption) {
 
 }
 
-func (self *simpJPEG) Write(out io.Writer) error {
+func (self *simpJPEG) WriteTo(out io.Writer) error {
 	if f, ok := out.(*os.File); ok {
 		log.Printf("write a file %s\n", f.Name())
 
@@ -171,8 +175,8 @@ func (self *simpJPEG) GetBlob() ([]byte, error) {
 	*cblob = nil
 	defer C.free(unsafe.Pointer(cblob))
 
-	var size C.ulong
-	r := C.simp_output_mem(self.si, cblob, &size)
+	var size = 0
+	r := C.simp_output_mem(self.si, cblob, (*C.ulong)(unsafe.Pointer(&size)))
 
 	if !r || *cblob == nil {
 		log.Println("simp out mem error")
@@ -208,7 +212,7 @@ func OptimizeJpeg(src, dest *os.File, wopt *WriteOption) error {
 	defer im.Close()
 	im.SetOption(*wopt)
 
-	err = im.Write(dest)
+	err = im.WriteTo(dest)
 	if err != nil {
 		// log.Println(err)
 		return err

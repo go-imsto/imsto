@@ -237,11 +237,24 @@ func (self *wandImpl) Height() uint {
 	return uint(C.MagickGetImageHeight(self.wand))
 }
 
+// Writes canvas to a file, returns true on success.
+func (self *wandImpl) WriteFile(filename string) error {
+	cfilename := C.CString(filename)
+	success := C.MagickWriteImage(self.wand, cfilename)
+	C.free(unsafe.Pointer(cfilename))
+
+	if success == C.MagickFalse {
+		return fmt.Errorf("Could not write: %s", self.Error())
+	}
+
+	return nil
+}
+
 // Writes image to a file, returns nil on success.
-func (self *wandImpl) Write(out io.Writer) (err error) {
+func (self *wandImpl) WriteTo(out io.Writer) (err error) {
 	if f, ok := out.(*os.File); ok {
 
-		cmode := C.CString("w+")
+		cmode := C.CString("wb")
 		defer C.free(unsafe.Pointer(cmode))
 		file := C.fdopen(C.int(f.Fd()), cmode)
 		defer C.fclose(file)
@@ -250,6 +263,8 @@ func (self *wandImpl) Write(out io.Writer) (err error) {
 		if success == C.MagickFalse {
 			return fmt.Errorf("Could not write: %s", self.Error())
 		}
+
+		log.Print("wand wrote done")
 
 	} else {
 		var blob []byte

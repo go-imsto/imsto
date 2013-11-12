@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ meta_table_suffix = demo
 engine = s3
 bucket_name = imsto-demo
 max_quality = 88
+max_file_size = 393216
 thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
 tmp_dir = /tmp/
@@ -75,6 +77,14 @@ func GetValue(section, name string) string {
 	return value
 }
 
+func GetInt(section, name string) int {
+	s := GetValue(section, name)
+	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return int(i)
+	}
+	return 0
+}
+
 func GetSection(sname string) (section ini.Section) {
 	if section = loadedConfig.Section(sname); len(section) > 0 {
 		return section
@@ -89,9 +99,6 @@ func Sections() []string {
 		if name != "common" {
 			a = append(a, name)
 		}
-	}
-	if len(a) == 0 {
-		a = append(a, "default")
 	}
 	return a
 }

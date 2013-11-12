@@ -41,6 +41,7 @@ func newMetaWrap(section string) *MetaWrap {
 	}
 	dsn := config.GetValue(section, "meta_dsn")
 	table := config.GetValue(section, "meta_table_suffix")
+	log.Printf("table suffix: ", table)
 	mw := &MetaWrap{dsn: dsn, table_suffix: table}
 
 	return mw
@@ -85,7 +86,7 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 	}
 
 	var r *sql.Rows
-	r, err = db.Query("SELECT id, name, path, size, meta, sev, ids, hashes FROM "+mw.table()+" LIMIT $1 OFFSET $2", limit, offset)
+	r, err = db.Query("SELECT id, name, path, size, meta, sev, created, ids, hashes FROM "+mw.table()+" LIMIT $1 OFFSET $2", limit, offset)
 	if err != nil {
 		return
 	}
@@ -96,7 +97,7 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 		e := Entry{}
 		var id string
 		var meta, sev cdb.Hstore
-		err = r.Scan(&id, &e.Name, &e.Path, &e.Size, &meta, &sev, &e.Ids, &e.Hashes)
+		err = r.Scan(&id, &e.Name, &e.Path, &e.Size, &meta, &sev, &e.Created, &e.Ids, &e.Hashes)
 		if err != nil {
 			return
 		}

@@ -9,7 +9,7 @@
 void 		_simp_init      (Simp_Image *im);
 Simp_Image *_simp_read_head (Simp_Image *im);
 
-#ifdef IM_DEBUG
+#if defined IM_DEBUG && defined JPEG_DEBUG
 static void 
 my_message_handle(j_common_ptr cinfo, int msg_level)
 {
@@ -83,13 +83,13 @@ void
 _simp_init(Simp_Image *im)
 {
 #ifdef IM_DEBUG
-	printf("[start _simp_init]\n");
+	printf("[start simp_init]\n");
 #endif
 
 	im->in.ji.err = jpeg_std_error(&(im->jerr.pub));
-// #ifdef IM_DEBUG
-// 	im->jerr.pub.emit_message = my_message_handle;
-// #endif
+#if defined IM_DEBUG && defined JPEG_DEBUG
+	im->jerr.pub.emit_message = my_message_handle;
+#endif
 	im->jerr.pub.error_exit = my_error_exit;
 	
 	if (setjmp(im->jerr.setjmp_buffer)) {
@@ -108,7 +108,7 @@ Simp_Image *
 _simp_read_head(Simp_Image *im)
 {
 #ifdef IM_DEBUG
-	printf("[start _simp_read_head]\n");
+	printf("[start simp_read_head]\n");
 #endif
 
 	int rc;
@@ -130,14 +130,14 @@ _simp_read_head(Simp_Image *im)
 	}
 
 #ifdef IM_DEBUG
-	printf("jpeg header: %dx%d %dbit %c\n", im->in.w, im->in.h,
+	printf("[jpeg header: %dx%d %dbit %c]\n", im->in.w, im->in.h,
 		im->in.ji.num_components*8, (im->in.ji.progressive_mode?'P':'N'));
 #endif
 
 	im->in.q = estimate_jpeg_quality(&(im->in.ji));
 	im->wopt.quality = (UINT8)im->in.q;
 #ifdef IM_DEBUG
-	printf("quality: %d\n", im->in.q);
+	printf("[quality: %d]\n", im->in.q);
 #endif
 
 	return im;
@@ -169,7 +169,7 @@ simp_set_quality(Simp_Image *im, int quality)
 	}
 #ifdef IM_DEBUG
 	else
-		printf("invalid quality: %d\n", quality);
+		printf("[invalid quality: %d]\n", quality);
 #endif
 
 }
@@ -188,6 +188,9 @@ simp_close(Simp_Image *im)
 static bool
 _simp_decode(Simp_Image *im)
 {
+#ifdef IM_DEBUG
+	printf("[start simp_decode]\n");
+#endif
 	// JSAMPARRAY buf = NULL;
 	int j;
 
@@ -201,7 +204,7 @@ _simp_decode(Simp_Image *im)
 		}
 		simp_close(im);
 #ifdef IM_DEBUG
-	printf("[ERROR]\n");
+	printf("[simp decode ERROR]\n");
 #endif
 
 		return FALSE;
@@ -224,10 +227,6 @@ _simp_decode(Simp_Image *im)
 
 	if (setjmp(im->jerr.setjmp_buffer)) {
 		jpeg_abort_decompress(&(im->in.ji));
-		// fclose(outfile);
-		// outfile=NULL;
-		// if (infile) fclose(infile);
-		// if (!quiet_mode) printf(" [Compress ERROR]\n");
 #ifdef IM_DEBUG
 	printf("[Decompress ERROR]\n");
 #endif
@@ -240,6 +239,9 @@ _simp_decode(Simp_Image *im)
 		return 0;
 	}
 	jpeg_finish_decompress(&(im->in.ji));
+#ifdef IM_DEBUG
+	printf("[decode OK %d lines]\n", j);
+#endif
 	return true;
 }
 
@@ -247,7 +249,7 @@ static bool
 _simp_encode(Simp_Image *im)
 {
 #ifdef IM_DEBUG
-	printf("[start encode]\n");
+	printf("[start simp_encode]\n");
 #endif
 
 	void  *data = NULL;
@@ -265,7 +267,7 @@ static bool
 _simp_write(Simp_Image *im)
 {
 #ifdef IM_DEBUG
-	printf("[start write]\n");
+	printf("[start simp_write]\n");
 #endif
 
 	int j;
@@ -276,7 +278,7 @@ _simp_write(Simp_Image *im)
 	jpeg_set_defaults(&(im->out.ji)); 
 	if (im->wopt.quality > 0 && im->wopt.quality < 100) {
 #ifdef IM_DEBUG
-	printf("[wopt quality %d]\n", im->wopt.quality);
+	printf("[set wopt quality %d]\n", im->wopt.quality);
 #endif
 		jpeg_set_quality(&(im->out.ji),(int)im->wopt.quality,TRUE);
 	}
@@ -458,9 +460,9 @@ int estimate_jpeg_quality(j_decompress_ptr jpeg_info)
 			save_quality=i+1;
 			#ifdef IM_DEBUG
 			if ((hashval > hash[i]) || (sum > sums[i]))
-				printf("Quality: %d (approximate)\n", save_quality);
+				printf("[Quality: %d (approximate)]\n", save_quality);
 			else
-				printf("Quality: %d\n", save_quality);
+				printf("[Quality: %d]\n", save_quality);
 			#endif
 			break;
 		}
