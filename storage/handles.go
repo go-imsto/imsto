@@ -228,7 +228,7 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 
 	err = store(entry, section)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return
 	}
 
@@ -265,7 +265,7 @@ func StoredRequest(r *http.Request) (entry *Entry, err error) {
 
 	err = store(entry, section)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return
 	}
 
@@ -275,7 +275,7 @@ func StoredRequest(r *http.Request) (entry *Entry, err error) {
 func store(e *Entry, section string) (err error) {
 	err = e.Trek(section)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return
 	}
 	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)

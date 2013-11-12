@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"github.com/vaughan0/go-ini"
 	"log"
 	"os"
@@ -15,7 +16,7 @@ meta_table_suffix = demo
 engine = s3
 bucket_name = imsto-demo
 max_quality = 88
-max_file_size = 393216
+max_file_size = 262114
 thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
 tmp_dir = /tmp/
@@ -38,6 +39,7 @@ func SetConfDir(dir string) {
 
 	if _, err := os.Stat(dir); err != nil {
 		log.Println(err)
+		return
 	}
 
 	confDir = dir
@@ -45,18 +47,7 @@ func SetConfDir(dir string) {
 
 func init() {
 	defaultConfig, _ = ini.Load(strings.NewReader(defaultConfigIni))
-
-	confDir = os.Getenv("IMSTO_CONF_DIR")
-	if confDir == "" {
-		log.Println("env IMSTO_CONF_DIR not found")
-		confDir, _ = os.Getwd()
-		// panic(errors.New("env IMSTO_CONF_DIR not found"))
-	}
-
-	if confDir != "" {
-		LoadConfig(confDir)
-	}
-
+	flag.StringVar(&confDir, "c", "", "config dir")
 }
 
 func GetValue(section, name string) string {
@@ -65,12 +56,12 @@ func GetValue(section, name string) string {
 		ok    bool
 	)
 
-	value, ok = loadedConfig.Get(section, name)
-	if !ok {
-		value, ok = defaultConfig.Get("common", name)
-		if !ok {
-			log.Printf("'%v' variable missing from '%v' section", name, section)
-			return ""
+	if value, ok = loadedConfig.Get(section, name); !ok {
+		if value, ok = loadedConfig.Get("common", name); !ok {
+			if value, ok = defaultConfig.Get("common", name); !ok {
+				log.Printf("'%v' variable missing from '%v' section", name, section)
+				return ""
+			}
 		}
 	}
 
@@ -103,19 +94,29 @@ func Sections() []string {
 	return a
 }
 
-func LoadConfig(dir string) error {
+func Load() (err error) {
+	var dir string
+	if confDir == "" {
+		dir = os.Getenv("IMSTO_CONF_DIR")
+		if dir == "" {
+			log.Println("env IMSTO_CONF_DIR not found, or -c dir unset")
+			dir, _ = os.Getwd()
+			// panic(errors.New("env IMSTO_CONF_DIR not found"))
+		}
+	} else {
+		dir = confDir
+	}
 	cfgFile := path.Join(dir, "imsto.ini")
-	var err error
 
 	loadedConfig, err = ini.LoadFile(cfgFile)
 
 	if err != nil {
 		log.Print(err)
 	} else {
-		log.Print("loaded " + cfgFile)
+		log.Print("config loaded from " + cfgFile)
 	}
 
-	return err
+	return
 }
 
 // type option map[string]string

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"calf/config"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -73,10 +74,17 @@ func setExitStatus(n int) {
 	exitMu.Unlock()
 }
 
+func init() {
+	flag.Parse()
+	err := config.Load()
+	if err != nil {
+		log.Print("config load error: ", err)
+	}
+}
+
 func main() {
 	fmt.Fprintf(os.Stdout, header)
 	flag.Usage = func() { usage(1) }
-	flag.Parse()
 	args := flag.Args()
 
 	if len(args) < 1 || args[0] == "help" {

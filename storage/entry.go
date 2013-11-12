@@ -145,7 +145,7 @@ func (e *Entry) Trek(section string) (err error) {
 	var hash2 string
 	size := len(data)
 	if max_file_size := config.GetInt(section, "max_file_size"); size > max_file_size {
-		err = errors.New(fmt.Sprintf("file: %s size %d is too big, max is %d", e.Name))
+		err = errors.New(fmt.Sprintf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size))
 		return
 	}
 

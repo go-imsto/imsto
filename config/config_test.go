@@ -7,7 +7,8 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Logf("confDir: %v", GetConfDir())
 
-	err := LoadConfig("/opt/imsto/config")
+	SetConfDir("/opt/imsto/config")
+	err := Load()
 
 	if err != nil {
 		t.Fatal(err)
