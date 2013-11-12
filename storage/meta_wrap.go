@@ -41,7 +41,7 @@ func newMetaWrap(section string) *MetaWrap {
 	}
 	dsn := config.GetValue(section, "meta_dsn")
 	table := config.GetValue(section, "meta_table_suffix")
-	log.Printf("table suffix: ", table)
+	log.Printf("table suffix: %s", table)
 	mw := &MetaWrap{dsn: dsn, table_suffix: table}
 
 	return mw
@@ -63,6 +63,10 @@ func (mw *MetaWrap) table() string {
 	return meta_table_prefix + mw.table_suffix
 }
 
+const (
+	valid_condition = " WHERE status = 0"
+)
+
 func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 	if limit < 1 {
 		limit = 1
@@ -70,12 +74,15 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 	if offset < 0 {
 		offset = 0
 	}
+	table := mw.table()
+
+	log.Printf("browse table: %s", table)
 
 	db := mw.getDb()
 	defer db.Close()
 
 	t = 0
-	err = db.QueryRow("SELECT COUNT(id) FROM " + mw.table() + "").Scan(&t)
+	err = db.QueryRow("SELECT COUNT(id) FROM " + table + valid_condition).Scan(&t)
 	if err != nil {
 		return
 	}
@@ -86,7 +93,7 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 	}
 
 	var r *sql.Rows
-	r, err = db.Query("SELECT id, name, path, size, meta, sev, created, ids, hashes FROM "+mw.table()+" LIMIT $1 OFFSET $2", limit, offset)
+	r, err = db.Query("SELECT id, name, path, size, meta, sev, created, ids, hashes FROM "+table+valid_condition+" ORDER BY created DESC LIMIT $1 OFFSET $2", limit, offset)
 	if err != nil {
 		return
 	}
@@ -232,7 +239,21 @@ func (mw *MetaWrap) GetMap(id EntryId) (*emap, error) {
 }
 
 func (mw *MetaWrap) Delete(id EntryId) error {
-	// TODO:
+	db := mw.getDb()
+	defer db.Close()
+	sql := "UPDATE " + mw.table() + " SET status = 1 WHERE id = $1"
+	r, err := db.Exec(sql, id.String())
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	var af int64
+	af, err = r.RowsAffected()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("delete entry %s result %v", id.String(), af)
 	return nil
 }
 

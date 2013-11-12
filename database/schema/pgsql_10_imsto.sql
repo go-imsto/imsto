@@ -53,7 +53,7 @@ CREATE TABLE meta_template (
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
-CREATE INDEX idx_meta_created ON meta_template (created) ;
+CREATE INDEX idx_meta_created ON meta_template (status, created) ;
 
 CREATE TABLE meta_demo
 (

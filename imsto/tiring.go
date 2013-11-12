@@ -41,7 +41,7 @@ func sectionsHandler(w http.ResponseWriter, r *http.Request) {
 func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
 	section := r.FormValue("roof")
-	log.Printf("section: %s", section)
+	log.Printf("browse section: %s", section)
 	limit, _ := strconv.ParseUint(r.FormValue("rows"), 10, 32)
 	if limit < 1 {
 		limit = 1
@@ -58,6 +58,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	mw := storage.NewMetaWrapper(section)
 	a, t, err := mw.Browse(int(limit), int(offset))
 	if err != nil {
+		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
 	}
@@ -88,6 +89,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	entry, err := storage.StoredRequest(r)
 
 	if err != nil {
+		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
 	}
@@ -100,17 +102,21 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	m["path"] = entry.Path
 	m["size"] = entry.Size
 
-	if err != nil {
-		m["error"] = err
-		log.Println(err)
-		return
-	}
 	m["status"] = "ok"
 
 	writeJsonQuiet(w, r, m)
 }
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO:
+	err := storage.DeleteRequest(r)
+	if err != nil {
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	m := make(map[string]interface{})
+	m["status"] = "ok"
+	writeJsonQuiet(w, r, m)
 }
 
 func runTiring(args []string) bool {

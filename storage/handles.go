@@ -348,3 +348,21 @@ func ParseUpload(r *http.Request) (fileName string, data []byte, mimeType string
 	modifiedTime, _ = strconv.ParseUint(r.FormValue("ts"), 10, 64)
 	return
 }
+
+func DeleteRequest(r *http.Request) error {
+	dir, id := path.Split(r.URL.Path)
+	section := path.Base(dir)
+	if id != "" && section != "" {
+		mw := NewMetaWrapper(section)
+		eid, err := NewEntryId(id)
+		if err != nil {
+			return err
+		}
+		err = mw.Delete(*eid)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return errors.New("invalid url")
+}
