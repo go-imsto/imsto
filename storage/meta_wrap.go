@@ -6,10 +6,9 @@ import (
 	"calf/image"
 	"database/sql"
 	_ "database/sql/driver"
+	"fmt"
 	_ "github.com/lib/pq"
 	"log"
-	// "strings"
-	"fmt"
 )
 
 const (

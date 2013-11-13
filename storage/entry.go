@@ -48,21 +48,21 @@ func (ei *EntryId) tip() string {
 
 type AppId uint16
 
-type Author uint16
+type Author uint32
 
 type Entry struct {
-	Id        *EntryId        `json:"id,omitempty"`
-	Name      string          `json:"name"`
-	Hashes    cdb.Qarray      `json:"-"`
-	Ids       cdb.Qarray      `json:"-"`
+	Id        *EntryId   `json:"id,omitempty"`
+	Name      string     `json:"name"`
+	Hashes    cdb.Qarray `json:"-"`
+	Ids       cdb.Qarray `json:"-"`
 	Meta      *iimg.Attr `json:"meta,omitempty"`
-	Size      uint32          `json:"size"`
-	AppId     AppId           `json:"-"`
-	Author    Author          `json:"-"`
-	Path      string          `json:"path"`
-	Mime      string          `json:"mime"`
-	Modified  uint64          `json:"modified"`
-	Created   time.Time       `json:"created"`
+	Size      uint32     `json:"size"`
+	AppId     AppId      `json:"appid"`
+	Author    Author     `json:"author"`
+	Path      string     `json:"path"`
+	Mime      string     `json:"mime"`
+	Modified  uint64     `json:"modified"`
+	Created   time.Time  `json:"created"`
 	imageType int
 	sev       cdb.Hstore
 	exif      cdb.Hstore
