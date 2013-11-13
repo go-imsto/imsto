@@ -55,6 +55,7 @@ var (
 	IsDebug    *bool
 	exitStatus = 0
 	exitMu     sync.Mutex
+	appDir     string
 	logDir     string
 )
 
@@ -76,14 +77,19 @@ func setExitStatus(n int) {
 }
 
 func init() {
-	flag.StringVar(&logDir, "logs", "", "config dir")
+	flag.StringVar(&appDir, "root", "", "app root dir")
+	flag.StringVar(&logDir, "logs", "", "app logs dir")
 	flag.Parse()
+	if appDir != "" {
+		config.SetAppRoot(appDir)
+	}
 	err := config.Load()
 	if err != nil {
 		log.Print("config load error: ", err)
 	}
 	if logDir == "" {
-		dir, err := os.Getwd()
+		dir := config.AppRoot()
+		log.Printf("approot %s", dir)
 		if err != nil {
 			log.Print("getwd error: ", err)
 		}
@@ -128,7 +134,7 @@ func main() {
 			IsDebug = cmd.IsDebug
 			// if IsDebug != nil && *IsDebug {
 			log.SetFlags(log.LstdFlags | log.Lshortfile)
-			// log.Printf("log dir: %s", logDir)
+			log.Printf("log dir: %s", logDir)
 			if logDir != "" {
 				logfile := path.Join(logDir, name+".log")
 				log.Printf("logfile: %s", logfile)

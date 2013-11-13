@@ -1,7 +1,7 @@
 package config
 
 import (
-	"flag"
+	"errors"
 	"github.com/vaughan0/go-ini"
 	"log"
 	"os"
@@ -26,28 +26,27 @@ support_size = 120,160,400
 // var once sync.Once
 
 var (
-	confDir       string
+	appRoot       string
 	defaultConfig ini.File
 	loadedConfig  ini.File
 )
 
-func GetConfDir() string {
-	return confDir
+func AppRoot() string {
+	return appRoot
 }
 
-func SetConfDir(dir string) {
+func SetAppRoot(dir string) {
 
 	if _, err := os.Stat(dir); err != nil {
 		log.Println(err)
 		return
 	}
 
-	confDir = dir
+	appRoot = dir
 }
 
 func init() {
 	defaultConfig, _ = ini.Load(strings.NewReader(defaultConfigIni))
-	flag.StringVar(&confDir, "c", "", "config dir")
 }
 
 func GetValue(section, name string) string {
@@ -96,17 +95,19 @@ func Sections() []string {
 
 func Load() (err error) {
 	var dir string
-	if confDir == "" {
-		dir = os.Getenv("IMSTO_CONF_DIR")
+	if appRoot == "" {
+		dir = os.Getenv("IMSTO_APP_ROOT")
 		if dir == "" {
-			log.Println("env IMSTO_CONF_DIR not found, or -c dir unset")
-			dir, _ = os.Getwd()
-			// panic(errors.New("env IMSTO_CONF_DIR not found"))
+			err = errors.New("IMSTO_APP_ROOT not found in environment")
+			// log.Println("IMSTO_APP_ROOT not found in environment, or -c dir unset")
+			// dir, _ = os.Getwd()
+			// panic(errors.New("env IMSTO_APP_ROOT not found"))
+			return
 		}
 	} else {
-		dir = confDir
+		dir = appRoot
 	}
-	cfgFile := path.Join(dir, "imsto.ini")
+	cfgFile := path.Join(dir, "config", "imsto.ini")
 
 	loadedConfig, err = ini.LoadFile(cfgFile)
 
