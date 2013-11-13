@@ -113,7 +113,7 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 			return
 		}
 
-		var ia image.ImageAttr
+		var ia image.Attr
 		err = meta.ToStruct(&ia)
 		if err != nil {
 			return
@@ -147,7 +147,7 @@ func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 
 	log.Println("meta:", meta)
 	log.Println("sev:", entry.sev)
-	var ia image.ImageAttr
+	var ia image.Attr
 	err = meta.ToStruct(&ia)
 	if err != nil {
 		log.Println(err)

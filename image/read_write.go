@@ -15,7 +15,7 @@ type Dimension uint32
 type Size uint32
 type Quality uint8
 
-type ImageAttr struct {
+type Attr struct {
 	Width   Dimension `json:"width"`
 	Height  Dimension `json:"height"`
 	Quality Quality   `json:"quality"`
@@ -26,7 +26,7 @@ type ImageAttr struct {
 
 // var attr_keys = []string{"width", "height", "quality", "size", "ext"}
 
-func (ia *ImageAttr) Hstore() db.Hstore {
+func (ia *Attr) Hstore() db.Hstore {
 	return db.StructToHstore(*ia)
 }
 
@@ -35,9 +35,9 @@ type WriteOption struct {
 	Quality  Quality
 }
 
-// export NewImageAttr
-func NewImageAttr(w, h uint, q uint8) *ImageAttr {
-	return &ImageAttr{Dimension(w), Dimension(h), Quality(q), Size(0), "", ""}
+// export NewAttr
+func NewAttr(w, h uint, q uint8) *Attr {
+	return &Attr{Dimension(w), Dimension(h), Quality(q), Size(0), "", ""}
 }
 
 type ThumbOption struct {
@@ -50,7 +50,7 @@ type ThumbOption struct {
 
 type ImageReader interface {
 	Open(r io.Reader) error
-	GetAttr() *ImageAttr
+	GetAttr() *Attr
 	Format() string
 }
 

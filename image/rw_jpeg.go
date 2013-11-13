@@ -31,15 +31,11 @@ static unsigned char ** makeCharArray(int size) {
 import "C"
 
 import (
-	// "fmt"
-	// "imsto"
-	"io"
-	"os"
-	// "strings"
-	// "bufio"
 	"errors"
+	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"unsafe"
 )
 
@@ -48,9 +44,9 @@ const jpeg_format = "JPEG"
 // jpeg simp_image
 type simpJPEG struct {
 	si   *C.Simp_Image
-	attr *ImageAttr
 	wopt WriteOption
-	size uint32
+	size Size
+	*Attr
 }
 
 func newSimpJPEG() *simpJPEG {
@@ -78,7 +74,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 			return errors.New("simp_open_stdio failed")
 		}
 		fi, _ := f.Stat()
-		self.size = uint32(fi.Size())
+		self.size = Size(fi.Size())
 	} else {
 		blob, err := ioutil.ReadAll(r)
 
@@ -99,7 +95,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 			return errors.New("simp_open_mem failed")
 		}
 
-		self.size = uint32(size)
+		self.size = Size(size)
 	}
 
 	self.si = si
@@ -108,7 +104,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 	q := C.simp_get_quality(self.si)
 	log.Printf("image open, w: %d, h: %d, q: %d", w, h, q)
 
-	self.attr = NewImageAttr(uint(w), uint(h), uint8(q))
+	self.Attr = NewAttr(uint(w), uint(h), uint8(q))
 	return nil
 }
 
@@ -120,16 +116,16 @@ func (self *simpJPEG) Close() error {
 	return nil
 }
 
-func (self *simpJPEG) GetAttr() *ImageAttr {
-	return self.attr
+func (self *simpJPEG) GetAttr() *Attr {
+	return self.Attr
 }
 
 func (self *simpJPEG) SetOption(wopt WriteOption) {
 	self.wopt = wopt
 	log.Printf("setOption: q %d, s %v", self.wopt.Quality, self.wopt.StripAll)
-	if self.wopt.Quality > 0 && self.attr.Quality > self.wopt.Quality {
+	if self.wopt.Quality > 0 && self.Quality > self.wopt.Quality {
 		C.simp_set_quality(self.si, C.int(self.wopt.Quality))
-		self.attr.Quality = self.wopt.Quality
+		self.Quality = self.wopt.Quality
 		log.Printf("set quality: %d", self.wopt.Quality)
 	}
 

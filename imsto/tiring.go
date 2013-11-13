@@ -64,7 +64,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	m["items"] = a
 	m["total"] = t
-	log.Printf("total: %d\n", t)
+	// log.Printf("total: %d\n", t)
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, m)
 }

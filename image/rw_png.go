@@ -11,8 +11,8 @@ import (
 const png_format = "PNG"
 
 type simpPNG struct {
-	m    image.Image
-	attr *ImageAttr
+	m image.Image
+	*Attr
 }
 
 func newSimpPNG() *simpPNG {
@@ -34,13 +34,13 @@ func (self *simpPNG) Open(r io.Reader) (err error) {
 	}
 
 	rec := self.m.Bounds()
-	self.attr = NewImageAttr(uint(rec.Max.X), uint(rec.Max.Y), 0) //&ImageAttr{Width: uint32(), Height: uint32()}
+	self.Attr = NewAttr(uint(rec.Max.X), uint(rec.Max.Y), 0) //&Attr{Width: uint32(), Height: uint32()}
 
 	return
 }
 
-func (self *simpPNG) GetAttr() *ImageAttr {
-	return self.attr
+func (self *simpPNG) GetAttr() *Attr {
+	return self.Attr
 }
 
 func (self *simpPNG) GetBlob() ([]byte, error) {

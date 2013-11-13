@@ -17,7 +17,7 @@ func NewEntryConvert(id, name string, size uint32, meta, sev db.Hstore, hashes, 
 		return
 	}
 
-	var ia image.ImageAttr
+	var ia image.Attr
 	err = meta.ToStruct(&ia)
 	if err != nil {
 		log.Println(err)

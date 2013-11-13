@@ -39,6 +39,7 @@ type wandImpl struct {
 	filename      string
 	width, height uint
 	wopt          WriteOption
+	*Attr
 }
 
 func init() {
@@ -84,6 +85,8 @@ func (self *wandImpl) Open(r io.Reader) error {
 		return fmt.Errorf(`Could not open image: %s`, self.Error())
 	}
 
+	self.Attr = NewAttr(self.Width(), self.Height(), self.Quality())
+
 	return nil
 }
 
@@ -95,11 +98,13 @@ func (self *wandImpl) OpenBlob(blob []byte) error {
 		return fmt.Errorf(`Could not open image from blob: %s`, self.Error())
 	}
 
+	self.Attr = NewAttr(self.Width(), self.Height(), self.Quality())
+
 	return nil
 }
 
-func (self *wandImpl) GetAttr() *ImageAttr {
-	return NewImageAttr(self.Width(), self.Height(), self.Quality())
+func (self *wandImpl) GetAttr() *Attr {
+	return self.Attr
 }
 
 // Returns the format of a particular image in a sequence.

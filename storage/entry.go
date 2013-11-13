@@ -55,7 +55,7 @@ type Entry struct {
 	Name      string          `json:"name"`
 	Hashes    cdb.Qarray      `json:"-"`
 	Ids       cdb.Qarray      `json:"-"`
-	Meta      *iimg.ImageAttr `json:"meta,omitempty"`
+	Meta      *iimg.Attr `json:"meta,omitempty"`
 	Size      uint32          `json:"size"`
 	AppId     AppId           `json:"-"`
 	Author    Author          `json:"-"`

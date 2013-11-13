@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"text/template"
@@ -35,7 +36,7 @@ func (cmd *Command) Name() string {
 }
 
 func (cmd *Command) Usage() {
-	fmt.Fprintf(os.Stderr, "Example: weed %s\n", cmd.UsageLine)
+	fmt.Fprintf(os.Stderr, "Example: imsto %s\n", cmd.UsageLine)
 	fmt.Fprintf(os.Stderr, "Default Usage:\n")
 	cmd.Flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "Description:\n")
@@ -54,6 +55,7 @@ var (
 	IsDebug    *bool
 	exitStatus = 0
 	exitMu     sync.Mutex
+	logDir     string
 )
 
 var commands = []*Command{
@@ -62,7 +64,6 @@ var commands = []*Command{
 	cmdTiring,
 	cmdStage,
 	cmdView,
-	// cmdClean,
 	cmdTest,
 }
 
@@ -75,10 +76,26 @@ func setExitStatus(n int) {
 }
 
 func init() {
+	flag.StringVar(&logDir, "logs", "", "config dir")
 	flag.Parse()
 	err := config.Load()
 	if err != nil {
 		log.Print("config load error: ", err)
+	}
+	if logDir == "" {
+		dir, err := os.Getwd()
+		if err != nil {
+			log.Print("getwd error: ", err)
+		}
+		if dir != "" {
+			dir = path.Join(dir, "logs")
+			// log.Printf("log dir: %s", dir)
+			if fi, err := os.Stat(dir); err == nil {
+				if fi.IsDir() {
+					logDir = dir
+				}
+			}
+		}
 	}
 }
 
@@ -102,26 +119,27 @@ func main() {
 		usage(2)
 	}
 
-	// Commands use panic to abort execution when something goes wrong.
-	// Panics are logged at the point of error.  Ignore those.
-	// defer func() {
-	// 	if err := recover(); err != nil {
-	// 		if _, ok := err.(LoggedError); !ok {
-	// 			// This panic was not expected / logged.
-	// 			// fmt.Println(err)
-	// 			panic(err)
-	// 		}
-	// 		os.Exit(1)
-	// 	}
-	// }()
 	for _, cmd := range commands {
-		if cmd.Name() == args[0] && cmd.Run != nil {
+		name := cmd.Name()
+		if name == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			cmd.Flag.Parse(args[1:])
 			args = cmd.Flag.Args()
 			IsDebug = cmd.IsDebug
 			// if IsDebug != nil && *IsDebug {
 			log.SetFlags(log.LstdFlags | log.Lshortfile)
+			// log.Printf("log dir: %s", logDir)
+			if logDir != "" {
+				logfile := path.Join(logDir, name+".log")
+				log.Printf("logfile: %s", logfile)
+				fd, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0664)
+				if err != nil {
+					log.Printf("logfile %s create failed", logfile)
+					return
+				}
+				log.SetOutput(fd)
+			}
+
 			// }
 			if cmd.Run(args) {
 				fmt.Fprintf(os.Stderr, "\n")
