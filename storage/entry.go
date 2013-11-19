@@ -46,7 +46,7 @@ func (ei *EntryId) tip() string {
 	return ei.id[:1]
 }
 
-type AppId uint16
+type AppId uint8
 
 type Author uint32
 

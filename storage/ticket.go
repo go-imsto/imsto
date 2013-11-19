@@ -4,26 +4,30 @@ import (
 	"calf/config"
 	"database/sql"
 	_ "database/sql/driver"
+	"errors"
+	"fmt"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 )
 
 type Ticket struct {
-	dsn    string
-	table  string
-	app    AppId
-	author Author
-	prompt string
-	id     int
+	section string
+	dsn     string
+	table   string
+	app     AppId
+	author  Author
+	prompt  string
+	id      int
 }
 
 func newTicket(section string, app AppId) *Ticket {
 	dsn := config.GetValue(section, "meta_dsn")
 	table := config.GetValue(section, "ticket_table")
 	// log.Printf("table: %s", table)
-	t := &Ticket{dsn: dsn, table: table, app: app}
+	t := &Ticket{section: section, dsn: dsn, table: table, app: app}
 
 	return t
 }
@@ -41,6 +45,18 @@ func NewTicketRequest(r *http.Request) (t *Ticket, err error) {
 	if err != nil {
 		log.Printf("arg appid error: %s", err)
 		appid = 0
+	}
+
+	var salt []byte
+	salt, err = getApiSalt(section, appid)
+	token := NewToken(salt)
+	var ok bool
+	ok, err = token.VerifyString(r.PostFormValue("token"))
+	if err != nil {
+		return
+	}
+	if !ok {
+		err = errors.New("Invalid Token")
 	}
 	t = newTicket(section, AppId(appid))
 
@@ -81,4 +97,20 @@ func (t *Ticket) getDb() *sql.DB {
 		log.Fatal(err)
 	}
 	return db
+}
+
+func getApiSalt(section string, appid AppId) (salt []byte, err error) {
+	k := fmt.Sprintf("IMSTO_API_%d_SALT", appid)
+	str := config.GetValue(section, k)
+	if str == "" {
+		str = os.Getenv(k)
+	}
+
+	if str == "" {
+		err = fmt.Errorf("%s not found in environment or config", k)
+		return
+	}
+
+	salt = []byte(str)
+	return
 }

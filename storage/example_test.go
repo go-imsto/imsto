@@ -21,21 +21,38 @@ func TestEntryId(t *testing.T) {
 	}
 }
 
-// func TestMetaBrowse(t *testing.T) {
-// 	t.Log("dsn: " + config.GetValue("imsto", "meta_dsn"))
-// 	mw, err := NewMetaWrapper("")
+const (
+	t_salt  = "abcd"
+	t_value = "test"
+)
 
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+func TestApiToken(t *testing.T) {
+	token, err := NewToken([]byte(t_salt))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	limit := 5
-// 	offset := 0
-// 	rows, err := mw.Browse(limit, offset)
+	token.SetValue([]byte(t_value))
+	// t.Logf("api token bins: %x", token.Binary())
+	str := token.String()
+	t.Logf("api token strs: %s", str)
+	t.Logf("api token hash: %x, stamp: %d, value: %s", token.hash, token.stamp, token.GetValue())
 
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	token, err = NewToken([]byte(t_salt))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	t.Log(rows)
-// }
+	var ok bool
+	ok, err = token.VerifyString(str)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("token ok: %v", ok)
+	value := string(token.GetValue())
+	t.Logf("token value: %s", value)
+
+	if value != t_value {
+		t.Fatalf("unexpected result from BaseConvert:\n+ %v\n- %v", value, t_value)
+	}
+}
