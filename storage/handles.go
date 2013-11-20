@@ -272,6 +272,11 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		// return
 	}
 
+	if !config.HasSection(section) {
+		err = fmt.Errorf("section '%s' not found", section)
+		return
+	}
+
 	var token *apiToken
 	token, err = getApiToken(section, appid)
 	if err != nil {

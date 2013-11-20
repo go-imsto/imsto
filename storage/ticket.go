@@ -116,9 +116,9 @@ func (t *Ticket) saveNew() error {
 	defer db.Close()
 
 	var id int
-	sql := "INSERT INTO " + t.table + "(app_id, author, prompt) VALUES($1, $2, $3) RETURNING id"
+	sql := "INSERT INTO " + t.table + "(section, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
 	log.Printf("sql: %s", sql)
-	err := db.QueryRow(sql, t.appid, t.author, t.prompt).Scan(&id)
+	err := db.QueryRow(sql, t.section, t.appid, t.author, t.prompt).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -156,10 +156,9 @@ func (t *Ticket) bindEntry(entry *Entry) error {
 	// }
 	// var ra int64
 	// ra, err = sr.RowsAffected()
-	sql := "SELECT ticket_update($1, $2, $3)"
+	sql := "SELECT ticket_update($1, $2)"
 	var ret int
-	mw := NewMetaWrapper(t.section)
-	err := db.QueryRow(sql, t.id, mw.TableSuffix(), entry.Id.String()).Scan(&ret)
+	err := db.QueryRow(sql, t.id, entry.Id.String()).Scan(&ret)
 	if err != nil {
 		return err
 	}

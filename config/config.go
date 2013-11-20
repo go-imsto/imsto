@@ -84,6 +84,13 @@ func GetSection(sname string) (section ini.Section) {
 	return defaultConfig.Section("")
 }
 
+func HasSection(sname string) bool {
+	if _, ok := loadedConfig[sname]; ok {
+		return true
+	}
+	return false
+}
+
 func Sections() []string {
 	a := []string{}
 	for name, _ := range loadedConfig {

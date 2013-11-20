@@ -24,12 +24,11 @@ type MetaWrapper interface {
 	GetHash(hash string) (*ehash, error)
 	GetMap(id EntryId) (*emap, error)
 	Delete(id EntryId) error
-	TableSuffix() string
 }
 
 type MetaWrap struct {
-	dsn string
-	// section string
+	dsn     string
+	section string
 	// prefix  string
 
 	table_suffix string
@@ -42,7 +41,7 @@ func newMetaWrap(section string) *MetaWrap {
 	dsn := config.GetValue(section, "meta_dsn")
 	table := config.GetValue(section, "meta_table_suffix")
 	log.Printf("table suffix: %s", table)
-	mw := &MetaWrap{dsn: dsn, table_suffix: table}
+	mw := &MetaWrap{dsn: dsn, section: section, table_suffix: table}
 
 	return mw
 }
