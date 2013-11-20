@@ -20,6 +20,8 @@ CREATE TABLE upload_ticket (
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 
+CREATE INDEX idx_ticket_created ON upload_ticket (created, done) ;
+
 SELECT setval('upload_ticket_id_seq', 1000, true);
 
 

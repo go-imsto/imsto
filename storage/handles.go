@@ -432,7 +432,7 @@ func parseRequest(r *http.Request) (section string, appid AppId, author Author, 
 		aid uint64
 		uid uint64
 	)
-	section = r.FormValue("section")
+	section = r.FormValue("roof")
 	str = r.FormValue("app")
 	if str != "" {
 		aid, err = strconv.ParseUint(str, 10, 16)

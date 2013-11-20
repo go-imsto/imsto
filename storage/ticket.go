@@ -12,23 +12,23 @@ import (
 )
 
 type Ticket struct {
-	section  string
-	dsn      string
-	table    string
-	appid    AppId
-	author   Author
-	prompt   string
-	id       int
-	img_id   string
-	img_path string
-	done     bool
+	section string
+	dsn     string
+	table   string
+	AppId   AppId  `json:"appid,omitempty"`
+	Author  Author `json:"author,omitempty"`
+	Prompt  string `json:"prompt,omitempty"`
+	id      int
+	ImgId   string `json:"img_id,omitempty"`
+	ImgPath string `json:"img_path,omitempty"`
+	Done    bool   `json:"done,omitempty"`
 }
 
 func newTicket(section string, appid AppId) *Ticket {
 	dsn := config.GetValue(section, "meta_dsn")
 	table := getTicketTable(section)
 	// log.Printf("table: %s", table)
-	t := &Ticket{section: section, dsn: dsn, table: table, appid: appid}
+	t := &Ticket{section: section, dsn: dsn, table: table, AppId: appid}
 
 	return t
 }
@@ -81,8 +81,8 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 	}
 	ticket := newTicket(section, appid)
 
-	ticket.author = author
-	ticket.prompt = r.FormValue("prompt")
+	ticket.Author = author
+	ticket.Prompt = r.FormValue("prompt")
 
 	err = ticket.saveNew()
 
@@ -121,12 +121,20 @@ func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
 	if err != nil {
 		return
 	}
+	var ok bool
+	ok, err = t.VerifyString(r.FormValue("token"))
+	if err != nil {
+		return
+	}
+	if !ok {
+		err = errors.New("Invalid Token")
+	}
 
 	id := t.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
 
 	ticket, err = loadTicket(section, int(id))
-	if ticket.author != author {
-		log.Printf("mismatch author %s : %s", ticket.author, author)
+	if ticket.Author != author {
+		log.Printf("mismatch author %s : %s", ticket.Author, author)
 	}
 	return
 }
@@ -138,7 +146,7 @@ func (t *Ticket) saveNew() error {
 	var id int
 	sql := "INSERT INTO " + t.table + "(section, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
 	log.Printf("sql: %s", sql)
-	err := db.QueryRow(sql, t.section, t.appid, t.author, t.prompt).Scan(&id)
+	err := db.QueryRow(sql, t.section, t.AppId, t.Author, t.Prompt).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -156,7 +164,7 @@ func (t *Ticket) load(id int) error {
 	defer db.Close()
 	t.id = id
 	sql := "SELECT section, app_id, author, prompt, img_id, img_path, done FROM " + t.table + " WHERE id = $1 LIMIT 1"
-	err := db.QueryRow(sql, id).Scan(&t.section, &t.appid, &t.author, &t.prompt, &t.img_id, &t.img_path, &t.done)
+	err := db.QueryRow(sql, id).Scan(&t.section, &t.AppId, &t.Author, &t.Prompt, &t.ImgId, &t.ImgPath, &t.Done)
 	if err != nil {
 		return err
 	}
