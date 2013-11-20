@@ -189,7 +189,7 @@ BEGIN
 	USING a_id;
 
 	IF t_path IS NOT NULL THEN
-		RAISE WARNING 'exists meta %', t_path;
+		RAISE NOTICE 'exists meta %', t_path;
 		RETURN -1;
 	END IF;
 

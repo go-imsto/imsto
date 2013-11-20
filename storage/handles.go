@@ -237,25 +237,60 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 
 type entryStored struct {
 	*Entry
-	Err error `json:"error,omitempty"`
+	Err string `json:"error,omitempty"`
 }
 
 func newStoredEntry(entry *Entry, err error) entryStored {
-	return entryStored{entry, err}
+	var es string
+	if err != nil {
+		es = err.Error()
+	} else {
+		es = ""
+	}
+	return entryStored{entry, es}
 }
 
 func StoredRequest(r *http.Request) (entries []entryStored, err error) {
-	section := r.FormValue("section")
-	var (
-		lastModified uint64
-	)
-
 	if err = r.ParseMultipartForm(defaultMaxMemory); err != nil {
 		log.Print("form parse error:", err)
 		return
 	}
 
-	// TODO: add verify token
+	// log.Printf("form: %s", r.Form)
+	// log.Printf("postform: %s", r.PostForm)
+
+	var (
+		section      string
+		appid        AppId
+		author       Author
+		lastModified uint64
+	)
+
+	section, appid, author, err = parseRequest(r)
+	if err != nil {
+		log.Print("request error:", err)
+		// return
+	}
+
+	var token *apiToken
+	token, err = getApiToken(section, appid)
+	if err != nil {
+		return
+	}
+	token_str := r.FormValue("token")
+	if token_str == "" {
+		err = errors.New("api: need token argument")
+		return
+	}
+	var ok bool
+	ok, err = token.VerifyString(token_str)
+	if err != nil {
+		return
+	}
+	if !ok {
+		err = errors.New("api: Invalid Token")
+		return
+	}
 
 	lastModified, _ = strconv.ParseUint(r.FormValue("ts"), 10, 64)
 	log.Printf("lastModified: %s", lastModified)
@@ -278,26 +313,46 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 
 	entries = make([]entryStored, n)
 	for i, fh := range form.File["file"] {
-		log.Printf("%d name: %s, headers: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
+		log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
 		mime := fh.Header.Get("Content-Type")
 		file, fe := fh.Open()
 		if fe != nil {
-			entries[i].Err = fe
+			entries[i].Err = fe.Error()
 		}
 
 		data, ee := ioutil.ReadAll(file)
 		if ee != nil {
-			entries[i].Err = ee
+			entries[i].Err = ee.Error()
 			continue
 		}
-		log.Printf("post %s (%s) size %d %v\n", fh.Filename, mime, len(data))
+		log.Printf("post %s (%s) size %d\n", fh.Filename, mime, len(data))
 		entry, ee := newEntry(data, fh.Filename)
 		if ee != nil {
-			entries[i].Err = ee
+			entries[i].Err = ee.Error()
 			continue
 		}
+		entry.AppId = appid
+		entry.Author = author
 		entry.Modified = lastModified
 		ee = store(entry, section)
+		if ee != nil {
+			log.Printf("%02d stored error: %s", i, ee)
+		}
+		if ee == nil && i == 0 && token.vc == VC_TICKET {
+			// TODO: upate ticket
+			ticket := newTicket(section, appid)
+			tid_str := token.GetValuleString()
+			tid, _ := strconv.ParseInt(tid_str, 10, 64)
+			log.Printf("token value: %d", tid)
+			ee = ticket.load(int(tid))
+			if ee != nil {
+				log.Printf("ticket load error: ", ee)
+			}
+			ee = ticket.bindEntry(entry)
+			if ee != nil {
+				log.Printf("ticket bind error: %v", ee)
+			}
+		}
 		entries[i] = newStoredEntry(entry, ee)
 	}
 
@@ -358,4 +413,53 @@ func DeleteRequest(r *http.Request) error {
 		return nil
 	}
 	return errors.New("invalid url")
+}
+
+func parseRequest(r *http.Request) (section string, app AppId, author Author, err error) {
+
+	section = r.FormValue("section")
+	var appid uint64
+	appid, err = strconv.ParseUint(r.FormValue("app"), 10, 16)
+	if err != nil {
+		log.Printf("arg appid error: %s", err)
+		appid = 0
+	}
+	app = AppId(appid)
+
+	user := r.FormValue("user")
+	var uid uint64
+	uid, err = strconv.ParseUint(user, 10, 16)
+	if err != nil {
+		log.Printf("arg author error: %s", err)
+		uid = 0
+	}
+	author = Author(uid)
+	return
+}
+
+func getApiSalt(section string, appid AppId) (salt []byte, err error) {
+	k := fmt.Sprintf("IMSTO_API_%d_SALT", appid)
+	str := config.GetValue(section, k)
+	if str == "" {
+		str = os.Getenv(k)
+	}
+
+	if str == "" {
+		err = fmt.Errorf("%s not found in environment or config", k)
+		return
+	}
+
+	salt = []byte(str)
+	return
+}
+
+func getApiToken(section string, appid AppId) (token *apiToken, err error) {
+	var salt []byte
+	salt, err = getApiSalt(section, appid)
+	if err != nil {
+		return
+	}
+	ver := apiVer(0)
+	token, err = newToken(ver, appid, salt)
+	return
 }

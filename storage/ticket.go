@@ -9,28 +9,26 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
 )
 
 type Ticket struct {
 	section string
 	dsn     string
 	table   string
-	app     AppId
+	appid   AppId
 	author  Author
 	prompt  string
 	id      int
 }
 
-func newTicket(section string, app AppId) *Ticket {
+func newTicket(section string, appid AppId) *Ticket {
 	dsn := config.GetValue(section, "meta_dsn")
 	table := config.GetValue(section, "ticket_table")
 	if table == "" {
 		log.Print("'ticket_table' is not found in config")
 	}
 	// log.Printf("table: %s", table)
-	t := &Ticket{section: section, dsn: dsn, table: table, app: app}
+	t := &Ticket{section: section, dsn: dsn, table: table, appid: appid}
 
 	return t
 }
@@ -41,23 +39,24 @@ func NewTokenRequest(r *http.Request) (t *apiToken, err error) {
 		appid   AppId
 		author  Author
 	)
-	section, appid, author, err = parseRequest(r)
+
 	if err = r.ParseForm(); err != nil {
 		log.Print("form parse error:", err)
 		return
 	}
-	var salt []byte
-	salt, err = getApiSalt(section, appid)
+
+	section, appid, author, err = parseRequest(r)
+	if err != nil {
+		log.Print("request error:", err)
+		return
+	}
+
+	t, err = getApiToken(section, appid)
 	if err != nil {
 		return
 	}
 
-	t, err = NewToken(salt)
-	if err != nil {
-		return
-	}
-
-	t.SetValue([]byte(fmt.Sprint(author)))
+	t.SetValue([]byte(fmt.Sprint(author)), VC_TOKEN)
 	return
 }
 
@@ -67,20 +66,23 @@ func NewTicketRequest(r *http.Request) (t *apiToken, err error) {
 		appid   AppId
 		author  Author
 	)
-	section, appid, author, err = parseRequest(r)
 	if err = r.ParseForm(); err != nil {
 		log.Print("form parse error:", err)
 		return
 	}
-	var salt []byte
-	salt, err = getApiSalt(section, appid)
-	var token *apiToken
-	token, err = NewToken(salt)
+
+	section, appid, author, err = parseRequest(r)
+	if err != nil {
+		log.Print("request error:", err)
+		return
+	}
+
+	t, err = getApiToken(section, appid)
 	if err != nil {
 		return
 	}
 	var ok bool
-	ok, err = token.VerifyString(r.PostFormValue("token"))
+	ok, err = t.VerifyString(r.PostFormValue("token"))
 	if err != nil {
 		return
 	}
@@ -99,39 +101,13 @@ func NewTicketRequest(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	t, err = NewToken(salt)
+	t, err = getApiToken(section, appid)
 	if err != nil {
 		return
 	}
-	t.SetValue([]byte(fmt.Sprint(ticket.GetId())))
+	t.SetValue([]byte(fmt.Sprint(ticket.GetId())), VC_TICKET)
 	log.Printf("new token: %x", t.Binary())
 
-	return
-}
-
-func parseRequest(r *http.Request) (section string, app AppId, author Author, err error) {
-	if err = r.ParseForm(); err != nil {
-		log.Print("form parse error:", err)
-		return
-	}
-
-	section = r.PostFormValue("section")
-	var appid uint64
-	appid, err = strconv.ParseUint(r.PostFormValue("appid"), 10, 16)
-	if err != nil {
-		log.Printf("arg appid error: %s", err)
-		appid = 0
-	}
-	app = AppId(appid)
-
-	user := r.PostFormValue("user")
-	var uid uint64
-	uid, err = strconv.ParseUint(user, 10, 16)
-	if err != nil {
-		log.Printf("arg author error: %s", err)
-		uid = 0
-	}
-	author = Author(uid)
 	return
 }
 
@@ -142,11 +118,52 @@ func (t *Ticket) saveNew() error {
 	var id int
 	sql := "INSERT INTO " + t.table + "(app_id, author, prompt) VALUES($1, $2, $3) RETURNING id"
 	log.Printf("sql: %s", sql)
-	err := db.QueryRow(sql, t.app, t.author, t.prompt).Scan(&id)
+	err := db.QueryRow(sql, t.appid, t.author, t.prompt).Scan(&id)
 	if err != nil {
 		return err
 	}
 	t.id = id
+	return nil
+}
+
+func (t *Ticket) update() error {
+	// TODO:
+	return nil
+}
+
+func (t *Ticket) load(id int) error {
+	db := t.getDb()
+	defer db.Close()
+	t.id = id
+	sql := "SELECT app_id, author, prompt FROM " + t.table + " WHERE id = $1 LIMIT 1"
+	err := db.QueryRow(sql, t.id).Scan(&t.appid, &t.author, &t.prompt)
+	if err != nil {
+		return err
+	}
+	log.Printf("ticket #%d loaded", id)
+	return nil
+}
+
+func (t *Ticket) bindEntry(entry *Entry) error {
+	db := t.getDb()
+	defer db.Close()
+	log.Printf("start binding %s", entry.Id)
+	// sql := "UPDATE " + t.table + " SET img_id=$1, img_path=$1, img_meta=$2, uploaded=$3, updated=$4 WHERE id = $5"
+	// sr, err := db.Exec(sql, entry.Id.String(), entry.Path, entry.Meta.Hstore(), true, entry.Created, t.id)
+	// log.Printf("db exec result: %s, error:", sr, err)
+	// if err != nil {
+	// 	return err
+	// }
+	// var ra int64
+	// ra, err = sr.RowsAffected()
+	sql := "SELECT ticket_update($1, $2, $3)"
+	var ret int
+	mw := NewMetaWrapper(t.section)
+	err := db.QueryRow(sql, t.id, mw.TableSuffix(), entry.Id.String()).Scan(&ret)
+	if err != nil {
+		return err
+	}
+	log.Printf("update result: %d", ret)
 	return nil
 }
 
@@ -160,20 +177,4 @@ func (t *Ticket) getDb() *sql.DB {
 		log.Fatal(err)
 	}
 	return db
-}
-
-func getApiSalt(section string, appid AppId) (salt []byte, err error) {
-	k := fmt.Sprintf("IMSTO_API_%d_SALT", appid)
-	str := config.GetValue(section, k)
-	if str == "" {
-		str = os.Getenv(k)
-	}
-
-	if str == "" {
-		err = fmt.Errorf("%s not found in environment or config", k)
-		return
-	}
-
-	salt = []byte(str)
-	return
 }

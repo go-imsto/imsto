@@ -24,6 +24,7 @@ type MetaWrapper interface {
 	GetHash(hash string) (*ehash, error)
 	GetMap(id EntryId) (*emap, error)
 	Delete(id EntryId) error
+	TableSuffix() string
 }
 
 type MetaWrap struct {
@@ -56,6 +57,10 @@ func NewMetaWrapper(section string) (mw MetaWrapper) {
 	}
 
 	return mw
+}
+
+func (mw *MetaWrap) TableSuffix() string {
+	return mw.table_suffix
 }
 
 func (mw *MetaWrap) table() string {
@@ -257,8 +262,7 @@ func (mw *MetaWrap) Delete(id EntryId) error {
 }
 
 func (mw *MetaWrap) getDb() *sql.DB {
-	dsn := mw.dsn
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", mw.dsn)
 
 	if err != nil {
 		log.Fatal(err)

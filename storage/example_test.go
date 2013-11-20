@@ -27,18 +27,23 @@ const (
 )
 
 func TestApiToken(t *testing.T) {
-	token, err := NewToken([]byte(t_salt))
+	var (
+		ver   = apiVer(0)
+		appid = AppId(0)
+		vc    = valueCate(0)
+	)
+	token, err := newToken(ver, appid, []byte(t_salt))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	token.SetValue([]byte(t_value))
+	token.SetValue([]byte(t_value), vc)
 	// t.Logf("api token bins: %x", token.Binary())
 	str := token.String()
 	t.Logf("api token strs: %s", str)
 	t.Logf("api token hash: %x, stamp: %d, value: %s", token.hash, token.stamp, token.GetValue())
 
-	token, err = NewToken([]byte(t_salt))
+	token, err = newToken(ver, appid, []byte(t_salt))
 	if err != nil {
 		t.Fatal(err)
 	}
