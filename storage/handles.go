@@ -345,11 +345,11 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		}
 		if ee == nil && i == 0 && token.vc == VC_TICKET {
 			// TODO: upate ticket
-			ticket := newTicket(section, appid)
-			tid_str := token.GetValuleString()
-			tid, _ := strconv.ParseInt(tid_str, 10, 64)
+			// ticket := newTicket(section, appid)
+			tid := token.GetValuleInt()
 			log.Printf("token value: %d", tid)
-			ee = ticket.load(int(tid))
+			var ticket *Ticket
+			ticket, ee = loadTicket(section, int(tid))
 			if ee != nil {
 				log.Printf("ticket load error: ", ee)
 			}
@@ -421,6 +421,12 @@ func DeleteRequest(r *http.Request) error {
 }
 
 func parseRequest(r *http.Request) (section string, appid AppId, author Author, err error) {
+	if r.Form == nil {
+		if err = r.ParseForm(); err != nil {
+			log.Print("form parse error:", err)
+			return
+		}
+	}
 	var (
 		str string
 		aid uint64

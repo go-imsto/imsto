@@ -14,7 +14,7 @@ CREATE TABLE upload_ticket (
 	img_id varchar (44) NOT NULL DEFAULT '',
 	img_path varchar(65) NOT NULL DEFAULT '',
 	img_meta hstore,
-	uploaded boolean NOT NULL DEFAULT false,
+	done boolean NOT NULL DEFAULT false,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)

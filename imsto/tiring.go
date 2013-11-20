@@ -121,7 +121,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func tokenHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := storage.NewTokenRequest(r)
+	token, err := storage.TokenRequestNew(r)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
@@ -135,16 +135,28 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ticketHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := storage.NewTicketRequest(r)
-	if err != nil {
-		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
-		return
+	m := make(map[string]interface{})
+	if r.Method == "POST" {
+		token, err := storage.TicketRequestNew(r)
+		if err != nil {
+			log.Printf("ERROR: %s", err)
+			writeJsonError(w, r, err)
+			return
+		}
+		m["token"] = token.String()
+	} else if r.Method == "GET" {
+		ticket, err := storage.TicketRequestLoad(r)
+		if err != nil {
+			log.Printf("ERROR: %s", err)
+			writeJsonError(w, r, err)
+			return
+		}
+		m["ticket"] = ticket
 	}
 
-	m := make(map[string]interface{})
-	m["status"] = "ok"
-	m["token"] = token.String()
+	if len(m) > 0 {
+		m["status"] = "ok"
+	}
 	writeJsonQuiet(w, r, m)
 }
 

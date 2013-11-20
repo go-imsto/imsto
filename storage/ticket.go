@@ -4,47 +4,41 @@ import (
 	"calf/config"
 	"database/sql"
 	_ "database/sql/driver"
+	"encoding/binary"
 	"errors"
-	"fmt"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 )
 
 type Ticket struct {
-	section string
-	dsn     string
-	table   string
-	appid   AppId
-	author  Author
-	prompt  string
-	id      int
+	section  string
+	dsn      string
+	table    string
+	appid    AppId
+	author   Author
+	prompt   string
+	id       int
+	img_id   string
+	img_path string
+	done     bool
 }
 
 func newTicket(section string, appid AppId) *Ticket {
 	dsn := config.GetValue(section, "meta_dsn")
-	table := config.GetValue(section, "ticket_table")
-	if table == "" {
-		log.Print("'ticket_table' is not found in config")
-	}
+	table := getTicketTable(section)
 	// log.Printf("table: %s", table)
 	t := &Ticket{section: section, dsn: dsn, table: table, appid: appid}
 
 	return t
 }
 
-func NewTokenRequest(r *http.Request) (t *apiToken, err error) {
+func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
 	var (
 		section string
 		appid   AppId
 		author  Author
 	)
-
-	if err = r.ParseForm(); err != nil {
-		log.Print("form parse error:", err)
-		return
-	}
-
 	section, appid, author, err = parseRequest(r)
 	if err != nil {
 		log.Print("request error:", err)
@@ -55,22 +49,18 @@ func NewTokenRequest(r *http.Request) (t *apiToken, err error) {
 	if err != nil {
 		return
 	}
-
-	t.SetValue([]byte(fmt.Sprint(author)), VC_TOKEN)
+	var b = make([]byte, 4)
+	binary.BigEndian.PutUint32(b, uint32(author))
+	t.SetValue(b, VC_TOKEN)
 	return
 }
 
-func NewTicketRequest(r *http.Request) (t *apiToken, err error) {
+func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 	var (
 		section string
 		appid   AppId
 		author  Author
 	)
-	if err = r.ParseForm(); err != nil {
-		log.Print("form parse error:", err)
-		return
-	}
-
 	section, appid, author, err = parseRequest(r)
 	if err != nil {
 		log.Print("request error:", err)
@@ -92,7 +82,7 @@ func NewTicketRequest(r *http.Request) (t *apiToken, err error) {
 	ticket := newTicket(section, appid)
 
 	ticket.author = author
-	ticket.prompt = r.PostFormValue("prompt")
+	ticket.prompt = r.FormValue("prompt")
 
 	err = ticket.saveNew()
 
@@ -105,9 +95,39 @@ func NewTicketRequest(r *http.Request) (t *apiToken, err error) {
 	if err != nil {
 		return
 	}
-	t.SetValue([]byte(fmt.Sprint(ticket.GetId())), VC_TICKET)
+
+	var b = make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(ticket.GetId()))
+	t.SetValue(b, VC_TICKET)
 	log.Printf("new token: %x", t.Binary())
 
+	return
+}
+
+func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
+	var (
+		section string
+		appid   AppId
+		author  Author
+	)
+	section, appid, author, err = parseRequest(r)
+	if err != nil {
+		log.Print("request error:", err)
+		return
+	}
+
+	var t *apiToken
+	t, err = getApiToken(section, appid)
+	if err != nil {
+		return
+	}
+
+	id := t.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
+
+	ticket, err = loadTicket(section, int(id))
+	if ticket.author != author {
+		log.Printf("mismatch author %s : %s", ticket.author, author)
+	}
 	return
 }
 
@@ -135,13 +155,19 @@ func (t *Ticket) load(id int) error {
 	db := t.getDb()
 	defer db.Close()
 	t.id = id
-	sql := "SELECT app_id, author, prompt FROM " + t.table + " WHERE id = $1 LIMIT 1"
-	err := db.QueryRow(sql, t.id).Scan(&t.appid, &t.author, &t.prompt)
+	sql := "SELECT section, app_id, author, prompt, img_id, img_path, done FROM " + t.table + " WHERE id = $1 LIMIT 1"
+	err := db.QueryRow(sql, id).Scan(&t.section, &t.appid, &t.author, &t.prompt, &t.img_id, &t.img_path, &t.done)
 	if err != nil {
 		return err
 	}
 	log.Printf("ticket #%d loaded", id)
 	return nil
+}
+
+func loadTicket(sn string, id int) (t *Ticket, err error) {
+	t = newTicket(sn, AppId(0))
+	err = t.load(id)
+	return
 }
 
 func (t *Ticket) bindEntry(entry *Entry) error {
@@ -176,4 +202,12 @@ func (t *Ticket) getDb() *sql.DB {
 		log.Fatal(err)
 	}
 	return db
+}
+
+func getTicketTable(sn string) (table string) {
+	table = config.GetValue(sn, "ticket_table")
+	if table == "" {
+		log.Print("'ticket_table' is not found in config")
+	}
+	return
 }

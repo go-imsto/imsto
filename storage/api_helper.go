@@ -110,6 +110,10 @@ func (a *apiToken) GetValuleInt() int64 {
 	return BytesToInt64(a.value)
 }
 
+func (a *apiToken) SetValueInt(val int, vc valueCate) {
+	a.SetValue(Int64ToBytes(int64(val)), vc)
+}
+
 func (a *apiToken) SetValue(value []byte, vc valueCate) {
 	a.value = value
 	a.vc = vc

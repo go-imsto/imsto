@@ -33,7 +33,7 @@ BEGIN
 	END IF;
 
 	UPDATE upload_ticket 
-	SET img_id=a_item_id, img_path=t_path, uploaded=true, updated=CURRENT_TIMESTAMP
+	SET img_id=a_item_id, img_path=t_path, done=true, updated=CURRENT_TIMESTAMP
 	WHERE id = a_id;
 
 RETURN 1;
