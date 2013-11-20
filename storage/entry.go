@@ -52,17 +52,17 @@ type Author uint32
 
 type Entry struct {
 	Id        *EntryId   `json:"id,omitempty"`
-	Name      string     `json:"name"`
+	Name      string     `json:"name,omitempty"`
 	Hashes    cdb.Qarray `json:"-"`
 	Ids       cdb.Qarray `json:"-"`
 	Meta      *iimg.Attr `json:"meta,omitempty"`
 	Size      uint32     `json:"size"`
-	AppId     AppId      `json:"appid"`
-	Author    Author     `json:"author"`
+	AppId     AppId      `json:"appid,omitempty"`
+	Author    Author     `json:"author,omitempty"`
 	Path      string     `json:"path"`
-	Mime      string     `json:"mime"`
-	Modified  uint64     `json:"modified"`
-	Created   time.Time  `json:"created"`
+	Mime      string     `json:"mime,omitempty"`
+	Modified  uint64     `json:"modified,omitempty"`
+	Created   time.Time  `json:"created,omitempty"`
 	imageType int
 	sev       cdb.Hstore
 	exif      cdb.Hstore
@@ -91,11 +91,12 @@ func newEntry(data []byte, name string) (e *Entry, err error) {
 	}
 
 	e = &Entry{
-		Id:   id,
-		Name: name,
-		Size: uint32(len(data)),
-		b:    data,
-		h:    hash,
+		Id:      id,
+		Name:    name,
+		Size:    uint32(len(data)),
+		Created: time.Now(),
+		b:       data,
+		h:       hash,
 	}
 
 	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}

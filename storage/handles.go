@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -18,7 +17,8 @@ import (
 )
 
 const (
-	image_url_regex = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	image_url_regex  = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	defaultMaxMemory = 16 << 20 // 16 MB
 )
 
 var (
@@ -235,38 +235,70 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 	return
 }
 
-func StoredRequest(r *http.Request) (entry *Entry, err error) {
+type entryStored struct {
+	*Entry
+	Err error `json:"error,omitempty"`
+}
+
+func newStoredEntry(entry *Entry, err error) entryStored {
+	return entryStored{entry, err}
+}
+
+func StoredRequest(r *http.Request) (entries []entryStored, err error) {
+	section := r.FormValue("section")
 	var (
-		name, mime   string
-		data         []byte
 		lastModified uint64
 	)
 
-	if err = r.ParseForm(); err != nil {
+	if err = r.ParseMultipartForm(defaultMaxMemory); err != nil {
 		log.Print("form parse error:", err)
 		return
 	}
 
-	if err != nil {
-		log.Println(err)
+	// TODO: add verify token
+
+	lastModified, _ = strconv.ParseUint(r.FormValue("ts"), 10, 64)
+	log.Printf("lastModified: %s", lastModified)
+
+	form := r.MultipartForm
+	if form == nil {
+		err = errors.New("browser error: no file select")
+		return
+	}
+	defer form.RemoveAll()
+
+	if _, ok := form.File["file"]; !ok {
+		err = errors.New("browser error: input 'file' not found")
 		return
 	}
 
-	name, data, mime, lastModified, err = ParseUpload(r)
-	log.Printf("post %s (%s) size %d %v\n", name, mime, len(data), lastModified)
-	entry, err = newEntry(data, name)
+	n := len(form.File["file"])
 
-	if err != nil {
-		return
-	}
-	entry.Modified = lastModified
-	section := r.FormValue("section")
-	// err = entry.Trek(section)
+	log.Printf("%d files", n)
 
-	err = store(entry, section)
-	if err != nil {
-		// log.Println(err)
-		return
+	entries = make([]entryStored, n)
+	for i, fh := range form.File["file"] {
+		log.Printf("%d name: %s, headers: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
+		mime := fh.Header.Get("Content-Type")
+		file, fe := fh.Open()
+		if fe != nil {
+			entries[i].Err = fe
+		}
+
+		data, ee := ioutil.ReadAll(file)
+		if ee != nil {
+			entries[i].Err = ee
+			continue
+		}
+		log.Printf("post %s (%s) size %d %v\n", fh.Filename, mime, len(data))
+		entry, ee := newEntry(data, fh.Filename)
+		if ee != nil {
+			entries[i].Err = ee
+			continue
+		}
+		entry.Modified = lastModified
+		ee = store(entry, section)
+		entries[i] = newStoredEntry(entry, ee)
 	}
 
 	return
@@ -307,45 +339,6 @@ func store(e *Entry, section string) (err error) {
 		log.Println(err)
 		return
 	}
-	return
-}
-
-func ParseUpload(r *http.Request) (fileName string, data []byte, mimeType string, modifiedTime uint64, e error) {
-	form, fe := r.MultipartReader()
-	if fe != nil {
-		log.Println("MultipartReader [ERROR]", fe)
-		e = fe
-		return
-	}
-	part, fe := form.NextPart()
-	if fe != nil {
-		log.Println("Reading Multi part [ERROR]", fe)
-		e = fe
-		return
-	}
-	fileName = part.FileName()
-	if fileName != "" {
-		fileName = path.Base(fileName)
-	}
-
-	data, e = ioutil.ReadAll(part)
-	if e != nil {
-		log.Println("Reading Content [ERROR]", e)
-		return
-	}
-	dotIndex := strings.LastIndex(fileName, ".")
-	ext, mtype := "", ""
-	if dotIndex > 0 {
-		ext = strings.ToLower(fileName[dotIndex:])
-		mtype = mime.TypeByExtension(ext)
-	}
-	contentType := part.Header.Get("Content-Type")
-	if contentType != "" && mtype != contentType {
-		mimeType = contentType //only return mime type if not deductable
-		mtype = contentType
-	}
-
-	modifiedTime, _ = strconv.ParseUint(r.FormValue("ts"), 10, 64)
 	return
 }
 

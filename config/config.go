@@ -21,6 +21,7 @@ thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
 tmp_dir = /tmp/
 support_size = 120,160,400
+ticket_table = upload_ticket
 `
 
 // var once sync.Once

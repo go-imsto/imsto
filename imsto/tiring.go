@@ -86,7 +86,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, isGetMethod bool) 
 	// TODO:
 }
 func PostHandler(w http.ResponseWriter, r *http.Request) {
-	entry, err := storage.StoredRequest(r)
+	entries, err := storage.StoredRequest(r)
 
 	if err != nil {
 		log.Printf("ERROR: %s", err)
@@ -96,13 +96,14 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 
 	m := make(map[string]interface{})
 
-	log.Printf("post new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
+	// log.Printf("post new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
 
-	m["id"] = entry.Id.String()
-	m["path"] = entry.Path
-	m["size"] = entry.Size
+	// m["id"] = entry.Id.String()
+	// m["path"] = entry.Path
+	// m["size"] = entry.Size
 
 	m["status"] = "ok"
+	m["data"] = entries
 
 	writeJsonQuiet(w, r, m)
 }
@@ -116,6 +117,34 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	m := make(map[string]interface{})
 	m["status"] = "ok"
+	writeJsonQuiet(w, r, m)
+}
+
+func tokenHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := storage.NewTokenRequest(r)
+	if err != nil {
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	m := make(map[string]interface{})
+	m["status"] = "ok"
+	m["token"] = token.String()
+	writeJsonQuiet(w, r, m)
+}
+
+func ticketHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := storage.NewTicketRequest(r)
+	if err != nil {
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	m := make(map[string]interface{})
+	m["status"] = "ok"
+	m["token"] = token.String()
 	writeJsonQuiet(w, r, m)
 }
 
@@ -134,7 +163,8 @@ func runTiring(args []string) bool {
 	http.HandleFunc("/imsto/", storeHandler)
 	http.HandleFunc("/imsto/meta", browseHandler)
 	http.HandleFunc("/imsto/sections", sectionsHandler)
-	// http.HandleFunc("/status", storeHandler)
+	http.HandleFunc("/imsto/token", tokenHandler)
+	http.HandleFunc("/imsto/ticket", ticketHandler)
 
 	log.Print("Start Tiring service ", VERSION, " at port ", strconv.Itoa(*mport))
 	srv := &http.Server{

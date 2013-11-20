@@ -4,7 +4,7 @@ BEGIN;
 
 set search_path = imsto, public;
 
-CREATE TABLE camera_ticket (
+CREATE TABLE upload_ticket (
 	id serial,
 	app_id int NOT NULL DEFAULT 0,
 	author int NOT NULL ,
