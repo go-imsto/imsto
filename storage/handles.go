@@ -268,8 +268,8 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 
 	section, appid, author, err = parseRequest(r)
 	if err != nil {
-		log.Print("request error:", err)
-		// return
+		// log.Print("request error:", err)
+		return
 	}
 
 	if !config.HasSection(section) {
@@ -420,24 +420,35 @@ func DeleteRequest(r *http.Request) error {
 	return errors.New("invalid url")
 }
 
-func parseRequest(r *http.Request) (section string, app AppId, author Author, err error) {
-
+func parseRequest(r *http.Request) (section string, appid AppId, author Author, err error) {
+	var (
+		str string
+		aid uint64
+		uid uint64
+	)
 	section = r.FormValue("section")
-	var appid uint64
-	appid, err = strconv.ParseUint(r.FormValue("app"), 10, 16)
-	if err != nil {
-		log.Printf("arg appid error: %s", err)
-		appid = 0
+	str = r.FormValue("app")
+	if str != "" {
+		aid, err = strconv.ParseUint(str, 10, 16)
+		if err != nil {
+			// log.Printf("arg app error: %s", err)
+			err = fmt.Errorf("arg 'app=%s' is invalid: %s", str, err.Error())
+			return
+		}
 	}
-	app = AppId(appid)
 
-	user := r.FormValue("user")
-	var uid uint64
-	uid, err = strconv.ParseUint(user, 10, 16)
-	if err != nil {
-		log.Printf("arg author error: %s", err)
-		uid = 0
+	appid = AppId(aid)
+
+	str = r.FormValue("user")
+	if str != "" {
+		uid, err = strconv.ParseUint(str, 10, 16)
+		if err != nil {
+			// log.Printf("arg user error: %s", err)
+			err = fmt.Errorf("arg 'user=%s' is invalid: %s", str, err.Error())
+			return
+		}
 	}
+
 	author = Author(uid)
 	return
 }
