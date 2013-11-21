@@ -1,7 +1,7 @@
 
 \encoding UTF8
 
-BEGIN;
+-- BEGIN;
 
 -- （参观者）只读角色
 CREATE ROLE im_visitor CONNECTION LIMIT 8;
@@ -26,4 +26,4 @@ GRANT CONNECT, TEMPORARY ON DATABASE imsto TO GROUP im_keeper;
 GRANT CONNECT, TEMPORARY ON DATABASE imsto TO GROUP im_visitor;
 
 
-END;
+--END;

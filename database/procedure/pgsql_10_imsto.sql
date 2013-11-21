@@ -218,4 +218,10 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 END;
 
+/*
+SET search_path = imsto;
+SELECT hash_tables_init();
+SELECT mapping_tables_init();
+*/
+
 
