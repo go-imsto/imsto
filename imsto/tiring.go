@@ -77,8 +77,13 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		writeJsonError(w, r, err)
 		return
 	}
-	m["items"] = a
+	m["data"] = a
 	m["total"] = t
+	url_prefix := config.GetValue(section, "url_prefix")
+	if url_prefix == "" {
+		url_prefix = "/thumb/"
+	}
+	m["url_prefix"] = url_prefix
 	// log.Printf("total: %d\n", t)
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, m)
