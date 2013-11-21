@@ -36,6 +36,10 @@
 
 
 ## Apis list
+- All api response struct:
+  - `status`: string `ok` or others
+  - `data`: array or object, result
+  - `error`: string, error messages, just only `status !== "ok"`
 
 ### Request a new token
 - method: `POST /imsto/token`

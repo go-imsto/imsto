@@ -13,9 +13,9 @@ import (
 
 var cmdTiring = &Command{
 	UsageLine: "tiring -port 5564",
-	Short:     "serve tiring tcp service",
+	Short:     "serve tiring http service",
 	Long: `
-serve tiring tcp service
+serve tiring http service
 `,
 }
 

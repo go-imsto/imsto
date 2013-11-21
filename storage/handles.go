@@ -433,6 +433,9 @@ func parseRequest(r *http.Request) (section string, appid AppId, author Author, 
 		uid uint64
 	)
 	section = r.FormValue("roof")
+	if section == "" {
+		log.Print("Waring: parseRequest section is empty")
+	}
 	str = r.FormValue("app")
 	if str != "" {
 		aid, err = strconv.ParseUint(str, 10, 16)

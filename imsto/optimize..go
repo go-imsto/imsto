@@ -9,9 +9,9 @@ import (
 
 var cmdOptimize = &Command{
 	UsageLine: "optimize [filename] [destname]",
-	Short:     "import data from imsto old version or file",
+	Short:     "optimize a jpeg file",
 	Long: `
-import from a image file
+optimize a jpeg file
 `,
 }
 
