@@ -26,6 +26,13 @@
 ### ticket
 - Same as a token, but include a extensional ticket ID
 - For mobile or other third environment upload
+- struct:
+  - appid: int
+  - author: int
+  - prompt: string,
+  - img_id: string, uploaded image ID
+  - img_path: string, upload image path without prefix
+  - done: boolean, has finished?
 
 
 ## Apis list
@@ -55,6 +62,7 @@
 1. Request new ticket and drop a barcode in web browser
 > `POST /imsto/ticket`
 2. Take the barcode that include ticket token in iOS program
-3. Post one or more files to server with argument token
+3. Check the ticket is valid and unfinished, read it's prompt for display
+4. Post one or more files to server with argument token
 > `POST /imsto/`
 > mutilpart-data: file=FILE,roof=ROOF,token=TICKET_TOKEN
