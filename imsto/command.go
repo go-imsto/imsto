@@ -212,7 +212,7 @@ func exit() {
 }
 
 func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
-	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Content-Type", "application/json")
 	var bytes []byte
 	if r.FormValue("pretty") != "" {
 		bytes, err = json.MarshalIndent(obj, "", "  ")

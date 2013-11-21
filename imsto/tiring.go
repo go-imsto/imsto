@@ -42,14 +42,29 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
 	section := r.FormValue("roof")
 	log.Printf("browse section: %s", section)
-	limit, _ := strconv.ParseUint(r.FormValue("rows"), 10, 32)
-	if limit < 1 {
-		limit = 1
+	var (
+		limit uint64
+		page  uint64
+	)
+
+	if str := r.FormValue("rows"); str != "" {
+		limit, _ = strconv.ParseUint(str, 10, 32)
+		if limit < 1 {
+			limit = 1
+		}
+	} else {
+		limit = 20
 	}
-	page, _ := strconv.ParseUint(r.FormValue("page"), 10, 32)
-	if page < 1 {
+
+	if str := r.FormValue("page"); str != "" {
+		page, _ := strconv.ParseUint(str, 10, 32)
+		if page < 1 {
+			page = 1
+		}
+	} else {
 		page = 1
 	}
+
 	offset := limit * (page - 1)
 
 	m["rows"] = limit
