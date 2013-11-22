@@ -207,7 +207,7 @@ type ehash struct {
 func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	db := mw.getDb()
 	defer db.Close()
-	var e ehash
+	var e = ehash{hash: hash}
 	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
 	row := db.QueryRow(sql, hash)
 	err := row.Scan(&e.id, &e.path)
@@ -215,7 +215,6 @@ func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 		log.Println(err)
 		return nil, err
 	}
-	e.hash = hash
 	return &e, nil
 }
 

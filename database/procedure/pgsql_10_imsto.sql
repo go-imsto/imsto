@@ -11,8 +11,8 @@ RETURNS int AS
 $$
 DECLARE
 	count int;
-	suffix varchar;
-	tbname varchar;
+	suffix text;
+	tbname text;
 BEGIN
 
 	count := 0;
@@ -47,10 +47,10 @@ CREATE OR REPLACE FUNCTION imsto.mapping_tables_init()
 RETURNS int AS
 $$
 DECLARE
-	basestr varchar;
+	basestr text;
 	count int;
-	suffix varchar;
-	tbname varchar;
+	suffix text;
+	tbname text;
 BEGIN
 
 	count := 0;
@@ -83,14 +83,14 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 保存 hash 记录
-CREATE OR REPLACE FUNCTION imsto.hash_save(a_hashed varchar, a_item_id varchar, a_path varchar)
+CREATE OR REPLACE FUNCTION imsto.hash_save(a_hashed text, a_item_id text, a_path text)
 
 RETURNS int AS
 $$
 DECLARE
-	suffix varchar;
-	tbname varchar;
-	t_id varchar;
+	suffix text;
+	tbname text;
+	t_id text;
 BEGIN
 
 	suffix := substr(a_hashed, 1, 1);
@@ -129,37 +129,46 @@ LANGUAGE plpgsql;
 -- CREATE TRIGGER hash_insert_trigger BEFORE INSERT ON hash_template
 -- FOR EACH ROW EXECUTE PROCEDURE hash_insert_trigger();
 
--- check hash exists
--- CREATE OR REPLACE FUNCTION imsto.hash_exists(a_hashed varchar)
 
 -- 保存 map 记录
 CREATE OR REPLACE FUNCTION imsto.map_save(
-	a_id varchar, a_path varchar, a_name varchar, a_mime varchar, a_size int, a_sev hstore)
+	a_id text, a_path text, a_name text, a_mime text, a_size int, a_sev hstore, a_roof text)
 
 RETURNS int AS
 $$
 DECLARE
-	suffix varchar;
-	tbname varchar;
+	suffix text;
+	tbname text;
 	t_st smallint;
+	t_roofs text[];
+	i_roofs text[];
 BEGIN
 
 	suffix := substr(a_id, 1, 1);
 	tbname := 'imsto.mapping_'||suffix;
+	i_roofs := ('{' || a_roof || '}')::text[];
 
-	EXECUTE 'SELECT status FROM '||tbname||' WHERE id = $1 LIMIT 1'
-	INTO t_st
+	EXECUTE 'SELECT roofs FROM '||tbname||' WHERE id = $1 LIMIT 1'
+	INTO t_roofs
 	USING a_id;
 
-	IF t_st IS NOT NULL THEN
-		RAISE NOTICE 'exists map %', t_st;
+	IF t_roofs IS NOT NULL THEN
+		RAISE NOTICE 'exists map %', t_roofs;
+		-- TODO: merge roofs
+		IF NOT t_roofs @> i_roofs THEN
+		t_roofs := t_roofs || i_roofs;
+		EXECUTE 'UPDATE ' || tbname || ' SET roofs = $1 WHERE id = $2'
+		USING t_roofs, a_id;
+		END IF;
 		RETURN -1;
+	ELSE
+		t_roofs := i_roofs;
 	END IF;
 
-	EXECUTE 'INSERT INTO ' || tbname || '(id, path, name, mime, size, sev) VALUES (
-		$1, $2, $3, $4, $5, $6
+	EXECUTE 'INSERT INTO ' || tbname || '(id, path, name, mime, size, sev, roofs) VALUES (
+		$1, $2, $3, $4, $5, $6, $7
 	)'
-	USING a_id, a_path, a_name, a_mime, a_size, a_sev;
+	USING a_id, a_path, a_name, a_mime, a_size, a_sev, t_roofs;
 
 RETURN 1;
 END;
@@ -168,21 +177,21 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 保存某条完整 entry 信息
-CREATE OR REPLACE FUNCTION imsto.entry_save (a_section varchar,
-	a_id varchar, a_path varchar, a_name varchar, a_mime varchar, a_size int
-	, a_meta hstore, a_sev hstore, a_hashes varchar[], a_ids varchar[])
+CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
+	a_id text, a_path text, a_name text, a_mime text, a_size int
+	, a_meta hstore, a_sev hstore, a_hashes text[], a_ids text[])
 
 RETURNS int AS
 $$
 DECLARE
-	m_v varchar;
-	tb_hash varchar;
-	tb_map varchar;
-	tb_meta varchar;
-	t_path varchar;
+	m_v text;
+	tb_hash text;
+	tb_map text;
+	tb_meta text;
+	t_path text;
 BEGIN
 
-	tb_meta := 'meta_' || a_section;
+	tb_meta := 'meta_' || a_roof;
 
 	EXECUTE 'SELECT path FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
 	INTO t_path
@@ -200,7 +209,7 @@ BEGIN
 
 	-- save entry map
 	FOR m_v IN SELECT UNNEST(a_ids) AS value LOOP
-		PERFORM map_save(m_v, a_path, a_name, a_mime, a_size, a_sev);
+		PERFORM map_save(m_v, a_path, a_name, a_mime, a_size, a_sev, a_roof);
 	END LOOP;
 
 	-- save entry meta

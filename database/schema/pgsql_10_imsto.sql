@@ -32,6 +32,8 @@ CREATE TABLE map_template (
 	size int NOT NULL DEFAULT 0,
 	sev hstore, -- storage info
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
+	roofs varCHAR(12)[] NOT NULL DEFAULT '{}',
+	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 

@@ -106,7 +106,7 @@ func newEntry(data []byte, name string) (e *Entry, err error) {
 }
 
 // 处理图片信息并填充
-func (e *Entry) Trek(section string) (err error) {
+func (e *Entry) trek(roof string) (err error) {
 	if e._treked {
 		return
 	}
@@ -128,7 +128,7 @@ func (e *Entry) Trek(section string) (err error) {
 	ia := im.GetAttr()
 	// log.Println(ia)
 
-	max_quality := iimg.Quality(config.GetInt(section, "max_quality"))
+	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
 	if ia.Quality > max_quality {
 		im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 		log.Printf("set quality to max_quality %d", max_quality)
@@ -146,7 +146,7 @@ func (e *Entry) Trek(section string) (err error) {
 
 	var hash2 string
 	size := len(data)
-	if max_file_size := config.GetInt(section, "max_file_size"); size > max_file_size {
+	if max_file_size := config.GetInt(roof, "max_file_size"); size > max_file_size {
 		err = errors.New(fmt.Sprintf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size))
 		return
 	}
@@ -181,12 +181,76 @@ func (e *Entry) Trek(section string) (err error) {
 	return
 }
 
+// return hash value string
 func (e *Entry) Hashed() string {
 	return e.h
 }
 
+// return binary bytes
 func (e *Entry) Blob() []byte {
 	return e.b
+}
+
+func (e *Entry) store(roof string) (err error) {
+
+	mw := NewMetaWrapper(roof)
+	eh, _err := mw.GetHash(e.h)
+	log.Printf("check hash: %s", eh)
+	if _err == nil && eh != nil && eh.id != "" {
+		if _id, _err := NewEntryId(eh.id); _err == nil {
+			e.Id = _id
+			_ne, _err := mw.GetEntry(*_id)
+			if _err == nil { // path, mime, size, sev, status, created
+				e.Name = _ne.Name
+				e.Path = _ne.Path
+				e.Size = _ne.Size
+				e.Mime = _ne.Mime
+				e.sev = _ne.sev
+				e.Created = _ne.Created
+				e.reset()
+				e._treked = true
+				log.Printf("exist: %s, %s", e.Id, e.Path)
+				return
+			} else {
+				log.Printf("get entry error: %s", _err)
+			}
+		}
+	} else {
+		log.Printf("check hash exists error: %s", err)
+	}
+
+	if err = e.trek(roof); err != nil {
+		return
+	}
+	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
+
+	data := e.Blob()
+	// size := len(data)
+	// log.Printf("blob length: %d", size)
+
+	var em Wagoner
+	if em, err = FarmEngine(roof); err != nil {
+		// log.Println(err)
+		return
+	}
+
+	sev, dbe := em.Put(e.Path, data, e.Meta.Hstore())
+	if dbe != nil {
+		err = dbe
+		return
+	}
+
+	e.sev = sev
+
+	if err = mw.Save(e); err != nil {
+		// log.Println(err)
+		return
+	}
+	return
+}
+
+func (e *Entry) reset() {
+	e.b = []byte{}
 }
 
 func newPath(ei *EntryId, ext string) string {

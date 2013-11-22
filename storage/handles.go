@@ -2,7 +2,6 @@ package storage
 
 import (
 	"calf/config"
-	"calf/db"
 	iimg "calf/image"
 	"errors"
 	"fmt"
@@ -236,7 +235,7 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 	entry.Modified = uint64(fi.ModTime().Unix())
 	// err = entry.trek(section)
 
-	err = store(entry, section)
+	err = entry.store(section)
 	if err != nil {
 		// log.Println(err)
 		return
@@ -349,10 +348,13 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		entry.AppId = appid
 		entry.Author = author
 		entry.Modified = lastModified
-		ee = store(entry, section)
+		ee = entry.store(section)
 		if ee != nil {
 			log.Printf("%02d stored error: %s", i, ee)
+			entries[i].Err = ee.Error()
+			continue
 		}
+		log.Printf("stored %s %s", entry.Id, entry.Path)
 		if ee == nil && i == 0 && token.vc == VC_TICKET {
 			// TODO: upate ticket
 			// ticket := newTicket(section, appid)
@@ -371,46 +373,6 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		entries[i] = newStoredEntry(entry, ee)
 	}
 
-	return
-}
-
-func store(e *Entry, section string) (err error) {
-	// TODO: check exists
-
-	err = e.Trek(section)
-	if err != nil {
-		// log.Println(err)
-		return
-	}
-	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
-
-	data := e.Blob()
-	size := len(data)
-	log.Printf("blob length: %d", size)
-
-	var em Wagoner
-	em, err = FarmEngine(section)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	var sev db.Hstore
-	sev, err = em.Put(e.Path, data, e.Meta.Hstore())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	e.sev = sev
-
-	mw := NewMetaWrapper(section)
-	err = mw.Save(e)
-	// fmt.Println("mw", mw)
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	return
 }
 

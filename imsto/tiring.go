@@ -113,7 +113,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		writeJsonError(w, r, err)
 		return
 	}
-
+	// log.Print(entries[0].Path)
 	m := make(map[string]interface{})
 
 	// log.Printf("post new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
