@@ -28,12 +28,18 @@ var (
 	ErrUnsupportSize = errors.New("Err: Unsupported size")
 )
 
-type ErrHttpFound struct {
+type HttpError struct {
+	Code int
+	Text string
 	Path string
 }
 
-func (ie ErrHttpFound) Error() string {
-	return "Found " + ie.Path
+func (ie *HttpError) Error() string {
+	return fmt.Sprintf("%d: %s", ie.Code, ie.Text)
+}
+
+func NewHttpError(code int, text string) *HttpError {
+	return &HttpError{Code: code, Text: text}
 }
 
 type outItem struct {
@@ -45,7 +51,7 @@ type harg map[string]string
 
 func parsePath(s string) (m harg, err error) {
 	if !ire.MatchString(s) {
-		err = ErrInvalidUrl
+		err = NewHttpError(400, ErrInvalidUrl.Error())
 		return
 	}
 	match := ire.FindStringSubmatch(s)
@@ -94,7 +100,9 @@ func LoadPath(url, section string) (item outItem, err error) {
 			if org_path != e.path { // 302 found
 				thumb_path := config.GetValue(section, "thumb_path")
 				new_path := path.Join(thumb_path, m["size"], e.path)
-				err = ErrHttpFound{Path: new_path}
+				ie := NewHttpError(302, "Found "+new_path)
+				ie.Path = new_path
+				err = ie
 				return
 			}
 			log.Printf("fetching file: %s", e.path)

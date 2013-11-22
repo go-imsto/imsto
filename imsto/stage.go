@@ -49,6 +49,15 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Print(err)
+		if ie := err.(*storage.HttpError); ie != nil {
+			log.Printf("httperror %s", ie.Code)
+			if ie.Code == 302 {
+				log.Printf("redirect to %s", ie.Path)
+				http.Redirect(w, r, ie.Path, ie.Code)
+				return
+			}
+			w.WriteHeader(ie.Code)
+		}
 		writeJsonError(w, r, err)
 		return
 	}
