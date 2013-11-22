@@ -19,10 +19,10 @@ const (
 
 type MetaWrapper interface {
 	Browse(limit, offset int) ([]Entry, int, error)
-	Store(entry *Entry) error
+	Save(entry *Entry) error
 	GetMeta(id EntryId) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
-	GetMap(id EntryId) (*emap, error)
+	GetEntry(id EntryId) (*Entry, error)
 	Delete(id EntryId) error
 }
 
@@ -166,7 +166,7 @@ func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	return &entry, nil
 }
 
-func (mw *MetaWrap) Store(entry *Entry) error {
+func (mw *MetaWrap) Save(entry *Entry) error {
 	db := mw.getDb()
 	defer db.Close()
 
@@ -219,21 +219,13 @@ func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	return &e, nil
 }
 
-type emap struct {
-	id               EntryId
-	name, path, mime string
-	size             uint32
-	sev              cdb.Hstore
-	status           uint16
-}
-
-func (mw *MetaWrap) GetMap(id EntryId) (*emap, error) {
+func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 	db := mw.getDb()
 	defer db.Close()
-	sql := "SELECT name, path, mime, size, sev, status FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT name, path, mime, size, sev, status, created FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id.String())
-	var e = emap{id: id}
-	err := row.Scan(&e.name, &e.path, &e.mime, &e.size, &e.sev, &e.status)
+	var e = Entry{Id: &id}
+	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created)
 	if err != nil {
 		log.Println(err)
 		return nil, err

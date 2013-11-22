@@ -63,6 +63,7 @@ type Entry struct {
 	Mime      string     `json:"mime,omitempty"`
 	Modified  uint64     `json:"modified,omitempty"`
 	Created   time.Time  `json:"created,omitempty"`
+	Status    uint8      `json:"-"`
 	imageType int
 	sev       cdb.Hstore
 	exif      cdb.Hstore

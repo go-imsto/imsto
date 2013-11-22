@@ -66,6 +66,7 @@ func parsePath(s string) (m harg, err error) {
 }
 
 func LoadPath(url, section string) (item outItem, err error) {
+	log.Printf("load: %s", url)
 	var m harg
 	m, err = parsePath(url)
 	if err != nil {
@@ -90,22 +91,23 @@ func LoadPath(url, section string) (item outItem, err error) {
 		if os.IsNotExist(err) || fi.Size() == 0 {
 
 			mw := NewMetaWrapper(section)
-			var e *emap
-			e, err = mw.GetMap(*id)
+			var entry *Entry
+			entry, err = mw.GetEntry(*id)
 			if err != nil {
 				log.Print(err)
+				err = NewHttpError(404, err.Error())
 				return
 			}
-			log.Print(e)
-			if org_path != e.path { // 302 found
+			log.Print(entry)
+			if org_path != entry.Path { // 302 found
 				thumb_path := config.GetValue(section, "thumb_path")
-				new_path := path.Join(thumb_path, m["size"], e.path)
+				new_path := path.Join(thumb_path, m["size"], entry.Path)
 				ie := NewHttpError(302, "Found "+new_path)
 				ie.Path = new_path
 				err = ie
 				return
 			}
-			log.Printf("fetching file: %s", e.path)
+			log.Printf("fetching file: %s", entry.Path)
 
 			var em Wagoner
 			em, err = FarmEngine(section)
@@ -114,7 +116,7 @@ func LoadPath(url, section string) (item outItem, err error) {
 				return
 			}
 			var data []byte
-			data, err = em.Get(e.path)
+			data, err = em.Get(entry.Path)
 			log.Printf("fetched: %d", len(data))
 			err = saveFile(org_file, data)
 			if err != nil {
@@ -373,6 +375,8 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 }
 
 func store(e *Entry, section string) (err error) {
+	// TODO: check exists
+
 	err = e.Trek(section)
 	if err != nil {
 		// log.Println(err)
@@ -401,7 +405,7 @@ func store(e *Entry, section string) (err error) {
 	e.sev = sev
 
 	mw := NewMetaWrapper(section)
-	err = mw.Store(e)
+	err = mw.Save(e)
 	// fmt.Println("mw", mw)
 	if err != nil {
 		log.Println(err)

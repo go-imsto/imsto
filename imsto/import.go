@@ -35,11 +35,11 @@ func runImport(args []string) bool {
 	entry, err := storage.StoredFile(args[0], section)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("fail %s\n", err)
 		return false
 	}
 
-	fmt.Printf("entry stored: %s\n", entry.Id)
+	fmt.Printf("ok %s %s\n", entry.Id, entry.Path)
 
 	// var mw storage.MetaWrapper
 	// mw = storage.NewMetaWrapper("")
