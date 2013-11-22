@@ -44,15 +44,15 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("section: ", section)
+	log.Printf("section: %s", section)
 	item, err := storage.LoadPath(r.URL.Path, section)
 
 	if err != nil {
 		log.Print(err)
 		if ie := err.(*storage.HttpError); ie != nil {
-			log.Printf("httperror %s", ie.Code)
+			// log.Printf("httperror %d", ie.Code)
 			if ie.Code == 302 {
-				log.Printf("redirect to %s", ie.Path)
+				// log.Printf("redirect to %s", ie.Path)
 				http.Redirect(w, r, ie.Path, ie.Code)
 				return
 			}
