@@ -62,7 +62,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Print(item)
+	// log.Print(item)
 	var fi os.FileInfo
 	var file *os.File
 	file, err = os.Open(item.DestFile)
@@ -74,7 +74,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	fi, err = file.Stat()
 	if err != nil {
-		log.Print(err)
+		// log.Print(err)
 		writeJsonError(w, r, err)
 		return
 	}
