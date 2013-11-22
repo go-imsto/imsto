@@ -40,6 +40,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 		// log.Print(sec)
 		if strings.HasPrefix(r.URL.Path, config.GetValue(sec, "thumb_path")) {
 			section = sec
+			break
 		}
 	}
 
