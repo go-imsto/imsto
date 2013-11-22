@@ -53,20 +53,20 @@ type Author uint32
 type Entry struct {
 	Id        *EntryId   `json:"id,omitempty"`
 	Name      string     `json:"name,omitempty"`
+	Size      uint32     `json:"size"`
+	Path      string     `json:"path"`
+	Mime      string     `json:"mime,omitempty"`
+	Status    uint8      `json:"-"`
 	Hashes    cdb.Qarray `json:"-"`
 	Ids       cdb.Qarray `json:"-"`
 	Meta      *iimg.Attr `json:"meta,omitempty"`
-	Size      uint32     `json:"size"`
 	AppId     AppId      `json:"appid,omitempty"`
 	Author    Author     `json:"author,omitempty"`
-	Path      string     `json:"path"`
-	Mime      string     `json:"mime,omitempty"`
 	Modified  uint64     `json:"modified,omitempty"`
 	Created   time.Time  `json:"created,omitempty"`
-	Status    uint8      `json:"-"`
 	imageType int
-	sev       cdb.Hstore
 	exif      cdb.Hstore
+	sev       cdb.Hstore
 	b         []byte
 	h         string
 	_treked   bool
