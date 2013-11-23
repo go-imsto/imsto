@@ -19,7 +19,7 @@ max_quality = 88
 max_file_size = 262114
 thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
-tmp_dir = /tmp/
+temp_root = /tmp/
 support_size = 120,160,400
 ticket_table = upload_ticket
 `
