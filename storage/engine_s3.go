@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"calf/config"
-	"calf/db"
+	"wpst.me/calf/config"
+	"wpst.me/calf/db"
 	"errors"
 	"fmt"
 	"github.com/crowdmob/goamz/aws"

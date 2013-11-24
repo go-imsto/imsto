@@ -2,7 +2,7 @@ package image
 
 import (
 	"bytes"
-	"calf/db"
+	"wpst.me/calf/db"
 	"io"
 	"log"
 	"mime"

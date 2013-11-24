@@ -2,7 +2,7 @@
 package main
 
 import (
-	"calf/config"
+	"wpst.me/calf/config"
 	"encoding/json"
 	"flag"
 	"fmt"

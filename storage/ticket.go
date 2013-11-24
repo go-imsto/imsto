@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"calf/config"
+	"wpst.me/calf/config"
 	"database/sql"
 	_ "database/sql/driver"
 	"encoding/binary"

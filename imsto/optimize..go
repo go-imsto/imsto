@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	// "imsto"
-	"calf/image"
+	"wpst.me/calf/image"
 	"os"
 )
 

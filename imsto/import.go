@@ -1,8 +1,8 @@
 package main
 
 import (
-	// "calf/image"
-	"calf/storage"
+	// "wpst.me/calf/image"
+	"wpst.me/calf/storage"
 	// "encoding/json"
 	"fmt"
 	// "io/ioutil"

@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"calf/db"
-	"calf/image"
+	"wpst.me/calf/db"
+	"wpst.me/calf/image"
 	"fmt"
 	"log"
 )

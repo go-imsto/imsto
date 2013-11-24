@@ -2,16 +2,16 @@ package storage
 
 import (
 	"bytes"
-	"calf/base"
-	"calf/config"
-	cdb "calf/db"
-	iimg "calf/image"
 	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"time"
+	"wpst.me/calf/base"
+	"wpst.me/calf/config"
+	cdb "wpst.me/calf/db"
+	iimg "wpst.me/calf/image"
 )
 
 type EntryId struct {
@@ -236,6 +236,7 @@ func (e *Entry) store(roof string) (err error) {
 
 	sev, dbe := em.Put(e.Path, data, e.Meta.Hstore())
 	if dbe != nil {
+		log.Printf("engine put error: %s", dbe)
 		err = dbe
 		return
 	}

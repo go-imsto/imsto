@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	cimg "calf/image"
-	"calf/storage"
+	cimg "wpst.me/calf/image"
+	"wpst.me/calf/storage"
 	"fmt"
 	"image"
 	"image/jpeg"

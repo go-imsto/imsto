@@ -1,8 +1,8 @@
 package main
 
 import (
-	"calf/config"
-	"calf/storage"
+	"wpst.me/calf/config"
+	"wpst.me/calf/storage"
 	"log"
 	"net/http"
 	"runtime"

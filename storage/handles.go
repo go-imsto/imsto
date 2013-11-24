@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"calf/config"
-	iimg "calf/image"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -13,6 +11,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"wpst.me/calf/config"
+	iimg "wpst.me/calf/image"
 )
 
 const (
@@ -97,7 +97,7 @@ func LoadPath(url, section string) (item outItem, err error) {
 				err = NewHttpError(404, err.Error())
 				return
 			}
-			log.Print(entry)
+			log.Printf("got %s", entry)
 			if org_path != entry.Path { // 302 found
 				thumb_path := config.GetValue(section, "thumb_path")
 				new_path := path.Join(thumb_path, m["size"], entry.Path)

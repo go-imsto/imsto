@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"calf/config"
-	cdb "calf/db"
-	"calf/image"
+	"wpst.me/calf/config"
+	cdb "wpst.me/calf/db"
+	"wpst.me/calf/image"
 	"database/sql"
 	_ "database/sql/driver"
 	"fmt"

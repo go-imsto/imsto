@@ -1,7 +1,7 @@
 package main
 
 import (
-	"calf/storage"
+	"wpst.me/calf/storage"
 	"fmt"
 )
 
