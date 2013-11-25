@@ -57,6 +57,11 @@ CREATE TABLE meta_template (
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;
 
+CREATE TABLE meta_common
+(
+	LIKE meta_template INCLUDING ALL
+) WITHOUT OIDS;
+
 CREATE TABLE meta_demo
 (
 	LIKE meta_template INCLUDING ALL

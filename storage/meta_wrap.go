@@ -41,6 +41,9 @@ func newMetaWrap(section string) *MetaWrap {
 	}
 	dsn := config.GetValue(section, "meta_dsn")
 	table := config.GetValue(section, "meta_table_suffix")
+	if table == "" {
+		table = section
+	}
 	log.Printf("table suffix: %s", table)
 	mw := &MetaWrap{dsn: dsn, section: section, table_suffix: table}
 

@@ -53,6 +53,7 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 func init() {
 	flag.StringVar(&mgo_url, "h", "mongodb://localhost/storage", "mongodb server url")
 	flag.StringVar(&mgo_db, "d", "storage", "mongodb database name")
+	flag.StringVar(&mgo_coll, "c", "", "mongodb collection name (without '.files')")
 	flag.StringVar(&roof, "s", "", "config section name")
 	flag.IntVar(&skip, "skip", 0, "skip")
 	flag.IntVar(&limit, "limit", 5, "limit")
@@ -65,18 +66,18 @@ func init() {
 	if err != nil {
 		log.Print("config load error: ", err)
 	}
-	mgo_coll = roof + ".files"
 }
 
 func main() {
-	if roof == "" || config.AppRoot() == "" {
+	if mgo_coll == "" || roof == "" || config.AppRoot() == "" {
 		flag.PrintDefaults()
 		return
 	}
+	collectionName := mgo_coll + ".files"
 
 	log.Printf("import : %s", roof)
 	q := bson.M{}
-	total, err := CountEntry(mgo_coll, q)
+	total, err := CountEntry(collectionName, q)
 	if err != nil {
 		log.Printf("count error: %s", err)
 		return
@@ -86,7 +87,7 @@ func main() {
 	// limit := 5
 	for skip < total {
 		log.Printf("start %d/%d", skip, total)
-		results, err := QueryEntry(mgo_coll, q, skip, limit)
+		results, err := QueryEntry(collectionName, q, skip, limit)
 		if err != nil {
 			log.Printf("query error: %s", err)
 		}
