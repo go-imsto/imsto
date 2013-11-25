@@ -1,8 +1,6 @@
 package main
 
 import (
-	"wpst.me/calf/config"
-	"wpst.me/calf/storage"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,8 +10,8 @@ import (
 	"path"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
+	"wpst.me/calf/storage"
 )
 
 var cmdStage = &Command{
@@ -35,17 +33,8 @@ func init() {
 }
 
 func StageHandler(w http.ResponseWriter, r *http.Request) {
-	section := ""
-	for _, sec := range config.Sections() {
-		// log.Print(sec)
-		if strings.HasPrefix(r.URL.Path, config.GetValue(sec, "thumb_path")) {
-			section = sec
-			break
-		}
-	}
 
-	log.Printf("section: %s", section)
-	item, err := storage.LoadPath(r.URL.Path, section)
+	item, err := storage.LoadPath(r.URL.Path)
 
 	if err != nil {
 		log.Print(err)

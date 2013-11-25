@@ -47,18 +47,10 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 	return
 }
 
-func (eo entryOut) save() error {
-	entry, err := eo.toEntry()
-	log.Printf("import %s %s %d", entry.Id, entry.Path, entry.Size)
-	mw := storage.NewMetaWrapper(roof)
-	err = mw.Save(entry)
-	return err
-}
-
 func init() {
 	flag.StringVar(&mgo_url, "h", "mongodb://localhost/storage", "mongodb server url")
 	flag.StringVar(&mgo_db, "d", "storage", "mongodb database name")
-	flag.StringVar(&roof, "s", "s3", "mongodb collection name")
+	flag.StringVar(&roof, "s", "", "config section name")
 	flag.IntVar(&skip, "skip", 0, "skip")
 	flag.IntVar(&limit, "limit", 5, "limit")
 	flag.StringVar(&appDir, "root", "", "app root dir")
@@ -74,6 +66,11 @@ func init() {
 }
 
 func main() {
+	if roof == "" || config.AppRoot() == "" {
+		flag.PrintDefaults()
+		return
+	}
+
 	log.Printf("import : %s", roof)
 	q := bson.M{}
 	total, err := CountEntry(mgo_coll, q)
@@ -85,17 +82,26 @@ func main() {
 	// skip := 0
 	// limit := 5
 	for skip < total {
+		log.Printf("start %d/%d", skip, total)
 		results, err := QueryEntry(mgo_coll, q, skip, limit)
 		if err != nil {
 			log.Printf("query error: %s", err)
 		}
 		// log.Printf("results: %s", results)
+		entries := make([]*storage.Entry, len(results))
 		for i, e := range results {
-			// log.Printf("%d %s\n", i, e.toEntry())
-			err = e.save()
+			// log.Printf("%d %s\n", i, e.Id)
+			entries[i], err = e.toEntry()
 			if err != nil {
-				log.Printf("save %d error: %s", i, err)
+				log.Printf("toEntry error: %s", err)
+				return
 			}
+		}
+		mw := storage.NewMetaWrapper(roof)
+		err = mw.BatchSave(entries)
+		if err != nil {
+			log.Printf("BatchSave error: %s", err)
+			return
 		}
 		skip += limit
 	}

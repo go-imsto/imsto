@@ -1,14 +1,14 @@
 package storage
 
 import (
-	"wpst.me/calf/config"
-	cdb "wpst.me/calf/db"
-	"wpst.me/calf/image"
 	"database/sql"
 	_ "database/sql/driver"
 	"fmt"
 	_ "github.com/lib/pq"
 	"log"
+	"wpst.me/calf/config"
+	cdb "wpst.me/calf/db"
+	"wpst.me/calf/image"
 )
 
 const (
@@ -20,6 +20,7 @@ const (
 type MetaWrapper interface {
 	Browse(limit, offset int) ([]Entry, int, error)
 	Save(entry *Entry) error
+	BatchSave(entries []*Entry) error
 	GetMeta(id EntryId) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
 	GetEntry(id EntryId) (*Entry, error)
@@ -170,34 +171,58 @@ func (mw *MetaWrap) Save(entry *Entry) error {
 	db := mw.getDb()
 	defer db.Close()
 
-	log.Printf("hashes: %s\n", entry.Hashes)
-	log.Printf("ids: %s\n", entry.Ids)
+	// log.Printf("hashes: %s\n", entry.Hashes)
+	// log.Printf("ids: %s\n", entry.Ids)
 
-	meta := entry.Meta.Hstore()
-	log.Println("meta: ", meta)
 	tx, err := db.Begin()
 	if err != nil {
-		log.Println(err)
-		// tx.Rollback()
+		tx.Rollback()
 		return err
 	}
 
 	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
 	row := tx.QueryRow(sql, mw.table_suffix,
-		entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, meta, entry.sev, entry.Hashes, entry.Ids)
+		entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids)
 
 	var ret int
 	err = row.Scan(&ret)
 
 	if err != nil {
-		log.Fatal(err)
+		tx.Rollback()
+		return err
+		// log.Fatal(err)
 	}
 
 	log.Printf("entry save ret: %v\n", ret)
 
 	tx.Commit()
+	return nil
+}
 
-	return err
+func (mw *MetaWrap) BatchSave(entries []*Entry) error {
+	db := mw.getDb()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
+	st, err := tx.Prepare(sql)
+	for _, entry := range entries {
+		var ret int
+		err := st.QueryRow(mw.table_suffix,
+			entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids).Scan(&ret)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		log.Printf("batch save entry %s: %d", entry.Id, ret)
+	}
+	tx.Commit()
+	return nil
 }
 
 type ehash struct {

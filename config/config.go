@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"github.com/vaughan0/go-ini"
 	"log"
 	"os"
@@ -30,6 +31,7 @@ var (
 	appRoot       string
 	defaultConfig ini.File
 	loadedConfig  ini.File
+	thumbRoofs    = make(map[string]string)
 )
 
 func AppRoot() string {
@@ -106,10 +108,7 @@ func Load() (err error) {
 	if appRoot == "" {
 		dir = os.Getenv("IMSTO_APP_ROOT")
 		if dir == "" {
-			err = errors.New("IMSTO_APP_ROOT not found in environment")
-			// log.Println("IMSTO_APP_ROOT not found in environment, or -c dir unset")
-			// dir, _ = os.Getwd()
-			// panic(errors.New("env IMSTO_APP_ROOT not found"))
+			err = errors.New("IMSTO_APP_ROOT not found in environment or -root unset")
 			return
 		}
 	} else {
@@ -125,5 +124,32 @@ func Load() (err error) {
 		log.Print("config loaded from " + cfgFile)
 	}
 
+	err = loadThumbRoofs()
+
+	if err != nil {
+		log.Printf("%s %s", err, cfgFile)
+	}
 	return
+}
+
+func loadThumbRoofs() error {
+	for _, sec := range Sections() {
+		s := GetValue(sec, "thumb_path")
+		tp := strings.TrimPrefix(s, "/")
+		if _, ok := thumbRoofs[tp]; !ok {
+			thumbRoofs[tp] = sec
+		} else {
+			return fmt.Errorf("duplicate 'thumb_root=%s' in config", s)
+			// log.Printf("duplicate thumb_root in config")
+		}
+	}
+	return nil
+}
+
+func ThumbRoof(s string) string {
+	tp := strings.Trim(s, "/")
+	if v, ok := thumbRoofs[tp]; ok {
+		return v
+	}
+	return ""
 }

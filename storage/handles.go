@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	image_url_regex  = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	image_url_regex  = `(?P<tp>[a-z][a-z0-9]+)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
 	defaultMaxMemory = 16 << 20 // 16 MB
 )
 
@@ -64,7 +64,7 @@ func parsePath(s string) (m harg, err error) {
 	return
 }
 
-func LoadPath(url, section string) (item outItem, err error) {
+func LoadPath(url string) (item outItem, err error) {
 	log.Printf("load: %s", url)
 	var m harg
 	m, err = parsePath(url)
@@ -73,6 +73,7 @@ func LoadPath(url, section string) (item outItem, err error) {
 		return
 	}
 	log.Print(m)
+	section := config.ThumbRoof(m["tp"])
 	var id *EntryId
 	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
 	if err != nil {

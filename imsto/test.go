@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	cimg "wpst.me/calf/image"
-	"wpst.me/calf/storage"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -11,6 +9,8 @@ import (
 	"mime"
 	"os"
 	"path"
+	cimg "wpst.me/calf/image"
+	"wpst.me/calf/storage"
 )
 
 var cmdTest = &Command{
@@ -34,8 +34,7 @@ func init() {
 func testApp(args []string) bool {
 	if *url != "" {
 		fmt.Println("url: ", *url)
-		section := ""
-		item, err := storage.LoadPath(*url, section)
+		item, err := storage.LoadPath(*url)
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false
