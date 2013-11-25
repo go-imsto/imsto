@@ -38,8 +38,11 @@ type entryOut struct {
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
-	eo.Meta.Set("mime", eo.Mime)
-	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
+	if eo.Meta != nil && eo.Mime != "" {
+		eo.Meta.Set("mime", eo.Mime)
+	}
+
+	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Mime, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
 	if err != nil {
 		log.Printf("toEntry error: %s", err)
 		return
