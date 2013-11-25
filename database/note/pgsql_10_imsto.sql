@@ -1,2 +1,7 @@
 -- 查询有扩展名是 .png 的 entry
 select id, name from meta_wpitem where meta @> 'ext=>.png';
+
+CREATE TABLE meta_s3
+(
+	LIKE meta_template INCLUDING ALL
+) WITHOUT OIDS;

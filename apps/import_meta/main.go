@@ -6,6 +6,7 @@ import (
 	"labix.org/v2/mgo/bson"
 	"log"
 	"time"
+	"wpst.me/calf/config"
 	"wpst.me/calf/db"
 	"wpst.me/calf/storage"
 )
@@ -14,6 +15,7 @@ import (
 // url: localhost
 
 var (
+	appDir      string
 	mgo_url     string
 	mgo_db      string
 	roof        string
@@ -48,20 +50,31 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 func (eo entryOut) save() error {
 	entry, err := eo.toEntry()
 	log.Printf("import %s %s %d", entry.Id, entry.Path, entry.Size)
+	mw := storage.NewMetaWrapper(roof)
+	err = mw.Save(entry)
 	return err
 }
 
 func init() {
-	flag.StringVar(&mgo_url, "url", "mongodb://localhost/storage", "mongodb server url")
-	flag.StringVar(&mgo_db, "db", "storage", "mongodb database name")
-	flag.StringVar(&roof, "roof", "s3", "mongodb collection name")
+	flag.StringVar(&mgo_url, "h", "mongodb://localhost/storage", "mongodb server url")
+	flag.StringVar(&mgo_db, "d", "storage", "mongodb database name")
+	flag.StringVar(&roof, "s", "s3", "mongodb collection name")
 	flag.IntVar(&skip, "skip", 0, "skip")
 	flag.IntVar(&limit, "limit", 5, "limit")
+	flag.StringVar(&appDir, "root", "", "app root dir")
 	flag.Parse()
+	if appDir != "" {
+		config.SetAppRoot(appDir)
+	}
+	err := config.Load()
+	if err != nil {
+		log.Print("config load error: ", err)
+	}
 	mgo_coll = roof + ".files"
 }
 
 func main() {
+	log.Printf("import : %s", roof)
 	q := bson.M{}
 	total, err := CountEntry(mgo_coll, q)
 	if err != nil {

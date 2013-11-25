@@ -1,14 +1,14 @@
 package main
 
 import (
-	"wpst.me/calf/config"
-	"wpst.me/calf/storage"
 	"log"
 	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+	"wpst.me/calf/config"
+	"wpst.me/calf/storage"
 )
 
 var cmdTiring = &Command{
@@ -80,10 +80,9 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m["data"] = a
 	m["total"] = t
 	url_prefix := config.GetValue(section, "url_prefix")
-	if url_prefix == "" {
-		url_prefix = "/thumb/"
-	}
-	m["url_prefix"] = url_prefix
+
+	thumb_path := config.GetValue(section, "thumb_path")
+	m["url_prefix"] = strings.TrimSuffix(url_prefix, "/") + thumb_path + "/"
 	// log.Printf("total: %d\n", t)
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, m)

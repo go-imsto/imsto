@@ -116,6 +116,10 @@ func LoadPath(url, section string) (item outItem, err error) {
 			}
 			var data []byte
 			data, err = em.Get(entry.Path)
+			if err != nil {
+				err = NewHttpError(404, err.Error())
+				return
+			}
 			log.Printf("fetched: %d", len(data))
 			err = saveFile(org_file, data)
 			if err != nil {

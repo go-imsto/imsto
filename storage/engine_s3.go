@@ -1,14 +1,14 @@
 package storage
 
 import (
-	"wpst.me/calf/config"
-	"wpst.me/calf/db"
 	"errors"
 	"fmt"
 	"github.com/crowdmob/goamz/aws"
 	"github.com/crowdmob/goamz/s3"
 	"log"
 	"os"
+	"wpst.me/calf/config"
+	"wpst.me/calf/db"
 )
 
 type s3Conn struct {
@@ -89,11 +89,11 @@ func (c *s3Conn) Get(key string) (data []byte, err error) {
 			break
 		}
 		if i++; i >= 3 {
-			return nil, err
+			return
 		}
-		log.Print("s3 Get:", err)
+		log.Printf("error: s3 Get %s: %s", key, err)
 	}
-	return data, nil
+	return
 }
 
 func hstoreToMaps(h db.Hstore) (m map[string][]string) {
