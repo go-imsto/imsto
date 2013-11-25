@@ -1,9 +1,9 @@
 package storage
 
 import (
+	"errors"
 	"wpst.me/calf/config"
 	"wpst.me/calf/db"
-	"errors"
 )
 
 type engine struct {
@@ -20,6 +20,7 @@ type Wagoner interface {
 
 var engines = make(map[string]engine)
 
+// Register a Engine
 func RegisterEngine(name string, farm func(string) (Wagoner, error)) {
 	if farm == nil {
 		panic("imsto: Register engine is nil")
@@ -30,6 +31,7 @@ func RegisterEngine(name string, farm func(string) (Wagoner, error)) {
 	engines[name] = engine{name, farm}
 }
 
+// get a intance of Wagoner by a special engine name
 func FarmEngine(sn string) (em Wagoner, err error) {
 	name := config.GetValue(sn, "engine")
 

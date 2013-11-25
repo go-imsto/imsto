@@ -1,9 +1,9 @@
+// see also: php.net/base_convert
 package base
 
 import (
 	"bytes"
 	"errors"
-	// "fmt"
 	"math/big"
 )
 

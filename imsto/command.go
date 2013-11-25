@@ -1,8 +1,7 @@
-// The command line tool for running Revel apps.
+// The command line tool for running Imsto bootstrap.
 package main
 
 import (
-	"wpst.me/calf/config"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"wpst.me/calf/config"
 )
 
 // Cribbed from the genius organization of the "go" command.

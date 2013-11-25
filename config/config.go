@@ -127,13 +127,3 @@ func Load() (err error) {
 
 	return
 }
-
-// type option map[string]string
-
-// func (opt option) Set(k, v string) {
-// 	opt[k] = v
-// }
-
-// func (opt option) Get(k string) (v string) {
-// 	return opt[k]
-// }

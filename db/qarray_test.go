@@ -14,5 +14,4 @@ func TestQarrayNew(t *testing.T) {
 
 	t.Log(q.Value())
 
-	t.Fail()
 }

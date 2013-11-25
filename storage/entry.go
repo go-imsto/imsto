@@ -1,3 +1,4 @@
+// imsto core objects
 package storage
 
 import (
