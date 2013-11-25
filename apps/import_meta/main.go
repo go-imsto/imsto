@@ -25,22 +25,30 @@ var (
 )
 
 type entryOut struct {
-	Id      string    `bson:"_id,omitempty" json:"id"`
-	Name    string    `bson:"name"`
-	Path    string    `bson:"filename"`
-	Mime    string    `bson:"mime,omitempty"`
-	Size    uint32    `bson:"size"`
-	Hashes  []string  `bson:"hash"`
-	Ids     []string  `bson:"ids"`
-	Meta    db.Hstore `bson:"meta",omitempty`
-	Sev     db.Hstore `bson:"sev",omitempty`
-	Created time.Time `bson:"created,omitempty"`
+	Id            string    `bson:"_id,omitempty" json:"id"`
+	Name          string    `bson:"name"`
+	Path          string    `bson:"filename"`
+	Mime          string    `bson:"mime,omitempty"`
+	Size          uint32    `bson:"size"`
+	Hashes        []string  `bson:"hash"`
+	Ids           []string  `bson:"ids"`
+	Meta          db.Hstore `bson:"meta",omitempty`
+	Sev           db.Hstore `bson:"sev",omitempty`
+	Created       time.Time `bson:"created,omitempty"`
+	width, height uint16
+	appId         uint8 `bson:"app_id"`
+	filename      string
+	length        uint
+	imgType       uint8  `bson:"type"`
+	hash          string `bson:"hash"`
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 	if eo.Meta != nil && eo.Mime != "" {
 		eo.Meta.Set("mime", eo.Mime)
 	}
+
+	// TODO: fix values
 
 	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Mime, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
 	if err != nil {

@@ -222,7 +222,7 @@ func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 			tx.Rollback()
 			return err
 		}
-		log.Printf("batch save entry %s: %d", entry.Id, ret)
+		log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, ret)
 	}
 	tx.Commit()
 	return nil
