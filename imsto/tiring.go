@@ -57,11 +57,9 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if str := r.FormValue("page"); str != "" {
-		page, _ := strconv.ParseUint(str, 10, 32)
-		if page < 1 {
-			page = 1
-		}
-	} else {
+		page, _ = strconv.ParseUint(str, 10, 32)
+	}
+	if page < 1 {
 		page = 1
 	}
 

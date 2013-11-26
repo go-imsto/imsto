@@ -40,6 +40,7 @@ func newMetaWrap(section string) *MetaWrap {
 		section = "common"
 	}
 	dsn := config.GetValue(section, "meta_dsn")
+	log.Printf("dsn: %s", dsn)
 	table := config.GetValue(section, "meta_table_suffix")
 	if table == "" {
 		table = section
@@ -91,11 +92,12 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 	t = 0
 	err = db.QueryRow("SELECT COUNT(id) FROM " + table + valid_condition).Scan(&t)
 	if err != nil {
+		log.Printf("query count error: %s", err)
 		return
 	}
 
 	if t == 0 {
-		log.Print("empty meta")
+		log.Print("browse empty meta")
 		return
 	}
 
@@ -254,7 +256,7 @@ func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 	var e = Entry{Id: &id}
 	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created)
 	if err != nil {
-		log.Println(err)
+		log.Printf("roof %s getEntry %s error %s", mw.section, id.String(), err)
 		return nil, err
 	}
 	return &e, nil
@@ -283,7 +285,7 @@ func (mw *MetaWrap) getDb() *sql.DB {
 	db, err := sql.Open("postgres", mw.dsn)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("open db error: %s", err)
 	}
 	return db
 }

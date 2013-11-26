@@ -35,16 +35,16 @@ type entryOut struct {
 	Meta       db.Hstore `bson:"meta"`
 	Sev        db.Hstore `bson:"sev"`
 	Created    time.Time `bson:"created"`
-	Width      uint16    `bson:"width"`
-	Height     uint16    `bson:"height"`
 	AppId      uint8     `bson:"app_id"`
-	Filename   string    `bson:"filename"`
-	Length     uint32    `bson:"length"`
-	ImgType    uint8     `bson:"type"`
-	Hashes     []string  `bson:"hashes"`
-	Hash       string    `bson:"hash"`
-	Md5        string    `bson:"md5"`
-	UploadDate time.Time `bson:"uploadDate"`
+	Width      uint16    `bson:"width,omitempty"`
+	Height     uint16    `bson:"height,omitempty"`
+	Filename   string    `bson:"filename,omitempty"`
+	Length     uint32    `bson:"length,omitempty"`
+	ImgType    uint8     `bson:"type,omitempty"`
+	Hashes     []string  `bson:"hashes,omitempty"`
+	Hash       string    `bson:"hash,omitempty"`
+	Md5        string    `bson:"md5,omitempty"`
+	UploadDate time.Time `bson:"uploadDate,omitempty"`
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {

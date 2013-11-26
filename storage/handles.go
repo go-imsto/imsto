@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	image_url_regex  = `(?P<tp>[a-z][a-z0-9]+)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	image_url_regex  = `(?P<tp>[a-z][a-z0-9]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
 	defaultMaxMemory = 16 << 20 // 16 MB
 )
 
@@ -65,14 +65,14 @@ func parsePath(s string) (m harg, err error) {
 }
 
 func LoadPath(url string) (item outItem, err error) {
-	log.Printf("load: %s", url)
+	// log.Printf("load: %s", url)
 	var m harg
 	m, err = parsePath(url)
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	log.Print(m)
+	// log.Print(m)
 	section := config.ThumbRoof(m["tp"])
 	var id *EntryId
 	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
@@ -80,7 +80,7 @@ func LoadPath(url string) (item outItem, err error) {
 		log.Print(err)
 		return
 	}
-	log.Printf("id: %s", id)
+	// log.Printf("id: %s", id)
 	thumb_root := config.GetValue(section, "thumb_root")
 
 	org_path := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
@@ -94,11 +94,11 @@ func LoadPath(url string) (item outItem, err error) {
 			var entry *Entry
 			entry, err = mw.GetEntry(*id)
 			if err != nil {
-				log.Print(err)
+				// log.Print(err)
 				err = NewHttpError(404, err.Error())
 				return
 			}
-			log.Printf("got %s", entry)
+			// log.Printf("got %s", entry)
 			if org_path != entry.Path { // 302 found
 				thumb_path := config.GetValue(section, "thumb_path")
 				new_path := path.Join(thumb_path, m["size"], entry.Path)
@@ -124,7 +124,7 @@ func LoadPath(url string) (item outItem, err error) {
 			log.Printf("fetched: %d", len(data))
 			err = saveFile(org_file, data)
 			if err != nil {
-				log.Print(err)
+				log.Printf("save fail: ", err)
 				return
 			}
 			if fi, err = os.Stat(org_file); err != nil {
@@ -147,10 +147,10 @@ func LoadPath(url string) (item outItem, err error) {
 
 		mode := m["size"][0:1]
 		dimension := m["size"][1:]
-		log.Printf("mode %s, dimension %s", mode, dimension)
+		// log.Printf("mode %s, dimension %s", mode, dimension)
 		support_size := strings.Split(config.GetValue(section, "support_size"), ",")
 		if !stringInSlice(dimension, support_size) {
-			err = ErrUnsupportSize
+			err = NewHttpError(400, ErrUnsupportSize.Error())
 			return
 		}
 		var width, height uint

@@ -149,11 +149,11 @@ func (self *wandImpl) GetImageBlob() ([]byte, error) {
 func (self *wandImpl) Thumbnail(topt ThumbOption) error {
 	ow := self.Width()
 	oh := self.Height()
-	log.Printf("ow: %d, oh: %d", ow, oh)
+	// log.Printf("orig_w: %d, orig_h: %d", ow, oh)
 	if topt.Width >= ow && topt.Height >= oh {
 		return nil
 	}
-	log.Printf("topt: %v", topt)
+	// log.Printf("topt: %v", topt)
 
 	if topt.IsFit {
 		if topt.IsCrop {
@@ -179,7 +179,7 @@ func (self *wandImpl) Thumbnail(topt ThumbOption) error {
 			crop_x := int(float32(new_width-topt.Width) / 2)
 			crop_y := int(float32(new_height-topt.Height) / 2)
 
-			log.Printf("crop_x: %d, crop_y: %d", crop_x, crop_y)
+			// log.Printf("crop_x: %d, crop_y: %d", crop_x, crop_y)
 
 			err := self.Crop(topt.Width, topt.Height, crop_x, crop_y)
 

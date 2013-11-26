@@ -13,7 +13,7 @@ import (
 
 const defaultConfigIni = `[common]
 meta_dsn = postgres://imsto@localhost/imsto?sslmode=disable
-meta_table_suffix = demo
+;meta_table_suffix = demo
 engine = s3
 bucket_name = imsto-demo
 max_quality = 88
@@ -54,20 +54,20 @@ func init() {
 
 func GetValue(section, name string) string {
 	var (
-		value string
-		ok    bool
+		s  string
+		ok bool
 	)
 
-	if value, ok = loadedConfig.Get(section, name); !ok {
-		if value, ok = loadedConfig.Get("common", name); !ok {
-			if value, ok = defaultConfig.Get("common", name); !ok {
+	if s, ok = loadedConfig.Get(section, name); !ok {
+		if s, ok = loadedConfig.Get("common", name); !ok {
+			if s, ok = defaultConfig.Get("common", name); !ok {
 				log.Printf("'%v' variable missing from '%v' section", name, section)
 				return ""
 			}
 		}
 	}
 
-	return value
+	return strings.Trim(s, "\"")
 }
 
 func GetInt(section, name string) int {
