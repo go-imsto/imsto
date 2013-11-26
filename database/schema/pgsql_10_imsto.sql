@@ -10,26 +10,37 @@ GRANT ALL ON SCHEMA imsto TO imsto;
 
 set search_path = imsto, public;
 
+CREATE DOMAIN entry_id AS TEXT
+CHECK(
+	VALUE ~ '^[a-z0-9]{20,36}$'
+);
+
+CREATE DOMAIN entry_path AS TEXT
+CHECK (
+	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{16,32}\.[a-z0-9]{2,6}$'
+);
+
+
 CREATE SEQUENCE hash_id_seq;
 
 -- all file hash values
 CREATE TABLE hash_template (
 	id bigint DEFAULT nextval('hash_id_seq'),
 	hashed varCHAR(40) NOT NULL UNIQUE , 
-	item_id varCHAR(36) NOT NULL DEFAULT '' , 
+	item_id entry_id NOT NULL DEFAULT '' , 
 	-- prefix varCHAR(10) NOT NULL DEFAULT '' , 
-	path varCHAR(39) NOT NULL DEFAULT '' , 
+	path entry_path NOT NULL , 
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 
 -- mapping for id and storage engine item
 CREATE TABLE map_template (
-	id varCHAR(38) NOT NULL, -- id = base_convert(hash,16,36)
+	id entry_id NOT NULL, -- id = base_convert(hash,16,36)
 	name name NOT NULL DEFAULT '',
-	path varCHAR(39) NOT NULL DEFAULT '' , 
+	path entry_path NOT NULL , 
 	mime varCHAR(64) NOT NULL DEFAULT '' , 
-	size int NOT NULL DEFAULT 0,
+	size int NOT NULL DEFAULT 0 CHECK (size >= 0),
 	sev hstore, -- storage info
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
 	roofs varCHAR(12)[] NOT NULL DEFAULT '{}',
@@ -39,8 +50,8 @@ CREATE TABLE map_template (
 
 -- meta browsable
 CREATE TABLE meta_template (
-	id varCHAR(38) NOT NULL,
-	path varCHAR(39) NOT NULL DEFAULT '' , 
+	id entry_id NOT NULL,
+	path entry_path NOT NULL , 
 	name name NOT NULL DEFAULT '',
 	meta hstore,
 	hashes varCHAR(40)[],

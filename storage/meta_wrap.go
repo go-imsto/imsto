@@ -223,6 +223,7 @@ func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 		err := st.QueryRow(mw.table_suffix,
 			entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids).Scan(&ret)
 		if err != nil {
+			log.Printf("batchSave %s %s error: %s", entry.Id.String(), entry.Path, err)
 			tx.Rollback()
 			return err
 		}
