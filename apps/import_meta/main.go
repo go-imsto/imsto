@@ -90,13 +90,13 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 		eo.Created = eo.UploadDate
 	}
 
-	log.Printf("eo %s %s %s %d %s", eo.Id, eo.Path, eo.Mime, eo.Size, eo.Hashes)
-	log.Printf("meta %s", eo.Meta)
 	if eo.Created.IsZero() {
 		log.Printf("zero Created '%v'", eo.Created)
 	} else {
 		log.Printf("Created '%v'", eo.Created)
 	}
+	// log.Printf("eo %s %s %s %d %s", eo.Id, eo.Path, eo.Mime, eo.Size, eo.Hashes)
+	// log.Printf("meta %s", eo.Meta)
 
 	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Mime, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
 	if err != nil {
