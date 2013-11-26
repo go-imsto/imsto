@@ -8,6 +8,7 @@ import (
 	"time"
 	"wpst.me/calf/config"
 	"wpst.me/calf/db"
+	"wpst.me/calf/image"
 	"wpst.me/calf/storage"
 )
 
@@ -25,33 +26,81 @@ var (
 )
 
 type entryOut struct {
-	Id            string    `bson:"_id,omitempty" json:"id"`
-	Name          string    `bson:"name"`
-	Path          string    `bson:"filename"`
-	Mime          string    `bson:"mime,omitempty"`
-	Size          uint32    `bson:"size"`
-	Hashes        []string  `bson:"hash"`
-	Ids           []string  `bson:"ids"`
-	Meta          db.Hstore `bson:"meta",omitempty`
-	Sev           db.Hstore `bson:"sev",omitempty`
-	Created       time.Time `bson:"created,omitempty"`
-	width, height uint16
-	appId         uint8 `bson:"app_id"`
-	filename      string
-	length        uint
-	imgType       uint8  `bson:"type"`
-	hash          string `bson:"hash"`
+	Id         string    `bson:"_id" json:"id"`
+	Name       string    `bson:"name"`
+	Path       string    `bson:"path"`
+	Mime       string    `bson:"mime"`
+	Size       uint32    `bson:"size"`
+	Ids        []string  `bson:"ids"`
+	Meta       db.Hstore `bson:"meta"`
+	Sev        db.Hstore `bson:"sev"`
+	Created    time.Time `bson:"created"`
+	Width      uint16    `bson:"width"`
+	Height     uint16    `bson:"height"`
+	AppId      uint8     `bson:"app_id"`
+	Filename   string    `bson:"filename"`
+	Length     uint32    `bson:"length"`
+	ImgType    uint8     `bson:"type"`
+	Hashes     []string  `bson:"hashes"`
+	Hash       string    `bson:"hash"`
+	Md5        string    `bson:"md5"`
+	UploadDate time.Time `bson:"uploadDate"`
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
-	if eo.Meta != nil && eo.Mime != "" {
+	log.Print(eo)
+
+	if eo.Path == "" && eo.Filename != "" {
+		eo.Path = eo.Filename
+	}
+
+	if eo.Size == 0 && eo.Length != 0 {
+		eo.Size = eo.Length
+	}
+	if eo.Meta == nil {
+		eo.Meta = make(db.Hstore)
+	}
+	if eo.Width > 0 {
+		eo.Meta.Set("width", eo.Width)
+	}
+	if eo.Height > 0 {
+		eo.Meta.Set("height", eo.Height)
+	}
+	if eo.ImgType > 0 {
+		typeid := image.TypeId(eo.ImgType)
+		eo.Meta.Set("format", typeid.String())
+	}
+	if eo.Mime != "" {
 		eo.Meta.Set("mime", eo.Mime)
 	}
 
-	// TODO: fix values
+	if eo.Hash == "" && eo.Md5 != "" {
+		eo.Hash = eo.Md5
+	}
+
+	if len(eo.Hashes) == 0 && eo.Hash != "" {
+		eo.Hashes = []string{eo.Hash}
+	}
+
+	if len(eo.Ids) == 0 {
+		eo.Ids = []string{eo.Id}
+	}
+
+	if eo.Created.IsZero() && !eo.UploadDate.IsZero() {
+		eo.Created = eo.UploadDate
+	}
+
+	log.Printf("eo %s %s %s %d %s", eo.Id, eo.Path, eo.Mime, eo.Size, eo.Hashes)
+	log.Printf("meta %s", eo.Meta)
+	if eo.Created.IsZero() {
+		log.Printf("zero Created '%v'", eo.Created)
+	} else {
+		log.Printf("Created '%v'", eo.Created)
+	}
 
 	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Mime, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
 	if err != nil {
+		log.Printf("pre eo: %s", eo)
 		log.Printf("toEntry error: %s", err)
 		return
 	}

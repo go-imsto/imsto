@@ -2,10 +2,8 @@ package image
 
 import (
 	"bufio"
-	// "bytes"
 	"errors"
 	"io"
-	// "os"
 	"log"
 )
 
@@ -25,7 +23,12 @@ var type_labels = [...]string{
 	"PNG",
 }
 
-func (id TypeId) String() string { return type_labels[id] }
+func (id TypeId) String() string {
+	if int(id) >= len(type_labels) {
+		return ""
+	}
+	return type_labels[id]
+}
 
 type format struct {
 	id        TypeId
