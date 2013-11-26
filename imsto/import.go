@@ -18,8 +18,13 @@ import from a image file
 `,
 }
 
+var (
+	roof string
+)
+
 func init() {
 	cmdImport.Run = runImport
+	cmdImport.Flag.StringVar(&roof, "s", "", "config section name")
 }
 
 func runImport(args []string) bool {
@@ -30,9 +35,8 @@ func runImport(args []string) bool {
 		fmt.Println(args[0])
 	}
 
-	section := ""
 	var entry *storage.Entry
-	entry, err := storage.StoredFile(args[0], section)
+	entry, err := storage.StoredFile(args[0], roof)
 
 	if err != nil {
 		fmt.Printf("fail %s\n", err)

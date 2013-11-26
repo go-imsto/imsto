@@ -32,16 +32,16 @@ func init() {
 	cmdTiring.IsDebug = cmdTiring.Flag.Bool("debug", false, "enable debug mode")
 }
 
-func sectionsHandler(w http.ResponseWriter, r *http.Request) {
+func roofsHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
-	m["sections"] = config.Sections()
+	m["roofs"] = config.Sections()
 	writeJsonQuiet(w, r, m)
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
-	section := r.FormValue("roof")
-	log.Printf("browse section: %s", section)
+	roof := r.FormValue("roof")
+	log.Printf("browse roof: %s", roof)
 	var (
 		limit uint64
 		page  uint64
@@ -68,7 +68,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m["rows"] = limit
 	m["page"] = page
 
-	mw := storage.NewMetaWrapper(section)
+	mw := storage.NewMetaWrapper(roof)
 	a, t, err := mw.Browse(int(limit), int(offset))
 	if err != nil {
 		log.Printf("ERROR: %s", err)
@@ -77,9 +77,9 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	m["data"] = a
 	m["total"] = t
-	url_prefix := config.GetValue(section, "url_prefix")
+	url_prefix := config.GetValue(roof, "url_prefix")
 
-	thumb_path := config.GetValue(section, "thumb_path")
+	thumb_path := config.GetValue(roof, "thumb_path")
 	m["url_prefix"] = strings.TrimSuffix(url_prefix, "/") + thumb_path + "/"
 	// log.Printf("total: %d\n", t)
 	m["version"] = VERSION
@@ -191,7 +191,7 @@ func runTiring(args []string) bool {
 	var e error
 	http.HandleFunc("/imsto/", storeHandler)
 	http.HandleFunc("/imsto/meta", browseHandler)
-	http.HandleFunc("/imsto/sections", sectionsHandler)
+	http.HandleFunc("/imsto/roofs", roofsHandler)
 	http.HandleFunc("/imsto/token", tokenHandler)
 	http.HandleFunc("/imsto/ticket", ticketHandler)
 

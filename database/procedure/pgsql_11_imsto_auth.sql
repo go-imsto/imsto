@@ -10,18 +10,18 @@ CREATE OR REPLACE FUNCTION imsto.ticket_update(a_id int, a_item_id varchar)
 RETURNS int AS
 $$
 DECLARE
-	t_section varchar;
+	t_roof varchar;
 	tb_meta varchar;
 	t_path varchar;
 
 BEGIN
 
-	SELECT section INTO t_section FROM upload_ticket WHERE id = a_id;
-	IF t_section IS NULL THEN
+	SELECT roof INTO t_roof FROM upload_ticket WHERE id = a_id;
+	IF t_roof IS NULL THEN
 		RETURN -1;
 	END IF;
 
-	tb_meta := 'meta_' || t_section;
+	tb_meta := 'meta_' || t_roof;
 
 	EXECUTE 'SELECT path FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
 	INTO t_path

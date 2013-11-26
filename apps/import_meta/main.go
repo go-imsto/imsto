@@ -48,7 +48,7 @@ type entryOut struct {
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
-	log.Print(eo)
+	// log.Print(eo)
 
 	if eo.Path == "" && eo.Filename != "" {
 		eo.Path = eo.Filename
@@ -92,8 +92,6 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 
 	if eo.Created.IsZero() {
 		log.Printf("zero Created '%v'", eo.Created)
-	} else {
-		log.Printf("Created '%v'", eo.Created)
 	}
 	// log.Printf("eo %s %s %s %d %s", eo.Id, eo.Path, eo.Mime, eo.Size, eo.Hashes)
 	// log.Printf("meta %s", eo.Meta)
@@ -119,10 +117,12 @@ func init() {
 	if appDir != "" {
 		config.SetAppRoot(appDir)
 	}
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	err := config.Load()
 	if err != nil {
 		log.Print("config load error: ", err)
 	}
+
 }
 
 func main() {
@@ -166,6 +166,8 @@ func main() {
 		}
 		skip += limit
 	}
+
+	log.Printf("[%s] %s.%s (%d) all done!", roof, mgo_db, mgo_coll, total)
 }
 
 func getSession() (*mgo.Session, error) {

@@ -28,36 +28,38 @@ type MetaWrapper interface {
 }
 
 type MetaWrap struct {
-	dsn     string
-	section string
+	dsn  string
+	roof string
 	// prefix  string
 
 	table_suffix string
 }
 
-func newMetaWrap(section string) *MetaWrap {
-	if section == "" {
-		section = "common"
+func newMetaWrap(roof string) *MetaWrap {
+	if roof == "" {
+		log.Print("arg roof is empty")
+		roof = "common"
 	}
-	dsn := config.GetValue(section, "meta_dsn")
-	log.Printf("dsn: %s", dsn)
-	table := config.GetValue(section, "meta_table_suffix")
+	dsn := config.GetValue(roof, "meta_dsn")
+	log.Printf("[%s]dsn: %s", roof, dsn)
+	table := config.GetValue(roof, "meta_table_suffix")
 	if table == "" {
-		table = section
+		// log.Print("meta_table_suffix is empty, use roof")
+		table = roof
 	}
 	log.Printf("table suffix: %s", table)
-	mw := &MetaWrap{dsn: dsn, section: section, table_suffix: table}
+	mw := &MetaWrap{dsn: dsn, roof: roof, table_suffix: table}
 
 	return mw
 }
 
 var meta_wrappers = make(map[string]MetaWrapper)
 
-func NewMetaWrapper(section string) (mw MetaWrapper) {
+func NewMetaWrapper(roof string) (mw MetaWrapper) {
 	var ok bool
-	if mw, ok = meta_wrappers[section]; !ok {
-		mw = newMetaWrap(section)
-		meta_wrappers[section] = mw
+	if mw, ok = meta_wrappers[roof]; !ok {
+		mw = newMetaWrap(roof)
+		meta_wrappers[roof] = mw
 	}
 
 	return mw
@@ -256,7 +258,7 @@ func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 	var e = Entry{Id: &id}
 	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created)
 	if err != nil {
-		log.Printf("roof %s getEntry %s error %s", mw.section, id.String(), err)
+		log.Printf("[%s]getEntry %s error %s", mw.roof, id.String(), err)
 		return nil, err
 	}
 	return &e, nil

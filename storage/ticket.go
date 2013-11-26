@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"wpst.me/calf/config"
 	"database/sql"
 	_ "database/sql/driver"
 	"encoding/binary"
@@ -9,10 +8,11 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"wpst.me/calf/config"
 )
 
 type Ticket struct {
-	section string
+	roof    string
 	dsn     string
 	table   string
 	AppId   AppId  `json:"appid,omitempty"`
@@ -24,28 +24,28 @@ type Ticket struct {
 	Done    bool   `json:"done,omitempty"`
 }
 
-func newTicket(section string, appid AppId) *Ticket {
-	dsn := config.GetValue(section, "meta_dsn")
-	table := getTicketTable(section)
+func newTicket(roof string, appid AppId) *Ticket {
+	dsn := config.GetValue(roof, "meta_dsn")
+	table := getTicketTable(roof)
 	// log.Printf("table: %s", table)
-	t := &Ticket{section: section, dsn: dsn, table: table, AppId: appid}
+	t := &Ticket{roof: roof, dsn: dsn, table: table, AppId: appid}
 
 	return t
 }
 
 func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
 	var (
-		section string
-		appid   AppId
-		author  Author
+		roof   string
+		appid  AppId
+		author Author
 	)
-	section, appid, author, err = parseRequest(r)
+	roof, appid, author, err = parseRequest(r)
 	if err != nil {
 		log.Print("request error:", err)
 		return
 	}
 
-	t, err = getApiToken(section, appid)
+	t, err = getApiToken(roof, appid)
 	if err != nil {
 		return
 	}
@@ -57,17 +57,17 @@ func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
 
 func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 	var (
-		section string
-		appid   AppId
-		author  Author
+		roof   string
+		appid  AppId
+		author Author
 	)
-	section, appid, author, err = parseRequest(r)
+	roof, appid, author, err = parseRequest(r)
 	if err != nil {
 		log.Print("request error:", err)
 		return
 	}
 
-	t, err = getApiToken(section, appid)
+	t, err = getApiToken(roof, appid)
 	if err != nil {
 		return
 	}
@@ -79,7 +79,7 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 	if !ok {
 		err = errors.New("Invalid Token")
 	}
-	ticket := newTicket(section, appid)
+	ticket := newTicket(roof, appid)
 
 	ticket.Author = author
 	ticket.Prompt = r.FormValue("prompt")
@@ -91,7 +91,7 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	t, err = getApiToken(section, appid)
+	t, err = getApiToken(roof, appid)
 	if err != nil {
 		return
 	}
@@ -106,18 +106,18 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 
 func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
 	var (
-		section string
-		appid   AppId
-		author  Author
+		roof   string
+		appid  AppId
+		author Author
 	)
-	section, appid, author, err = parseRequest(r)
+	roof, appid, author, err = parseRequest(r)
 	if err != nil {
 		log.Print("request error:", err)
 		return
 	}
 
 	var t *apiToken
-	t, err = getApiToken(section, appid)
+	t, err = getApiToken(roof, appid)
 	if err != nil {
 		return
 	}
@@ -132,7 +132,7 @@ func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
 
 	id := t.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
 
-	ticket, err = loadTicket(section, int(id))
+	ticket, err = loadTicket(roof, int(id))
 	if ticket.Author != author {
 		log.Printf("mismatch author %s : %s", ticket.Author, author)
 	}
@@ -144,9 +144,9 @@ func (t *Ticket) saveNew() error {
 	defer db.Close()
 
 	var id int
-	sql := "INSERT INTO " + t.table + "(section, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
+	sql := "INSERT INTO " + t.table + "(roof, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
 	log.Printf("sql: %s", sql)
-	err := db.QueryRow(sql, t.section, t.AppId, t.Author, t.Prompt).Scan(&id)
+	err := db.QueryRow(sql, t.roof, t.AppId, t.Author, t.Prompt).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -163,8 +163,8 @@ func (t *Ticket) load(id int) error {
 	db := t.getDb()
 	defer db.Close()
 	t.id = id
-	sql := "SELECT section, app_id, author, prompt, img_id, img_path, done FROM " + t.table + " WHERE id = $1 LIMIT 1"
-	err := db.QueryRow(sql, id).Scan(&t.section, &t.AppId, &t.Author, &t.Prompt, &t.ImgId, &t.ImgPath, &t.Done)
+	sql := "SELECT roof, app_id, author, prompt, img_id, img_path, done FROM " + t.table + " WHERE id = $1 LIMIT 1"
+	err := db.QueryRow(sql, id).Scan(&t.roof, &t.AppId, &t.Author, &t.Prompt, &t.ImgId, &t.ImgPath, &t.Done)
 	if err != nil {
 		return err
 	}

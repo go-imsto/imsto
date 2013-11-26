@@ -73,7 +73,7 @@ func LoadPath(url string) (item outItem, err error) {
 		return
 	}
 	// log.Print(m)
-	section := config.ThumbRoof(m["tp"])
+	roof := config.ThumbRoof(m["tp"])
 	var id *EntryId
 	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
 	if err != nil {
@@ -81,7 +81,7 @@ func LoadPath(url string) (item outItem, err error) {
 		return
 	}
 	// log.Printf("id: %s", id)
-	thumb_root := config.GetValue(section, "thumb_root")
+	thumb_root := config.GetValue(roof, "thumb_root")
 
 	org_path := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
 	org_file := path.Join(thumb_root, "orig", org_path)
@@ -90,7 +90,7 @@ func LoadPath(url string) (item outItem, err error) {
 	if fi, err = os.Stat(org_file); err != nil {
 		if os.IsNotExist(err) || fi.Size() == 0 {
 
-			mw := NewMetaWrapper(section)
+			mw := NewMetaWrapper(roof)
 			var entry *Entry
 			entry, err = mw.GetEntry(*id)
 			if err != nil {
@@ -100,17 +100,17 @@ func LoadPath(url string) (item outItem, err error) {
 			}
 			// log.Printf("got %s", entry)
 			if org_path != entry.Path { // 302 found
-				thumb_path := config.GetValue(section, "thumb_path")
+				thumb_path := config.GetValue(roof, "thumb_path")
 				new_path := path.Join(thumb_path, m["size"], entry.Path)
 				ie := NewHttpError(302, "Found "+new_path)
 				ie.Path = new_path
 				err = ie
 				return
 			}
-			log.Printf("fetching [%s] file: '%s'", section, entry.Path)
+			log.Printf("fetching [%s] file: '%s'", roof, entry.Path)
 
 			var em Wagoner
-			em, err = FarmEngine(section)
+			em, err = FarmEngine(roof)
 			if err != nil {
 				log.Println(err)
 				return
@@ -148,7 +148,7 @@ func LoadPath(url string) (item outItem, err error) {
 		mode := m["size"][0:1]
 		dimension := m["size"][1:]
 		// log.Printf("mode %s, dimension %s", mode, dimension)
-		support_size := strings.Split(config.GetValue(section, "support_size"), ",")
+		support_size := strings.Split(config.GetValue(roof, "support_size"), ",")
 		if !stringInSlice(dimension, support_size) {
 			err = NewHttpError(400, ErrUnsupportSize.Error())
 			return
@@ -214,7 +214,7 @@ func saveFile(filename string, data []byte) (err error) {
 	return
 }
 
-func StoredFile(filename string, section string) (entry *Entry, err error) {
+func StoredFile(filename string, roof string) (entry *Entry, err error) {
 	var fi os.FileInfo
 	if fi, err = os.Stat(filename); err != nil {
 		if os.IsNotExist(err) {
@@ -238,9 +238,9 @@ func StoredFile(filename string, section string) (entry *Entry, err error) {
 		return
 	}
 	entry.Modified = uint64(fi.ModTime().Unix())
-	// err = entry.trek(section)
+	// err = entry.trek(roof)
 
-	err = entry.store(section)
+	err = entry.store(roof)
 	if err != nil {
 		// log.Println(err)
 		return
@@ -274,25 +274,25 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 	// log.Printf("postform: %s", r.PostForm)
 
 	var (
-		section      string
+		roof         string
 		appid        AppId
 		author       Author
 		lastModified uint64
 	)
 
-	section, appid, author, err = parseRequest(r)
+	roof, appid, author, err = parseRequest(r)
 	if err != nil {
 		// log.Print("request error:", err)
 		return
 	}
 
-	if !config.HasSection(section) {
-		err = fmt.Errorf("section '%s' not found", section)
+	if !config.HasSection(roof) {
+		err = fmt.Errorf("roof '%s' not found", roof)
 		return
 	}
 
 	var token *apiToken
-	token, err = getApiToken(section, appid)
+	token, err = getApiToken(roof, appid)
 	if err != nil {
 		return
 	}
@@ -353,7 +353,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		entry.AppId = appid
 		entry.Author = author
 		entry.Modified = lastModified
-		ee = entry.store(section)
+		ee = entry.store(roof)
 		if ee != nil {
 			log.Printf("%02d stored error: %s", i, ee)
 			entries[i].Err = ee.Error()
@@ -362,11 +362,11 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		log.Printf("stored %s %s", entry.Id, entry.Path)
 		if ee == nil && i == 0 && token.vc == VC_TICKET {
 			// TODO: upate ticket
-			// ticket := newTicket(section, appid)
+			// ticket := newTicket(roof, appid)
 			tid := token.GetValuleInt()
 			log.Printf("token value: %d", tid)
 			var ticket *Ticket
-			ticket, ee = loadTicket(section, int(tid))
+			ticket, ee = loadTicket(roof, int(tid))
 			if ee != nil {
 				log.Printf("ticket load error: ", ee)
 			}
@@ -383,9 +383,9 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 
 func DeleteRequest(r *http.Request) error {
 	dir, id := path.Split(r.URL.Path)
-	section := path.Base(dir)
-	if id != "" && section != "" {
-		mw := NewMetaWrapper(section)
+	roof := path.Base(dir)
+	if id != "" && roof != "" {
+		mw := NewMetaWrapper(roof)
 		eid, err := NewEntryId(id)
 		if err != nil {
 			return err
@@ -399,7 +399,7 @@ func DeleteRequest(r *http.Request) error {
 	return errors.New("invalid url")
 }
 
-func parseRequest(r *http.Request) (section string, appid AppId, author Author, err error) {
+func parseRequest(r *http.Request) (roof string, appid AppId, author Author, err error) {
 	if r.Form == nil {
 		if err = r.ParseForm(); err != nil {
 			log.Print("form parse error:", err)
@@ -411,9 +411,9 @@ func parseRequest(r *http.Request) (section string, appid AppId, author Author, 
 		aid uint64
 		uid uint64
 	)
-	section = r.FormValue("roof")
-	if section == "" {
-		log.Print("Waring: parseRequest section is empty")
+	roof = r.FormValue("roof")
+	if roof == "" {
+		log.Print("Waring: parseRequest roof is empty")
 	}
 	str = r.FormValue("app")
 	if str != "" {
@@ -441,9 +441,9 @@ func parseRequest(r *http.Request) (section string, appid AppId, author Author, 
 	return
 }
 
-func getApiSalt(section string, appid AppId) (salt []byte, err error) {
+func getApiSalt(roof string, appid AppId) (salt []byte, err error) {
 	k := fmt.Sprintf("IMSTO_API_%d_SALT", appid)
-	str := config.GetValue(section, k)
+	str := config.GetValue(roof, k)
 	if str == "" {
 		str = os.Getenv(k)
 	}
@@ -457,9 +457,9 @@ func getApiSalt(section string, appid AppId) (salt []byte, err error) {
 	return
 }
 
-func getApiToken(section string, appid AppId) (token *apiToken, err error) {
+func getApiToken(roof string, appid AppId) (token *apiToken, err error) {
 	var salt []byte
-	salt, err = getApiSalt(section, appid)
+	salt, err = getApiSalt(roof, appid)
 	if err != nil {
 		return
 	}

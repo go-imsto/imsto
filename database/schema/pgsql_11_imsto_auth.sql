@@ -6,7 +6,7 @@ set search_path = imsto, public;
 
 CREATE TABLE upload_ticket (
 	id serial,
-	section varchar(20) NOT NULL,
+	roof varchar(20) NOT NULL,
 	app_id smallint NOT NULL,
 	author int NOT NULL ,
 	prompt varchar(255) NOT NULL,
