@@ -256,8 +256,8 @@ func (e *Entry) reset() {
 }
 
 func newPath(ei *EntryId, ext string) string {
-	r := []byte(ei.id)
-	p := string(r[0:2]) + "/" + string(r[2:4]) + "/" + string(r[4:]) + ext
+	r := ei.id
+	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 
 	return p
 }

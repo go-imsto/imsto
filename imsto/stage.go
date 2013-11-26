@@ -15,7 +15,7 @@ import (
 )
 
 var cmdStage = &Command{
-	UsageLine: "stage -port 5580",
+	UsageLine: "stage -port 8968",
 	Short:     "stage is a image handler",
 	Long: `
 stage is a image handler.
@@ -23,7 +23,7 @@ stage is a image handler.
 }
 
 var (
-	sport        = cmdStage.Flag.Int("port", 5580, "tcp listen port")
+	sport        = cmdStage.Flag.Int("port", 8968, "tcp listen port")
 	sReadTimeout = cmdStage.Flag.Int("readTimeout", 3, "connection read timeout in seconds")
 	sMaxCpu      = cmdStage.Flag.Int("maxCpu", 0, "maximum number of CPUs. 0 means all available CPUs")
 )

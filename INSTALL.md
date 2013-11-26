@@ -39,13 +39,13 @@ go get github.com/crowdmob/goamz/s3
 
 ### Launch tiring backend
 ~~~
-IMSTO_API_0_SALT=$SALT $GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT tiring -port 5564
+IMSTO_API_0_SALT=$SALT $GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT tiring -port 8964
 ~~~
 
 
 ### Launch stage backend
 ~~~
-$GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT stage -port 5580
+$GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT stage -port 8968
 ~~~
 
 ## Change nginx config
@@ -59,13 +59,13 @@ $GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT stage -port 5580
 	}
 
 	location @imsto_stage {
-		proxy_pass   http://localhost:5580;
+		proxy_pass   http://localhost:8968;
 		proxy_set_header   X-Real-IP        $remote_addr;
 		proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
 	}
 
 	location /imsto {
-		proxy_pass   http://localhost:5564;
+		proxy_pass   http://localhost:8964;
 		proxy_set_header   X-Real-IP        $remote_addr;
 		proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
 	}

@@ -107,7 +107,7 @@ func LoadPath(url string) (item outItem, err error) {
 				err = ie
 				return
 			}
-			log.Printf("fetching file: %s", entry.Path)
+			log.Printf("fetching [%s] file: '%s'", section, entry.Path)
 
 			var em Wagoner
 			em, err = FarmEngine(section)
