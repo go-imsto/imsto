@@ -46,77 +46,16 @@ var cachedItems = make(map[string]*outItem)
 
 type outItem struct {
 	k    string
+	m    harg
+	roof string
 	src  string
-	Name string
+	dst  string
+	id   *EntryId
 	sync.Mutex
 }
 
-func newOutItem(k, src, name string) (oi *outItem) {
-	var ok bool
-	if oi, ok = cachedItems[k]; !ok {
-		oi = &outItem{k: k, src: src, Name: name}
-		cachedItems[k] = oi
-	}
+func newOutItem(url string) (oi *outItem, err error) {
 
-	return
-}
-
-func (o *outItem) Walk(c func(file http.File)) error {
-	o.Lock()
-	defer o.Unlock()
-	file, err := os.Open(o.Name)
-	if err != nil {
-		return err
-	}
-	if file == nil {
-		return fmt.Errorf("Fatal error: open %s failed", o.Name)
-	}
-	defer file.Close()
-	c(file)
-	return nil
-}
-
-func (o *outItem) thumbnail(topt iimg.ThumbOption) (err error) {
-	o.Lock()
-	defer func() {
-		o.Unlock()
-		delete(cachedItems, o.k)
-	}()
-
-	if fi, fe := os.Stat(o.Name); fe == nil && fi.Size() > 0 {
-		// log.Print("thumbnail already done")
-		return
-	}
-
-	log.Printf("outItem.thumbnail(%dx%d %v) starting", topt.Width, topt.Height, topt.IsCrop)
-	err = iimg.ThumbnailFile(o.src, o.Name, topt)
-	if err != nil {
-		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
-		return
-	}
-	return
-}
-
-type harg map[string]string
-
-func parsePath(s string) (m harg, err error) {
-	if !ire.MatchString(s) {
-		err = NewHttpError(400, ErrInvalidUrl.Error())
-		return
-	}
-	match := ire.FindStringSubmatch(s)
-	names := ire.SubexpNames()
-	m = make(harg)
-	for i, n := range names {
-		if n != "" {
-			m[n] = match[i]
-		}
-	}
-	return
-}
-
-func LoadPath(url string) (item *outItem, err error) {
-	// log.Printf("load: %s", url)
 	var m harg
 	m, err = parsePath(url)
 	if err != nil {
@@ -132,33 +71,85 @@ func LoadPath(url string) (item *outItem, err error) {
 		return
 	}
 	// log.Printf("id: %s", id)
-	thumb_root := config.GetValue(roof, "thumb_root")
+	// thumb_root := config.GetValue(roof, "thumb_root")
+	var ok bool
+	k := roof + id.String()
+	if oi, ok = cachedItems[k]; !ok {
 
-	org_path := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
-	org_file := path.Join(thumb_root, "orig", org_path)
+		src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
+		// src := path.Join(thumb_root, "orig", org_path)
+		oi = &outItem{k: k, m: m, roof: roof, src: src}
+		cachedItems[k] = oi
+	}
 
+	return
+}
+
+func (o *outItem) cfg(s string) string {
+	return config.GetValue(o.roof, s)
+}
+
+func (o *outItem) srcName() string {
+	return path.Join(o.thumbRoot(), "orig", o.src)
+}
+
+func (o *outItem) thumbRoot() string {
+	return o.cfg("thumb_root")
+}
+
+func (o *outItem) Walk(c func(file http.File)) error {
+	o.Lock()
+	defer func() {
+		if o != nil {
+			o.Unlock()
+		}
+		delete(cachedItems, o.k)
+	}()
+	file, err := os.Open(o.dst)
+	if err != nil {
+		return err
+	}
+	if file == nil {
+		return fmt.Errorf("Fatal error: open %s failed", o.Name)
+	}
+	defer file.Close()
+	c(file)
+	return nil
+}
+
+func (o *outItem) prepare() (err error) {
+	if o != nil {
+		o.Lock()
+	}
+
+	defer func() {
+		if o != nil {
+			o.Unlock()
+		}
+	}()
+	org_file := o.srcName()
 	if fi, fe := os.Stat(org_file); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
-		mw := NewMetaWrapper(roof)
+		mw := NewMetaWrapper(o.roof)
 		var entry *Entry
-		entry, err = mw.GetEntry(*id)
+		entry, err = mw.GetEntry(*o.id)
 		if err != nil {
 			// log.Print(err)
 			err = NewHttpError(404, err.Error())
 			return
 		}
 		// log.Printf("got %s", entry)
-		if org_path != entry.Path { // 302 found
-			thumb_path := config.GetValue(roof, "thumb_path")
-			new_path := path.Join(thumb_path, m["size"], entry.Path)
+		if o.src != entry.Path { // 302 found
+			thumb_path := config.GetValue(o.roof, "thumb_path")
+			new_path := path.Join(thumb_path, o.m["size"], entry.Path)
 			ie := NewHttpError(302, "Found "+new_path)
 			ie.Path = new_path
 			err = ie
 			return
 		}
-		log.Printf("fetching [%s] file: '%s'", roof, entry.Path)
+		log.Printf("fetching [%s] file: '%s'", o.roof, entry.Path)
 
 		var em Wagoner
-		em, err = FarmEngine(roof)
+		em, err = FarmEngine(o.roof)
 		if err != nil {
 			log.Println(err)
 			return
@@ -183,36 +174,38 @@ func LoadPath(url string) (item *outItem, err error) {
 		}
 	}
 
-	var (
-		dst_path, dst_file string
-	)
-	if m["size"] == "orig" {
-		dst_path = "orig/" + org_path
-		dst_file = org_file
-		item = newOutItem(url, org_file, dst_file)
+	if o.m["size"] == "orig" {
+		o.dst = o.srcName()
 		return
 	}
 
-	dst_path = fmt.Sprintf("%s/%s", m["size"], org_path)
-	dst_file = path.Join(thumb_root, dst_path)
-	item = newOutItem(url, org_file, dst_file)
+	dst_path := fmt.Sprintf("%s/%s", o.m["size"], o.src)
+	o.dst = path.Join(o.thumbRoot(), dst_path)
+	err = o.thumbnail()
+	return
+}
 
-	if fi, fe := os.Stat(dst_file); !os.IsNotExist(fe) {
-		if l := fi.Size(); l > 0 {
-			return
-		}
+func (o *outItem) thumbnail() (err error) {
+	// o.Lock()
+	// defer func() {
+	// 	o.Unlock()
+	// 	delete(cachedItems, o.k)
+	// }()
+
+	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 {
+		// log.Print("thumbnail already done")
+		return
 	}
-
-	mode := m["size"][0:1]
-	dimension := m["size"][1:]
+	mode := o.m["size"][0:1]
+	dimension := o.m["size"][1:]
 	// log.Printf("mode %s, dimension %s", mode, dimension)
-	support_size := strings.Split(config.GetValue(roof, "support_size"), ",")
+	support_size := strings.Split(config.GetValue(o.roof, "support_size"), ",")
 	if !stringInSlice(dimension, support_size) {
 		err = NewHttpError(400, ErrUnsupportSize.Error())
 		return
 	}
 	var width, height uint
-	if m["x"] == "" {
+	if o.m["x"] == "" {
 		var d uint64
 		d, _ = strconv.ParseUint(dimension, 10, 32)
 		width = uint(d)
@@ -234,13 +227,49 @@ func LoadPath(url string) (item *outItem, err error) {
 	} else if mode == "h" {
 		topt.MaxHeight = height
 	}
-	err = item.thumbnail(topt)
-	// err = iimg.ThumbnailFile(org_file, dst_file, topt)
-	// if err != nil {
-	// 	log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", org_path, dst_path, topt, err)
-	// 	return
-	// }
+	log.Printf("outItem.thumbnail(%dx%d %v) starting", topt.Width, topt.Height, topt.IsCrop)
+	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
+	if err != nil {
+		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
+		return
+	}
+	return
+}
 
+func (o *outItem) Name() string {
+	return o.dst
+}
+
+type harg map[string]string
+
+func parsePath(s string) (m harg, err error) {
+	if !ire.MatchString(s) {
+		err = NewHttpError(400, ErrInvalidUrl.Error())
+		return
+	}
+	match := ire.FindStringSubmatch(s)
+	names := ire.SubexpNames()
+	m = make(harg)
+	for i, n := range names {
+		if n != "" {
+			m[n] = match[i]
+		}
+	}
+	return
+}
+
+func LoadPath(url string) (item *outItem, err error) {
+	// log.Printf("load: %s", url)
+	item, err = newOutItem(url)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	err = item.prepare()
+	if err != nil {
+		log.Print(err)
+		return
+	}
 	return
 }
 
