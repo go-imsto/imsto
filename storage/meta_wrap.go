@@ -41,7 +41,7 @@ func newMetaWrap(roof string) *MetaWrap {
 		roof = "common"
 	}
 	dsn := config.GetValue(roof, "meta_dsn")
-	log.Printf("[%s]dsn: %s", roof, dsn)
+	// log.Printf("[%s]dsn: %s", roof, dsn)
 	table := config.GetValue(roof, "meta_table_suffix")
 	if table == "" {
 		// log.Print("meta_table_suffix is empty, use roof")

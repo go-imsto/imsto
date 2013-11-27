@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"wpst.me/calf/config"
 	iimg "wpst.me/calf/image"
 )
@@ -42,8 +43,33 @@ func NewHttpError(code int, text string) *HttpError {
 }
 
 type outItem struct {
-	DestPath, DestFile, Mime string
-	Size                     int
+	sPath, sName string
+	Path, Name   string
+	Size         int
+	mu           sync.Mutex
+}
+
+func (o *outItem) Walk(c func(file http.File)) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	file, err := os.Open(o.Name)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	c(file)
+	return nil
+}
+
+func (o *outItem) thumbnail(topt iimg.ThumbOption) (err error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	err = iimg.ThumbnailFile(o.sName, o.Name, topt)
+	if err != nil {
+		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.sPath, o.Path, topt, err)
+		return
+	}
+	return
 }
 
 type harg map[string]string
@@ -141,56 +167,58 @@ func LoadPath(url string) (item outItem, err error) {
 	if m["size"] == "orig" {
 		dst_path = "orig/" + org_path
 		dst_file = org_file
-	} else {
-		dst_path = fmt.Sprintf("%s/%s", m["size"], org_path)
-		dst_file = path.Join(thumb_root, dst_path)
-
-		mode := m["size"][0:1]
-		dimension := m["size"][1:]
-		// log.Printf("mode %s, dimension %s", mode, dimension)
-		support_size := strings.Split(config.GetValue(roof, "support_size"), ",")
-		if !stringInSlice(dimension, support_size) {
-			err = NewHttpError(400, ErrUnsupportSize.Error())
-			return
-		}
-		var width, height uint
-		if m["x"] == "" {
-			var d uint64
-			d, _ = strconv.ParseUint(dimension, 10, 32)
-			width = uint(d)
-			height = uint(d)
-		} else {
-			a := strings.Split(dimension, "x")
-			var dw, dh uint64
-			dw, _ = strconv.ParseUint(a[0], 10, 32)
-			dh, _ = strconv.ParseUint(a[1], 10, 32)
-			width = uint(dw)
-			height = uint(dh)
-		}
-
-		var topt = iimg.ThumbOption{Width: width, Height: height, IsFit: true}
-		if mode == "c" {
-			topt.IsCrop = true
-		} else if mode == "w" {
-			topt.MaxWidth = width
-		} else if mode == "h" {
-			topt.MaxHeight = height
-		}
-		err = iimg.ThumbnailFile(org_file, dst_file, topt)
-		if err != nil {
-			log.Print(err)
-			return
-		}
-
-		// if fi, _ := os.Stat(dst_file); fi.Size() == 0 {
-		// 	log.Print("thumbnail dst_file fail")
-		// }
+		item = outItem{Path: dst_path, Name: dst_file}
+		return
 	}
-	log.Printf("dst_path: %s, dst_file: %s", dst_path, dst_file)
 
-	item = outItem{}
-	item.DestPath = dst_path
-	item.DestFile = dst_file
+	dst_path = fmt.Sprintf("%s/%s", m["size"], org_path)
+	dst_file = path.Join(thumb_root, dst_path)
+	item = outItem{sPath: org_path, sName: org_file, Path: dst_path, Name: dst_file}
+
+	fi, err = os.Stat(dst_file)
+	if !os.IsNotExist(err) {
+		if l := fi.Size(); l > 0 {
+			return
+		}
+	}
+
+	mode := m["size"][0:1]
+	dimension := m["size"][1:]
+	// log.Printf("mode %s, dimension %s", mode, dimension)
+	support_size := strings.Split(config.GetValue(roof, "support_size"), ",")
+	if !stringInSlice(dimension, support_size) {
+		err = NewHttpError(400, ErrUnsupportSize.Error())
+		return
+	}
+	var width, height uint
+	if m["x"] == "" {
+		var d uint64
+		d, _ = strconv.ParseUint(dimension, 10, 32)
+		width = uint(d)
+		height = uint(d)
+	} else {
+		a := strings.Split(dimension, "x")
+		var dw, dh uint64
+		dw, _ = strconv.ParseUint(a[0], 10, 32)
+		dh, _ = strconv.ParseUint(a[1], 10, 32)
+		width = uint(dw)
+		height = uint(dh)
+	}
+
+	var topt = iimg.ThumbOption{Width: width, Height: height, IsFit: true}
+	if mode == "c" {
+		topt.IsCrop = true
+	} else if mode == "w" {
+		topt.MaxWidth = width
+	} else if mode == "h" {
+		topt.MaxHeight = height
+	}
+	err = item.thumbnail(topt)
+	// err = iimg.ThumbnailFile(org_file, dst_file, topt)
+	// if err != nil {
+	// 	log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", org_path, dst_path, topt, err)
+	// 	return
+	// }
 
 	return
 }
