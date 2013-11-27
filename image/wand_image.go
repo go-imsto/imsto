@@ -14,14 +14,14 @@ char *MagickGetPropertyName(char **properties, size_t index) {
 import "C"
 
 import (
-	"fmt"
-	// "imsto"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"unsafe"
 )
 
@@ -40,6 +40,7 @@ type wandImpl struct {
 	width, height uint
 	wopt          WriteOption
 	*Attr
+	sync.Mutex
 }
 
 func init() {
@@ -244,12 +245,14 @@ func (self *wandImpl) Height() uint {
 
 // Writes canvas to a file, returns true on success.
 func (self *wandImpl) WriteFile(filename string) error {
+	self.Lock()
+	defer self.Unlock()
 	cfilename := C.CString(filename)
 	success := C.MagickWriteImage(self.wand, cfilename)
 	C.free(unsafe.Pointer(cfilename))
 
 	if success == C.MagickFalse {
-		return fmt.Errorf("Could not write: %s", self.Error())
+		return fmt.Errorf("wandImpl.WriteFile(%s) Could not write: %s", filename, self.Error())
 	}
 
 	return nil

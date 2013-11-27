@@ -42,19 +42,34 @@ func NewHttpError(code int, text string) *HttpError {
 	return &HttpError{Code: code, Text: text}
 }
 
+var cachedItems = make(map[string]*outItem)
+
 type outItem struct {
 	sPath, sName string
-	Path, Name   string
+	dPath, Name  string
 	Size         int
-	mu           sync.Mutex
+	sync.Mutex
+}
+
+func newOutItem(sPath, sName, dPath, name string) (oi *outItem) {
+	var ok bool
+	if oi, ok = cachedItems[sPath]; !ok {
+		oi = &outItem{sPath: sPath, sName: sName, dPath: dPath, Name: name}
+		cachedItems[sPath] = oi
+	}
+
+	return
 }
 
 func (o *outItem) Walk(c func(file http.File)) error {
-	o.mu.Lock()
-	defer o.mu.Unlock()
+	o.Lock()
+	defer o.Unlock()
 	file, err := os.Open(o.Name)
 	if err != nil {
 		return err
+	}
+	if file == nil {
+		return fmt.Errorf("Fatal error: open %s failed", o.Name)
 	}
 	defer file.Close()
 	c(file)
@@ -62,11 +77,21 @@ func (o *outItem) Walk(c func(file http.File)) error {
 }
 
 func (o *outItem) thumbnail(topt iimg.ThumbOption) (err error) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
+	o.Lock()
+	defer func() {
+		o.Unlock()
+		delete(cachedItems, o.sPath)
+	}()
+
+	if fi, fe := os.Stat(o.Name); fe == nil && fi.Size() > 0 {
+		// log.Print("thumbnail already done")
+		return
+	}
+
+	log.Printf("outItem.thumbnail(%dx%d %v) starting", topt.Width, topt.Height, topt.IsCrop)
 	err = iimg.ThumbnailFile(o.sName, o.Name, topt)
 	if err != nil {
-		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.sPath, o.Path, topt, err)
+		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.sPath, o.dPath, topt, err)
 		return
 	}
 	return
@@ -90,7 +115,7 @@ func parsePath(s string) (m harg, err error) {
 	return
 }
 
-func LoadPath(url string) (item outItem, err error) {
+func LoadPath(url string) (item *outItem, err error) {
 	// log.Printf("load: %s", url)
 	var m harg
 	m, err = parsePath(url)
@@ -112,71 +137,67 @@ func LoadPath(url string) (item outItem, err error) {
 	org_path := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
 	org_file := path.Join(thumb_root, "orig", org_path)
 
-	var fi os.FileInfo
-	if fi, err = os.Stat(org_file); err != nil {
-		if os.IsNotExist(err) || fi.Size() == 0 {
+	if fi, fe := os.Stat(org_file); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
+		mw := NewMetaWrapper(roof)
+		var entry *Entry
+		entry, err = mw.GetEntry(*id)
+		if err != nil {
+			// log.Print(err)
+			err = NewHttpError(404, err.Error())
+			return
+		}
+		// log.Printf("got %s", entry)
+		if org_path != entry.Path { // 302 found
+			thumb_path := config.GetValue(roof, "thumb_path")
+			new_path := path.Join(thumb_path, m["size"], entry.Path)
+			ie := NewHttpError(302, "Found "+new_path)
+			ie.Path = new_path
+			err = ie
+			return
+		}
+		log.Printf("fetching [%s] file: '%s'", roof, entry.Path)
 
-			mw := NewMetaWrapper(roof)
-			var entry *Entry
-			entry, err = mw.GetEntry(*id)
-			if err != nil {
-				// log.Print(err)
-				err = NewHttpError(404, err.Error())
+		var em Wagoner
+		em, err = FarmEngine(roof)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		var data []byte
+		data, err = em.Get(entry.Path)
+		if err != nil {
+			err = NewHttpError(404, err.Error())
+			return
+		}
+		log.Printf("fetched: %d", len(data))
+		err = saveFile(org_file, data)
+		if err != nil {
+			log.Printf("save fail: ", err)
+			return
+		}
+		if fi, fe := os.Stat(org_file); fe != nil {
+			if os.IsNotExist(fe) || fi.Size() == 0 {
+				err = ErrWriteFailed
 				return
-			}
-			// log.Printf("got %s", entry)
-			if org_path != entry.Path { // 302 found
-				thumb_path := config.GetValue(roof, "thumb_path")
-				new_path := path.Join(thumb_path, m["size"], entry.Path)
-				ie := NewHttpError(302, "Found "+new_path)
-				ie.Path = new_path
-				err = ie
-				return
-			}
-			log.Printf("fetching [%s] file: '%s'", roof, entry.Path)
-
-			var em Wagoner
-			em, err = FarmEngine(roof)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			var data []byte
-			data, err = em.Get(entry.Path)
-			if err != nil {
-				err = NewHttpError(404, err.Error())
-				return
-			}
-			log.Printf("fetched: %d", len(data))
-			err = saveFile(org_file, data)
-			if err != nil {
-				log.Printf("save fail: ", err)
-				return
-			}
-			if fi, err = os.Stat(org_file); err != nil {
-				if os.IsNotExist(err) || fi.Size() == 0 {
-					err = ErrWriteFailed
-					return
-				}
 			}
 		}
 	}
+
 	var (
 		dst_path, dst_file string
 	)
 	if m["size"] == "orig" {
 		dst_path = "orig/" + org_path
 		dst_file = org_file
-		item = outItem{Path: dst_path, Name: dst_file}
+		item = newOutItem(org_path, org_file, dst_path, dst_file)
 		return
 	}
 
 	dst_path = fmt.Sprintf("%s/%s", m["size"], org_path)
 	dst_file = path.Join(thumb_root, dst_path)
-	item = outItem{sPath: org_path, sName: org_file, Path: dst_path, Name: dst_file}
+	item = newOutItem(org_path, org_file, dst_path, dst_file)
 
-	fi, err = os.Stat(dst_file)
-	if !os.IsNotExist(err) {
+	if fi, fe := os.Stat(dst_file); !os.IsNotExist(fe) {
 		if l := fi.Size(); l > 0 {
 			return
 		}

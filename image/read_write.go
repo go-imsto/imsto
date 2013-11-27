@@ -2,13 +2,13 @@ package image
 
 import (
 	"bytes"
-	"wpst.me/calf/db"
 	"io"
 	"log"
 	"mime"
 	"os"
 	"path"
 	"reflect"
+	"wpst.me/calf/db"
 )
 
 type Dimension uint32
@@ -166,6 +166,7 @@ func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
 	im.Open(in)
 	err = im.Thumbnail(topt)
 	if err != nil {
+		log.Printf("im.Thumbnail error: %s", err)
 		return err
 	}
 
