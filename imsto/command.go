@@ -148,7 +148,7 @@ func main() {
 			IsDebug = cmd.IsDebug
 			// if IsDebug != nil && *IsDebug {
 			log.SetFlags(log.LstdFlags | log.Lshortfile)
-			log.Printf("log dir: %s", logDir)
+			// log.Printf("log dir: %s", logDir)
 			if logDir != "" {
 				logfile := path.Join(logDir, name+"_log")
 				log.Printf("logfile: %s", logfile)
@@ -158,11 +158,16 @@ func main() {
 					return
 				}
 				log.SetOutput(fd)
+			} else {
+				log.Print("log dir is empty")
 			}
 
 			// }
-			if cmd.Run(args) {
+			if !cmd.Run(args) {
 				fmt.Fprintf(os.Stderr, "\n")
+				cmd.Flag.Usage()
+				fmt.Fprintf(os.Stderr, "Default Parameters:\n")
+				cmd.Flag.PrintDefaults()
 			}
 			exit()
 			return

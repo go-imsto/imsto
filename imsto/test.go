@@ -14,7 +14,7 @@ import (
 )
 
 var cmdTest = &Command{
-	UsageLine: "test",
+	UsageLine: "test imageattr|mimetype|image filename",
 	Short:     "run all tests from the command-line",
 	Long: `
 Just a test command
@@ -49,7 +49,7 @@ func testApp(args []string) bool {
 		return false
 	}
 
-	if al > 1 && args[0] == "imagetype" {
+	if al > 1 && args[0] == "imageattr" {
 
 		file, err := os.Open(args[1])
 
@@ -59,12 +59,10 @@ func testApp(args []string) bool {
 		}
 		defer file.Close()
 		var (
-			t   cimg.TypeId
-			ext string
+			im cimg.Image
 		)
-		t, ext, err = cimg.GuessType(file)
-
-		fmt.Println(t, ext)
+		im, err = cimg.Open(file)
+		fmt.Printf("attr: %s", im.GetAttr())
 	} else if al > 1 && args[0] == "mimetype" {
 
 		ext := path.Ext(args[1])

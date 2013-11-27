@@ -50,7 +50,7 @@ simp_open_stdio(FILE *infile)
 	}
 
 #ifdef IM_DEBUG
-	printf("start set in.f\n");
+	printf("[start set in.f]\n");
 #endif
 	im->in.f = infile;
 	if (!im->in.f) {

@@ -45,7 +45,7 @@ const jpeg_format = "JPEG"
 type simpJPEG struct {
 	si   *C.Simp_Image
 	wopt WriteOption
-	size Size
+	// size Size
 	*Attr
 }
 
@@ -61,6 +61,7 @@ func (self *simpJPEG) Format() string {
 func (self *simpJPEG) Open(r io.Reader) error {
 
 	var si *C.Simp_Image
+	var size Size
 
 	if f, ok := r.(*os.File); ok {
 		log.Println("open file reader")
@@ -74,7 +75,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 			return errors.New("simp_open_stdio failed")
 		}
 		fi, _ := f.Stat()
-		self.size = Size(fi.Size())
+		size = Size(fi.Size())
 	} else {
 		blob, err := ioutil.ReadAll(r)
 
@@ -83,19 +84,19 @@ func (self *simpJPEG) Open(r io.Reader) error {
 			return err
 		}
 
-		size := len(blob)
+		ln := len(blob)
 		log.Printf("jpeg blob head: %x", blob[0:8])
-		log.Printf("jpeg blob tail: %x", blob[size-2:size])
+		log.Printf("jpeg blob tail: %x", blob[ln-2:ln])
 
-		log.Printf("open mem buf len %d\n", size)
+		log.Printf("open mem buf len %d\n", ln)
 		p := (*C.uchar)(unsafe.Pointer(&blob[0]))
 
-		si = C.simp_open_mem(p, C.uint(size))
+		si = C.simp_open_mem(p, C.uint(ln))
 		if si == nil {
 			return errors.New("simp_open_mem failed")
 		}
 
-		self.size = Size(size)
+		size = Size(ln)
 	}
 
 	self.si = si
@@ -105,6 +106,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 	log.Printf("image open, w: %d, h: %d, q: %d", w, h, q)
 
 	self.Attr = NewAttr(uint(w), uint(h), uint8(q))
+	self.Size = size
 	return nil
 }
 
@@ -167,7 +169,7 @@ func (self *simpJPEG) WriteTo(out io.Writer) error {
 }
 
 func (self *simpJPEG) GetBlob() ([]byte, error) {
-	cblob := (**C.uchar)(C.makeCharArray(C.int(self.size)))
+	cblob := (**C.uchar)(C.makeCharArray(C.int(self.Size)))
 	*cblob = nil
 	defer C.free(unsafe.Pointer(cblob))
 

@@ -12,7 +12,7 @@ import (
 )
 
 var cmdTiring = &Command{
-	UsageLine: "tiring -port 8964",
+	UsageLine: "tiring -port 8964 -whiteList=\"127.0.0.1\"",
 	Short:     "serve tiring http service",
 	Long: `
 serve tiring http service
