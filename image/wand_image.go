@@ -75,7 +75,7 @@ func (self *wandImpl) Open(r io.Reader) error {
 		blob, err := ioutil.ReadAll(r)
 
 		if err != nil {
-			log.Println(err)
+			log.Printf("wandImpl.Open error: %s", err)
 			return err
 		}
 
@@ -214,7 +214,7 @@ func (self *wandImpl) Thumbnail(topt ThumbOption) error {
 		}
 	}
 	ret := C.MagickThumbnailImage(self.wand, C.size_t(topt.Width), C.size_t(topt.Height))
-	log.Printf("magick thumb ret: %v", ret)
+	// log.Printf("magick thumb ret: %v", ret)
 	if ret == C.MagickFalse {
 		return fmt.Errorf("magick thumbnail error: %s", self.Error())
 	}
@@ -269,24 +269,24 @@ func (self *wandImpl) WriteTo(out io.Writer) (err error) {
 			return fmt.Errorf("Could not write: %s", self.Error())
 		}
 
-		log.Print("wand wrote done")
+		// log.Print("wand wrote done")
 
 	} else {
 		var blob []byte
 		blob, err = self.GetBlob()
 		if err != nil {
-			log.Print(err)
+			log.Printf("GetBlob error: %s", err)
 			return err
 		}
 
-		log.Printf("blob %d bytes\n", len(blob))
+		// log.Printf("blob %d bytes\n", len(blob))
 		var wrote int
 		wrote, err = out.Write(blob)
 		if err != nil {
-			log.Print(err)
+			log.Printf("Wrote (%d) error: %s", wrote, err)
 			return err
 		}
-		log.Printf("wrote: %d", wrote)
+		// log.Printf("wrote: %d", wrote)
 	}
 	return nil
 }
@@ -297,6 +297,7 @@ func (self *wandImpl) GetBlob() ([]byte, error) {
 
 	p := unsafe.Pointer(C.MagickGetImageBlob(self.wand, &size))
 	if size == 0 {
+		log.Print("wandImpl.GetBlob zero size")
 		return nil, errors.New("Could not get image blob.")
 	}
 
