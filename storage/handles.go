@@ -45,17 +45,17 @@ func NewHttpError(code int, text string) *HttpError {
 var cachedItems = make(map[string]*outItem)
 
 type outItem struct {
-	sPath, sName string
-	dPath, Name  string
-	Size         int
+	k    string
+	src  string
+	Name string
 	sync.Mutex
 }
 
-func newOutItem(sPath, sName, dPath, name string) (oi *outItem) {
+func newOutItem(k, src, name string) (oi *outItem) {
 	var ok bool
-	if oi, ok = cachedItems[sPath]; !ok {
-		oi = &outItem{sPath: sPath, sName: sName, dPath: dPath, Name: name}
-		cachedItems[sPath] = oi
+	if oi, ok = cachedItems[k]; !ok {
+		oi = &outItem{k: k, src: src, Name: name}
+		cachedItems[k] = oi
 	}
 
 	return
@@ -80,7 +80,7 @@ func (o *outItem) thumbnail(topt iimg.ThumbOption) (err error) {
 	o.Lock()
 	defer func() {
 		o.Unlock()
-		delete(cachedItems, o.sPath)
+		delete(cachedItems, o.k)
 	}()
 
 	if fi, fe := os.Stat(o.Name); fe == nil && fi.Size() > 0 {
@@ -89,9 +89,9 @@ func (o *outItem) thumbnail(topt iimg.ThumbOption) (err error) {
 	}
 
 	log.Printf("outItem.thumbnail(%dx%d %v) starting", topt.Width, topt.Height, topt.IsCrop)
-	err = iimg.ThumbnailFile(o.sName, o.Name, topt)
+	err = iimg.ThumbnailFile(o.src, o.Name, topt)
 	if err != nil {
-		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.sPath, o.dPath, topt, err)
+		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
 		return
 	}
 	return
@@ -189,13 +189,13 @@ func LoadPath(url string) (item *outItem, err error) {
 	if m["size"] == "orig" {
 		dst_path = "orig/" + org_path
 		dst_file = org_file
-		item = newOutItem(org_path, org_file, dst_path, dst_file)
+		item = newOutItem(url, org_file, dst_file)
 		return
 	}
 
 	dst_path = fmt.Sprintf("%s/%s", m["size"], org_path)
 	dst_file = path.Join(thumb_root, dst_path)
-	item = newOutItem(org_path, org_file, dst_path, dst_file)
+	item = newOutItem(url, org_file, dst_file)
 
 	if fi, fe := os.Stat(dst_file); !os.IsNotExist(fe) {
 		if l := fi.Size(); l > 0 {
