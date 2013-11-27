@@ -78,7 +78,7 @@ func setExitStatus(n int) {
 
 func init() {
 	flag.StringVar(&appDir, "root", "", "app root dir")
-	flag.StringVar(&logDir, "logs", "", "app logs dir")
+	flag.StringVar(&logDir, "logs", "/var/log/imsto", "app logs dir")
 	flag.Parse()
 	if appDir != "" {
 		config.SetAppRoot(appDir)
@@ -125,6 +125,20 @@ func main() {
 		usage(2)
 	}
 
+	if logDir != "" {
+		_, err := os.Stat(logDir)
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(logDir, os.FileMode(0755)); err != nil {
+				log.Printf("mkdir '%s' error or access denied", logDir)
+				return
+			}
+		} else if os.IsPermission(err) {
+			log.Printf("dir '%s' access denied", logDir)
+			return
+		}
+
+	}
+
 	for _, cmd := range commands {
 		name := cmd.Name()
 		if name == args[0] && cmd.Run != nil {
@@ -136,7 +150,7 @@ func main() {
 			log.SetFlags(log.LstdFlags | log.Lshortfile)
 			log.Printf("log dir: %s", logDir)
 			if logDir != "" {
-				logfile := path.Join(logDir, name+".log")
+				logfile := path.Join(logDir, name+"_log")
 				log.Printf("logfile: %s", logfile)
 				fd, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0664)
 				if err != nil {
