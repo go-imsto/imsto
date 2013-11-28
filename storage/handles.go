@@ -76,7 +76,7 @@ func newOutItem(url string) (oi *outItem, err error) {
 	// log.Printf("id: %s", id)
 	// thumb_root := config.GetValue(roof, "thumb_root")
 
-	k := roof + id.String()
+	k := id.String()
 
 	src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
 	// src := path.Join(thumb_root, "orig", org_path)
@@ -106,11 +106,13 @@ func (o *outItem) Lock() {
 		lkr = new(sync.Mutex)
 		lockes[o.k] = lkr
 	}
-	lkr.Lock()
+	if lkr != nil {
+		lkr.Lock()
+	}
 }
 
 func (o *outItem) Unlock() {
-	if lkr, ok := lockes[o.k]; ok {
+	if lkr, ok := lockes[o.k]; ok && lkr != nil {
 		lkr.Unlock()
 	}
 }
@@ -244,7 +246,7 @@ func (o *outItem) thumbnail() (err error) {
 	} else if mode == "h" {
 		topt.MaxHeight = height
 	}
-	log.Printf("outItem.thumbnail(%dx%d %v) starting", topt.Width, topt.Height, topt.IsCrop)
+	log.Printf("%s thumbnail(%s %dx%d %v) starting", o.roof, o.k, topt.Width, topt.Height, topt.IsCrop)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
 	if err != nil {
 		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
