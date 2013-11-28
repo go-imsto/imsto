@@ -42,16 +42,19 @@ func NewHttpError(code int, text string) *HttpError {
 	return &HttpError{Code: code, Text: text}
 }
 
-var cachedItems = make(map[string]*outItem)
+var lockes = make(map[string]sync.Locker)
 
+// TODO:: clean lockes delay
+
+// temporary item for http read
 type outItem struct {
-	k    string
-	m    harg
-	roof string
-	src  string
-	dst  string
-	id   *EntryId
-	sync.Mutex
+	k      string
+	m      harg
+	roof   string
+	src    string
+	dst    string
+	id     *EntryId
+	isOrig bool
 }
 
 func newOutItem(url string) (oi *outItem, err error) {
@@ -67,20 +70,17 @@ func newOutItem(url string) (oi *outItem, err error) {
 	var id *EntryId
 	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
 	if err != nil {
-		log.Print(err)
+		log.Printf("invalid id: %s", err)
 		return
 	}
 	// log.Printf("id: %s", id)
 	// thumb_root := config.GetValue(roof, "thumb_root")
-	var ok bool
-	k := roof + id.String()
-	if oi, ok = cachedItems[k]; !ok {
 
-		src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
-		// src := path.Join(thumb_root, "orig", org_path)
-		oi = &outItem{k: k, m: m, roof: roof, src: src}
-		cachedItems[k] = oi
-	}
+	k := roof + id.String()
+
+	src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
+	// src := path.Join(thumb_root, "orig", org_path)
+	oi = &outItem{k: k, m: m, id: id, roof: roof, src: src, isOrig: m["size"] == "orig"}
 
 	return
 }
@@ -97,14 +97,30 @@ func (o *outItem) thumbRoot() string {
 	return o.cfg("thumb_root")
 }
 
+func (o *outItem) Lock() {
+	var (
+		lkr sync.Locker
+		ok  bool
+	)
+	if lkr, ok = lockes[o.k]; !ok {
+		lkr = new(sync.Mutex)
+		lockes[o.k] = lkr
+	}
+	lkr.Lock()
+}
+
+func (o *outItem) Unlock() {
+	if lkr, ok := lockes[o.k]; ok {
+		lkr.Unlock()
+	}
+}
+
 func (o *outItem) Walk(c func(file http.File)) error {
-	o.Lock()
-	defer func() {
-		if o != nil {
-			o.Unlock()
-		}
-		delete(cachedItems, o.k)
-	}()
+	// o.Lock()
+	// defer func() {
+	// o.Unlock()
+	// delete(lockes, o.k)
+	// }()
 	file, err := os.Open(o.dst)
 	if err != nil {
 		return err
@@ -118,16 +134,21 @@ func (o *outItem) Walk(c func(file http.File)) error {
 }
 
 func (o *outItem) prepare() (err error) {
-	if o != nil {
-		o.Lock()
+	o.Lock()
+	defer o.Unlock()
+	org_file := o.srcName()
+
+	if o.isOrig {
+		o.dst = org_file
+	} else {
+		dst_path := fmt.Sprintf("%s/%s", o.m["size"], o.src)
+		o.dst = path.Join(o.thumbRoot(), dst_path)
 	}
 
-	defer func() {
-		if o != nil {
-			o.Unlock()
-		}
-	}()
-	org_file := o.srcName()
+	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 {
+		return
+	}
+
 	if fi, fe := os.Stat(org_file); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
 		mw := NewMetaWrapper(o.roof)
 		var entry *Entry
@@ -174,18 +195,14 @@ func (o *outItem) prepare() (err error) {
 		}
 	}
 
-	if o.m["size"] == "orig" {
-		o.dst = o.srcName()
-		return
-	}
-
-	dst_path := fmt.Sprintf("%s/%s", o.m["size"], o.src)
-	o.dst = path.Join(o.thumbRoot(), dst_path)
 	err = o.thumbnail()
 	return
 }
 
 func (o *outItem) thumbnail() (err error) {
+	if o.isOrig {
+		return
+	}
 	// o.Lock()
 	// defer func() {
 	// 	o.Unlock()
