@@ -85,8 +85,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 		}
 
 		ln := len(blob)
-		log.Printf("jpeg blob head: %x", blob[0:8])
-		log.Printf("jpeg blob tail: %x", blob[ln-2:ln])
+		log.Printf("jpeg blob head: %x, tail: %x", blob[0:8], blob[ln-2:ln])
 
 		log.Printf("open mem buf len %d\n", ln)
 		p := (*C.uchar)(unsafe.Pointer(&blob[0]))

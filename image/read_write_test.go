@@ -65,7 +65,8 @@ func TestThumbnail(t *testing.T) {
 
 	var data []byte
 	out := bytes.NewBuffer(data)
-	var topt = ThumbOption{Width: 60, Height: 60, IsFit: true}
+	var topt = ThumbOption{Width: 60, Height: 60, IsFit: true, IsCrop: true}
+	t.Logf("thumboption: %s", topt)
 	err := Thumbnail(rd, out, topt)
 	if err != nil {
 		t.Fatal(err)

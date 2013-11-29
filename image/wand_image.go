@@ -25,13 +25,13 @@ import (
 	"unsafe"
 )
 
-func cargv(b [][]byte) **C.char {
-	outer := make([]*C.char, len(b)+1)
-	for i, inner := range b {
-		outer[i] = C.CString(string(inner))
-	}
-	return (**C.char)(unsafe.Pointer(&outer[0])) // void bar(**char) {...}
-}
+// func cargv(b [][]byte) **C.char {
+// 	outer := make([]*C.char, len(b)+1)
+// 	for i, inner := range b {
+// 		outer[i] = C.CString(string(inner))
+// 	}
+// 	return (**C.char)(unsafe.Pointer(&outer[0])) // void bar(**char) {...}
+// }
 
 // Image object
 type wandImpl struct {
@@ -353,6 +353,100 @@ func (self *wandImpl) Destroy() error {
 
 func (self *wandImpl) Close() error {
 	self.Destroy()
+	return nil
+}
+
+func (self *wandImpl) Watermark(water *wandImpl, pos Position) error {
+
+	defer water.Destroy()
+	s_width := self.Width()
+	s_height := self.Height()
+	w_width := water.Width()
+	w_height := water.Height()
+
+	if s_width < w_width || s_height < w_height {
+		return fmt.Errorf("source image is too small, must large than %d x %d", w_width, w_height)
+	}
+
+	var (
+		left, top int
+	)
+	switch pos {
+	case BottomRight:
+		left = int(s_width-w_width) - 10
+		top = int(s_height-w_height) - 10
+		break
+	case TopRight:
+		left = int(s_width-w_width) - 10
+		top = 10
+		break
+	case BottomLeft:
+		left = 10
+		top = int(s_height-w_height) - 10
+		break
+	case Center:
+		left = int(s_width-w_width) / 2
+		top = int(s_height-w_height) / 2
+		break
+	default:
+		// left = s_width * 0.382 - w_width / 2
+		left = int(s_width-w_width) / 2
+		top = int(float64(s_height)*0.618 - float64(w_height)/2)
+
+	}
+
+	err := self.SetImageArtifact("compose:args", "15%")
+	if err != nil {
+		return err
+	}
+
+	// MagickSetImageArtifact(watermark_image.wand,"compose:args", "15%")
+	// #MagickSetImageArtifact(watermark_image.wand,"compose:args", "5")
+	// #MagickSetImageGravity(watermark_image.wand, SouthGravity)
+	// op := C.DissolveCompositeOp
+	// op := C.ModulateCompositeOp
+	op := C.CompositeOperator(C.BlendCompositeOp)
+	success := C.MagickCompositeImage(self.wand, water.wand, op, C.ssize_t(left), C.ssize_t(top))
+	if success == C.MagickFalse {
+		return fmt.Errorf("Could not add wartermark: %s", self.Error())
+	}
+
+	return nil
+}
+
+func (self *wandImpl) AddCopyright(water *wandImpl) error {
+	defer water.Destroy()
+	s_width := self.Width()
+	s_height := self.Height()
+	w_width := water.Width()
+	w_height := water.Height()
+
+	left := int(float64(s_width)*0.382 - float64(w_width)/2)
+	top := int(float64(s_height-w_height-s_height) * .1)
+
+	err := self.SetImageArtifact("compose:args", "40%")
+	if err != nil {
+		return err
+	}
+
+	op := C.CompositeOperator(C.BlendCompositeOp)
+	success := C.MagickCompositeImage(self.wand, water.wand, op, C.ssize_t(left), C.ssize_t(top))
+	if success == C.MagickFalse {
+		return fmt.Errorf("Could not add wartermark: %s", self.Error())
+	}
+	return nil
+}
+
+// Associates a artifact with an image.
+func (self *wandImpl) SetImageArtifact(artifact, value string) error {
+	csartifact := C.CString(artifact)
+	defer C.free(unsafe.Pointer(csartifact))
+	csvalue := C.CString(value)
+	defer C.free(unsafe.Pointer(csvalue))
+	success := C.MagickSetImageArtifact(self.wand, csartifact, csvalue)
+	if success == C.MagickFalse {
+		return fmt.Errorf("Could not set Artifact: %s", self.Error())
+	}
 	return nil
 }
 

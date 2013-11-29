@@ -15,7 +15,7 @@ import (
 )
 
 var cmdTest = &Command{
-	UsageLine: "test imageattr|mimetype|image filename",
+	UsageLine: "test attr|mime|image|thumb filename [destname]",
 	Short:     "run all tests from the command-line",
 	Long: `
 Just a test command
@@ -62,7 +62,7 @@ func testApp(args []string) bool {
 		return false
 	}
 
-	if al > 1 && args[0] == "imageattr" {
+	if al > 1 && args[0] == "attr" {
 
 		file, err := os.Open(args[1])
 
@@ -76,13 +76,29 @@ func testApp(args []string) bool {
 		)
 		im, err = cimg.Open(file)
 		fmt.Printf("attr: %s", im.GetAttr())
-	} else if al > 1 && args[0] == "mimetype" {
+		return true
+	}
+
+	if al > 1 && args[0] == "mime" {
 
 		ext := path.Ext(args[1])
 		fmt.Println(ext)
 		mimetype := mime.TypeByExtension(ext)
 		fmt.Println(mimetype)
-	} else if al > 1 && args[0] == "image" {
+		return true
+	}
+
+	if al > 2 && args[0] == "thumb" {
+		topt := cimg.ThumbOption{Width: 120, Height: 120, IsFit: true, IsCrop: true}
+		err := cimg.ThumbnailFile(args[1], args[2], topt)
+		if err != nil {
+			fmt.Printf("thumb error: %s", err)
+			return false
+		}
+		return false
+	}
+
+	if al > 1 && args[0] == "image" {
 		im, format, err := readImage(args[1])
 		if err != nil {
 			fmt.Println(err)

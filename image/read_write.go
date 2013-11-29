@@ -6,7 +6,6 @@ import (
 	"log"
 	"mime"
 	"os"
-	"path"
 	"reflect"
 	"wpst.me/calf/db"
 )
@@ -38,14 +37,6 @@ type WriteOption struct {
 // export NewAttr
 func NewAttr(w, h uint, q uint8) *Attr {
 	return &Attr{Dimension(w), Dimension(h), Quality(q), Size(0), "", ""}
-}
-
-type ThumbOption struct {
-	Width, Height       uint
-	MaxWidth, MaxHeight uint
-	IsFit               bool
-	IsCrop              bool
-	wopt                WriteOption
 }
 
 type ImageReader interface {
@@ -129,61 +120,9 @@ func getImageImpl(t TypeId) (im Image) {
 	} else if t == TYPE_PNG {
 		im = newSimpPNG()
 	} else {
-		im = newWandImage()
+		log.Panicf("rw: unsupport type %s", t)
+		// im = newWandImage()
 	}
 
 	return
-}
-
-func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
-	im := newWandImage()
-	im.Open(r)
-	err := im.Thumbnail(topt)
-
-	if err != nil {
-		return err
-	}
-
-	err = im.WriteTo(w)
-
-	if err != nil {
-		log.Print(err)
-		return err
-	}
-
-	return nil
-}
-
-func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
-	var in *os.File
-	in, err = os.Open(src)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	defer in.Close()
-	im := newWandImage()
-	im.Open(in)
-	err = im.Thumbnail(topt)
-	if err != nil {
-		log.Printf("im.Thumbnail error: %s", err)
-		return err
-	}
-
-	dir := path.Dir(dest)
-	err = os.MkdirAll(dir, os.FileMode(0755))
-	if err != nil {
-		return
-	}
-
-	return im.WriteFile(dest)
-
-	// out, err = os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0644))
-	// if err != nil {
-	// 	log.Print(err)
-	// 	return
-	// }
-	// defer out.Close()
-
-	// return Thumbnail(in, out, topt)
 }

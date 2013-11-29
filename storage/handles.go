@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"wpst.me/calf/config"
 	iimg "wpst.me/calf/image"
 )
@@ -42,7 +42,7 @@ func NewHttpError(code int, text string) *HttpError {
 	return &HttpError{Code: code, Text: text}
 }
 
-var lockes = make(map[string]sync.Locker)
+// var lockes = make(map[string]sync.Locker)
 
 // TODO:: clean lockes delay
 
@@ -55,6 +55,7 @@ type outItem struct {
 	dst    string
 	id     *EntryId
 	isOrig bool
+	lock   FLock
 }
 
 func newOutItem(url string) (oi *outItem, err error) {
@@ -80,7 +81,31 @@ func newOutItem(url string) (oi *outItem, err error) {
 
 	src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
 	// src := path.Join(thumb_root, "orig", org_path)
-	oi = &outItem{k: k, m: m, id: id, roof: roof, src: src, isOrig: m["size"] == "orig"}
+	isOrig := m["size"] == "orig"
+
+	oi = &outItem{
+		k: k, m: m,
+		id: id, roof: roof,
+		src:    src,
+		isOrig: isOrig,
+	}
+
+	org_file := oi.srcName()
+	if isOrig {
+		oi.dst = org_file
+	} else {
+		dst_path := fmt.Sprintf("%s/%s", m["size"], oi.src)
+		oi.dst = path.Join(oi.thumbRoot(), dst_path)
+	}
+
+	dir := path.Dir(org_file)
+	err = os.MkdirAll(dir, os.FileMode(0755))
+
+	oi.lock, err = NewFLock(org_file + ".lock")
+	if err != nil {
+		log.Printf("create lock error: %s", err)
+		return
+	}
 
 	return
 }
@@ -97,24 +122,14 @@ func (o *outItem) thumbRoot() string {
 	return o.cfg("thumb_root")
 }
 
-func (o *outItem) Lock() {
-	var (
-		lkr sync.Locker
-		ok  bool
-	)
-	if lkr, ok = lockes[o.k]; !ok {
-		lkr = new(sync.Mutex)
-		lockes[o.k] = lkr
-	}
-	if lkr != nil {
-		lkr.Lock()
-	}
+func (o *outItem) Lock() error {
+	return o.lock.Lock()
+	// return syscall.Flock(int(o.dst_f.Fd()), syscall.LOCK_EX)
 }
 
-func (o *outItem) Unlock() {
-	if lkr, ok := lockes[o.k]; ok && lkr != nil {
-		lkr.Unlock()
-	}
+func (o *outItem) Unlock() error {
+	return o.lock.Unlock()
+	// return syscall.Flock(int(o.dst_f.Fd()), syscall.LOCK_UN)
 }
 
 func (o *outItem) Walk(c func(file http.File)) error {
@@ -286,7 +301,7 @@ func LoadPath(url string) (item *outItem, err error) {
 	}
 	err = item.prepare()
 	if err != nil {
-		log.Print(err)
+		log.Printf("prepare error: %s", err)
 		return
 	}
 	return
@@ -299,6 +314,20 @@ func stringInSlice(s string, a []string) bool {
 		}
 	}
 	return false
+}
+
+func prepareDir(filename string) error {
+	dir := path.Dir(filename)
+	return os.MkdirAll(dir, os.FileMode(0755))
+}
+
+func writeFile(f *os.File, data []byte) error {
+	f.Seek(0, 0)
+	n, err := f.Write(data)
+	if err == nil && n < len(data) {
+		err = io.ErrShortWrite
+	}
+	return err
 }
 
 func saveFile(filename string, data []byte) (err error) {
