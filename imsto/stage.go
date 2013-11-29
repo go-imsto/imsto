@@ -19,7 +19,7 @@ stage is a image handler.
 
 var (
 	sport        = cmdStage.Flag.Int("port", 8968, "tcp listen port")
-	sReadTimeout = cmdStage.Flag.Int("readTimeout", 3, "connection read timeout in seconds")
+	sReadTimeout = cmdStage.Flag.Int("readTimeout", 15, "connection read timeout in seconds")
 	sMaxCpu      = cmdStage.Flag.Int("maxCpu", 0, "maximum number of CPUs. 0 means all available CPUs")
 )
 
