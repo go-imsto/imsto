@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	_ "database/sql/driver"
 	"encoding/binary"
-	"errors"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
@@ -34,54 +33,33 @@ func newTicket(roof string, appid AppId) *Ticket {
 }
 
 func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
-	var (
-		roof   string
-		appid  AppId
-		author Author
-	)
-	roof, appid, author, err = parseRequest(r)
-	if err != nil {
-		log.Print("request error:", err)
+
+	cr, e := parseRequest(r, false)
+	if e != nil {
+		err = e
 		return
 	}
 
-	t, err = getApiToken(roof, appid)
+	t, err = getApiToken(cr.roof, cr.appid)
 	if err != nil {
 		return
 	}
 	var b = make([]byte, 4)
-	binary.BigEndian.PutUint32(b, uint32(author))
+	binary.BigEndian.PutUint32(b, uint32(cr.author))
 	t.SetValue(b, VC_TOKEN)
 	return
 }
 
 func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
-	var (
-		roof   string
-		appid  AppId
-		author Author
-	)
-	roof, appid, author, err = parseRequest(r)
-	if err != nil {
-		log.Print("request error:", err)
+	cr, e := parseRequest(r, true)
+	if e != nil {
+		err = e
 		return
 	}
 
-	t, err = getApiToken(roof, appid)
-	if err != nil {
-		return
-	}
-	var ok bool
-	ok, err = t.VerifyString(r.PostFormValue("token"))
-	if err != nil {
-		return
-	}
-	if !ok {
-		err = errors.New("Invalid Token")
-	}
-	ticket := newTicket(roof, appid)
+	ticket := newTicket(cr.roof, cr.appid)
 
-	ticket.Author = author
+	ticket.Author = cr.author
 	ticket.Prompt = r.FormValue("prompt")
 
 	err = ticket.saveNew()
@@ -91,7 +69,7 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	t, err = getApiToken(roof, appid)
+	t, err = getApiToken(cr.roof, cr.appid)
 	if err != nil {
 		return
 	}
@@ -105,36 +83,17 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 }
 
 func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
-	var (
-		roof   string
-		appid  AppId
-		author Author
-	)
-	roof, appid, author, err = parseRequest(r)
-	if err != nil {
-		log.Print("request error:", err)
+	cr, e := parseRequest(r, true)
+	if e != nil {
+		err = e
 		return
 	}
 
-	var t *apiToken
-	t, err = getApiToken(roof, appid)
-	if err != nil {
-		return
-	}
-	var ok bool
-	ok, err = t.VerifyString(r.FormValue("token"))
-	if err != nil {
-		return
-	}
-	if !ok {
-		err = errors.New("Invalid Token")
-	}
+	id := cr.token.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
 
-	id := t.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
-
-	ticket, err = loadTicket(roof, int(id))
-	if ticket.Author != author {
-		log.Printf("mismatch author %s : %s", ticket.Author, author)
+	ticket, err = loadTicket(cr.roof, int(id))
+	if ticket.Author != cr.author {
+		log.Printf("mismatch author %s : %s", ticket.Author, cr.author)
 	}
 	return
 }

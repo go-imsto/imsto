@@ -396,48 +396,13 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		return
 	}
 
-	// log.Printf("form: %s", r.Form)
-	// log.Printf("postform: %s", r.PostForm)
-
-	var (
-		roof         string
-		appid        AppId
-		author       Author
-		lastModified uint64
-	)
-
-	roof, appid, author, err = parseRequest(r)
-	if err != nil {
-		// log.Print("request error:", err)
+	cr, e := parseRequest(r, true)
+	if e != nil {
+		err = e
 		return
 	}
 
-	if !config.HasSection(roof) {
-		err = fmt.Errorf("roof '%s' not found", roof)
-		return
-	}
-
-	var token *apiToken
-	token, err = getApiToken(roof, appid)
-	if err != nil {
-		return
-	}
-	token_str := r.FormValue("token")
-	if token_str == "" {
-		err = errors.New("api: need token argument")
-		return
-	}
-	var ok bool
-	ok, err = token.VerifyString(token_str)
-	if err != nil {
-		return
-	}
-	if !ok {
-		err = errors.New("api: Invalid Token")
-		return
-	}
-
-	lastModified, _ = strconv.ParseUint(r.FormValue("ts"), 10, 64)
+	lastModified, _ := strconv.ParseUint(r.FormValue("ts"), 10, 64)
 	log.Printf("lastModified: %s", lastModified)
 
 	form := r.MultipartForm
@@ -476,23 +441,23 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 			entries[i].Err = ee.Error()
 			continue
 		}
-		entry.AppId = appid
-		entry.Author = author
+		entry.AppId = cr.appid
+		entry.Author = cr.author
 		entry.Modified = lastModified
-		ee = entry.store(roof)
+		ee = entry.store(cr.roof)
 		if ee != nil {
 			log.Printf("%02d stored error: %s", i, ee)
 			entries[i].Err = ee.Error()
 			continue
 		}
 		log.Printf("stored %s %s", entry.Id, entry.Path)
-		if ee == nil && i == 0 && token.vc == VC_TICKET {
+		if ee == nil && i == 0 && cr.token.vc == VC_TICKET {
 			// TODO: upate ticket
 			// ticket := newTicket(roof, appid)
-			tid := token.GetValuleInt()
+			tid := cr.token.GetValuleInt()
 			log.Printf("token value: %d", tid)
 			var ticket *Ticket
-			ticket, ee = loadTicket(roof, int(tid))
+			ticket, ee = loadTicket(cr.roof, int(tid))
 			if ee != nil {
 				log.Printf("ticket load error: ", ee)
 			}
@@ -525,13 +490,25 @@ func DeleteRequest(r *http.Request) error {
 	return errors.New("invalid url")
 }
 
-func parseRequest(r *http.Request) (roof string, appid AppId, author Author, err error) {
+type custReq struct {
+	roof   string
+	appid  AppId
+	author Author
+	token  *apiToken
+}
+
+func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 	if r.Form == nil {
 		if err = r.ParseForm(); err != nil {
 			log.Print("form parse error:", err)
 			return
 		}
 	}
+	var (
+		roof   string
+		appid  AppId
+		author Author
+	)
 	var (
 		str string
 		aid uint64
@@ -541,6 +518,12 @@ func parseRequest(r *http.Request) (roof string, appid AppId, author Author, err
 	if roof == "" {
 		log.Print("Waring: parseRequest roof is empty")
 	}
+
+	if !config.HasSection(roof) {
+		err = fmt.Errorf("roof '%s' not found", roof)
+		return
+	}
+
 	str = r.FormValue("app")
 	if str != "" {
 		aid, err = strconv.ParseUint(str, 10, 16)
@@ -564,6 +547,24 @@ func parseRequest(r *http.Request) (roof string, appid AppId, author Author, err
 	}
 
 	author = Author(uid)
+
+	var token *apiToken
+	if needToken {
+		if token, err = getApiToken(roof, appid); err != nil {
+			return
+		}
+		token_str := r.FormValue("token")
+		if token_str == "" {
+			err = errors.New("api: need token argument")
+			return
+		}
+
+		if _, err = token.VerifyString(token_str); err != nil {
+			return
+		}
+	}
+
+	cr = custReq{roof, appid, author, token}
 	return
 }
 

@@ -52,6 +52,9 @@ func newToken(ver apiVer, appid AppId, salt []byte) (*apiToken, error) {
 }
 
 func (a *apiToken) VerifyString(str string) (bool, error) {
+	if str == "" {
+		return false, errors.New("api: token is empty")
+	}
 	s, err := base64.URLEncoding.DecodeString(str)
 	if err != nil {
 		log.Printf("verifystring '%s' error: %s", str, err)
