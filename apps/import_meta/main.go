@@ -26,25 +26,26 @@ var (
 )
 
 type entryOut struct {
-	Id         string    `bson:"_id" json:"id"`
-	Name       string    `bson:"name"`
-	Path       string    `bson:"path"`
-	Mime       string    `bson:"mime"`
-	Size       uint32    `bson:"size"`
-	Ids        []string  `bson:"ids"`
-	Meta       db.Hstore `bson:"meta"`
-	Sev        db.Hstore `bson:"sev"`
-	Created    time.Time `bson:"created"`
-	AppId      uint8     `bson:"app_id"`
-	Width      uint16    `bson:"width,omitempty"`
-	Height     uint16    `bson:"height,omitempty"`
-	Filename   string    `bson:"filename,omitempty"`
-	Length     uint32    `bson:"length,omitempty"`
-	ImgType    uint8     `bson:"type,omitempty"`
-	Hashes     []string  `bson:"hashes,omitempty"`
-	Hash       string    `bson:"hash,omitempty"`
-	Md5        string    `bson:"md5,omitempty"`
-	UploadDate time.Time `bson:"uploadDate,omitempty"`
+	Id          string    `bson:"_id" json:"id"`
+	Name        string    `bson:"name"`
+	Path        string    `bson:"path"`
+	Mime        string    `bson:"mime"`
+	ContentType string    `bson:"contentType,omitempty"`
+	Size        uint32    `bson:"size"`
+	Ids         []string  `bson:"ids"`
+	Meta        db.Hstore `bson:"meta"`
+	Sev         db.Hstore `bson:"sev"`
+	Created     time.Time `bson:"created"`
+	AppId       uint8     `bson:"app_id"`
+	Width       uint16    `bson:"width,omitempty"`
+	Height      uint16    `bson:"height,omitempty"`
+	Filename    string    `bson:"filename,omitempty"`
+	Length      uint32    `bson:"length,omitempty"`
+	ImgType     uint8     `bson:"type,omitempty"`
+	Hashes      []string  `bson:"hashes,omitempty"`
+	Hash        string    `bson:"hash,omitempty"`
+	Md5         string    `bson:"md5,omitempty"`
+	UploadDate  time.Time `bson:"uploadDate,omitempty"`
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
@@ -69,6 +70,9 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 	if eo.ImgType > 0 {
 		typeid := image.TypeId(eo.ImgType)
 		eo.Meta.Set("format", typeid.String())
+	}
+	if eo.Mime == "" && eo.ContentType != "" {
+		eo.Mime = eo.ContentType
 	}
 	if eo.Mime != "" {
 		eo.Meta.Set("mime", eo.Mime)
