@@ -22,10 +22,9 @@ const (
 )
 
 var (
-	ire              = regexp.MustCompile(image_url_regex)
-	ErrInvalidUrl    = errors.New("Err: Invalid Url")
-	ErrWriteFailed   = errors.New("Err: Write file failed")
-	ErrUnsupportSize = errors.New("Err: Unsupported size")
+	ire            = regexp.MustCompile(image_url_regex)
+	ErrInvalidUrl  = errors.New("Err: Invalid Url")
+	ErrWriteFailed = errors.New("Err: Write file failed")
 )
 
 type HttpError struct {
@@ -235,7 +234,7 @@ func (o *outItem) thumbnail() (err error) {
 	// log.Printf("mode %s, dimension %s", mode, dimension)
 	support_size := strings.Split(config.GetValue(o.roof, "support_size"), ",")
 	if !stringInSlice(dimension, support_size) {
-		err = NewHttpError(400, ErrUnsupportSize.Error())
+		err = NewHttpError(400, fmt.Sprintf("Unsupported size: %s", dimension))
 		return
 	}
 	var width, height uint
@@ -261,7 +260,7 @@ func (o *outItem) thumbnail() (err error) {
 	} else if mode == "h" {
 		topt.MaxHeight = height
 	}
-	log.Printf("%s thumbnail(%s %dx%d %v) starting", o.roof, o.k, topt.Width, topt.Height, topt.IsCrop)
+	log.Printf("%s thumbnail(%s %s) starting", o.roof, o.k, topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
 	if err != nil {
 		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)

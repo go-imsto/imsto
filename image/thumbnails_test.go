@@ -12,7 +12,8 @@ var (
 	topts = []ThumbOption{
 		{Width: 60, Height: 60, IsFit: true, IsCrop: false},
 		{Width: 60, Height: 60, IsFit: true, IsCrop: true},
-		{Width: 60, Height: 60, IsFit: false, IsCrop: false},
+		{MaxWidth: 60, IsFit: true},
+		{MaxHeight: 60, IsFit: true},
 	}
 )
 
@@ -23,13 +24,13 @@ func TestThumbnails(t *testing.T) {
 		t.Fatalf("image decode error: %s", err)
 	}
 
-	for _, topt := range topts {
+	for i, topt := range topts {
 		m, err := ThumbnailImage(im, &topt)
 		if err != nil {
 			t.Fatalf("ThumbnailImage '%s' error: %s", topt, err)
 		}
 		mb := m.Bounds()
-		t.Logf("thumbnail ok, %dx%d", mb.Dx(), mb.Dy())
+		t.Logf("%d thumbnail ok, %dx%d", i, mb.Dx(), mb.Dy())
 	}
 	// t.Fatal("fail")
 }

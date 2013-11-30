@@ -78,10 +78,10 @@ func (topt *ThumbOption) calc(ow, oh uint) error {
 		} else {
 
 			rel := float32(ow) / float32(oh)
-			if topt.MaxWidth > 0 && topt.Width > topt.MaxWidth {
+			if topt.MaxWidth > 0 && topt.MaxWidth <= ow {
 				topt.Width = topt.MaxWidth
 				topt.Height = uint(float32(topt.Width) / rel)
-			} else if topt.MaxHeight > 0 && topt.Height > topt.MaxHeight {
+			} else if topt.MaxHeight > 0 && topt.MaxHeight <= oh {
 				topt.Height = topt.MaxHeight
 				topt.Width = uint(float32(topt.Height) * rel)
 			} else {
