@@ -137,10 +137,7 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	if err != nil {
 		return err
 	}
-	// log.Printf("thumb option: %s", topt)
 	err = jpeg.Encode(w, m, &jpeg.Options{int(topt.Quality)})
-
-	// err = im.WriteTo(w)
 
 	if err != nil {
 		log.Print(err)
@@ -158,21 +155,12 @@ func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
 		return
 	}
 	defer in.Close()
-	// im := newWandImage()
-	// im.Open(in)
-	// err = im.Thumbnail(topt)
-	// if err != nil {
-	// 	log.Printf("im.Thumbnail error: %s", err)
-	// 	return err
-	// }
 
 	dir := path.Dir(dest)
 	err = os.MkdirAll(dir, os.FileMode(0755))
 	if err != nil {
 		return
 	}
-
-	// return im.WriteFile(dest)
 
 	var out *os.File
 	out, err = os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0644))
@@ -184,6 +172,5 @@ func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
 
 	err = Thumbnail(in, out, topt)
 
-	// return Thumbnail(in, out, topt)
 	return
 }
