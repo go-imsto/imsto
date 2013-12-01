@@ -67,14 +67,14 @@ func (a *apiToken) Verify(s []byte) (bool, error) {
 	if len(s) < min_token_length {
 		return false, errors.New("api: invalid token size")
 	}
-	log.Printf("token %x", s)
+	// log.Printf("token %x", s)
 	vc := s[di_vc:di_hash]
 
 	hash := s[di_hash:di_stamp] // sha1.Size
-	log.Printf("hash  %x", hash)
+	// log.Printf("hash  %x", hash)
 	stamp := BytesToInt64(s[di_stamp:di_value])
 
-	log.Printf("stamp %d", stamp)
+	// log.Printf("stamp %d", stamp)
 
 	// timeout
 	if isExpired(stamp) {
@@ -127,7 +127,7 @@ func (a *apiToken) Binary() []byte {
 	in := []byte{byte(a.ver), byte(a.appid), byte(a.vc)}
 	in = append(in, a.hash...)
 	in = append(in, Int64ToBytes(a.stamp)...)
-	log.Printf("in %x", in)
+	// log.Printf("in %x", in)
 	in = append(in, a.value...)
 	return in
 }
@@ -153,7 +153,7 @@ func hashToken(salt, value []byte, stamp int64) []byte {
 
 func isExpired(stamp int64) bool {
 	now := unixStamp()
-	log.Printf("now: %d stamp %d, interval %d", now, stamp, now-stamp)
+	// log.Printf("now: %d stamp %d, interval %d", now, stamp, now-stamp)
 	if now >= stamp && now-stamp < min_life_time {
 		return false
 	}

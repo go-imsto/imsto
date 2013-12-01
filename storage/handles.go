@@ -479,7 +479,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 			entries[i].Err = ee.Error()
 			continue
 		}
-		log.Printf("stored %s %s", entry.Id, entry.Path)
+		log.Printf("%02d [%s]stored %s %s", i, cr.roof, entry.Id, entry.Path)
 		if ee == nil && i == 0 && cr.token.vc == VC_TICKET {
 			// TODO: upate ticket
 			// ticket := newTicket(roof, appid)

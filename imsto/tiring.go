@@ -41,7 +41,7 @@ func roofsHandler(w http.ResponseWriter, r *http.Request) {
 func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m := make(map[string]interface{})
 	roof := r.FormValue("roof")
-	log.Printf("browse roof: %s", roof)
+	// log.Printf("browse roof: %s", roof)
 	var (
 		limit uint64
 		page  uint64
@@ -77,10 +77,9 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	m["data"] = a
 	m["total"] = t
-	url_prefix := config.GetValue(roof, "url_prefix")
 
 	thumb_path := config.GetValue(roof, "thumb_path")
-	m["url_prefix"] = strings.TrimSuffix(url_prefix, "/") + thumb_path + "/"
+	m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
 	// log.Printf("total: %d\n", t)
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, m)
