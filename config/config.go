@@ -24,6 +24,8 @@ temp_root = /tmp/
 support_size = 120,160,400
 ticket_table = upload_ticket
 watermark = config/watermark.png
+watermark_opacity = 20
+copyright = imsto.net
 `
 
 // var once sync.Once
