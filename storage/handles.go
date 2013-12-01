@@ -161,7 +161,7 @@ func (o *outItem) prepare() (err error) {
 		o.dst = path.Join(o.thumbRoot(), dst_path)
 	}
 
-	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 {
+	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.m["mop"] == "" {
 		return
 	}
 
@@ -212,6 +212,23 @@ func (o *outItem) prepare() (err error) {
 	}
 
 	err = o.thumbnail()
+	if err != nil {
+		return
+	}
+
+	if o.m["mop"] != "" {
+		if o.m["mop"] == "w" {
+			org_file := path.Join(o.thumbRoot(), o.m["size"], o.src)
+			dst_file := path.Join(o.thumbRoot(), o.m["size"]+"w", o.src)
+			watermark_file := path.Join(config.AppRoot(), config.GetValue(o.roof, "watermark"))
+			waterOption := iimg.WaterOption{Pos: iimg.Golden, Filename: watermark_file}
+			err = iimg.WatermarkFile(org_file, dst_file, waterOption)
+			if err != nil {
+				log.Printf("watermark error: %s", err)
+			}
+			o.dst = dst_file
+		}
+	}
 	return
 }
 
@@ -265,6 +282,10 @@ func (o *outItem) thumbnail() (err error) {
 	if err != nil {
 		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
 		return
+	}
+
+	if o.m["mop"] == "w" && width < 100 {
+		return NewHttpError(400, "bad size with watermark")
 	}
 	return
 }

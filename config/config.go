@@ -23,6 +23,7 @@ thumb_root = /opt/imsto/cache/thumb/
 temp_root = /tmp/
 support_size = 120,160,400
 ticket_table = upload_ticket
+watermark = config/watermark.png
 `
 
 // var once sync.Once

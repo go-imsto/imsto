@@ -17,17 +17,6 @@ const (
 	MIN_JPEG_QUALITY = jpeg.DefaultQuality // 75
 )
 
-type Position uint8
-
-const (
-	BottomRight Position = iota
-	TopLeft
-	TopRight
-	BottomLeft
-	Center
-	Golden
-)
-
 type ThumbOption struct {
 	Width, Height       uint
 	MaxWidth, MaxHeight uint
