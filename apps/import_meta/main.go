@@ -23,6 +23,7 @@ var (
 	mgo_coll    string
 	skip, limit int
 	mgoSession  *mgo.Session
+	id          string
 )
 
 type entryOut struct {
@@ -88,6 +89,16 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 
 	if len(eo.Ids) == 0 {
 		eo.Ids = []string{eo.Id}
+	} else {
+		exists := false
+		for _, i := range eo.Ids {
+			if i == eo.Id {
+				exists = true
+			}
+		}
+		if !exists {
+			eo.Ids = append(eo.Ids, eo.Id)
+		}
 	}
 
 	if eo.Created.IsZero() && !eo.UploadDate.IsZero() {
@@ -97,7 +108,7 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 	if eo.Created.IsZero() {
 		log.Printf("zero Created '%v'", eo.Created)
 	}
-	// log.Printf("eo %s %s %s %d %s", eo.Id, eo.Path, eo.Mime, eo.Size, eo.Hashes)
+	// log.Printf("eo %s %s %s %d hahes: %s ids: %s", eo.Id, eo.Path, eo.Mime, eo.Size, eo.Hashes, eo.Ids)
 	// log.Printf("meta %s", eo.Meta)
 
 	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Mime, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
@@ -117,6 +128,7 @@ func init() {
 	flag.IntVar(&skip, "skip", 0, "skip")
 	flag.IntVar(&limit, "limit", 5, "limit")
 	flag.StringVar(&appDir, "root", "", "app root dir")
+	flag.StringVar(&id, "id", "", "single item id")
 	flag.Parse()
 	if appDir != "" {
 		config.SetAppRoot(appDir)
@@ -137,7 +149,30 @@ func main() {
 	collectionName := mgo_coll + ".files"
 
 	log.Printf("import : %s", roof)
-	q := bson.M{}
+	var q bson.M
+	if id != "" {
+		log.Printf("id %s", id)
+		eo, err := QueryEntry(collectionName, id)
+		if err != nil {
+			log.Printf("query error: %s", err)
+			return
+		}
+		mw := storage.NewMetaWrapper(roof)
+		entry, err := eo.toEntry()
+		if err != nil {
+			log.Printf("to entry error: %s", err)
+			return
+		}
+		log.Printf("entry %s", entry)
+		err = mw.Save(entry)
+		if err != nil {
+			log.Printf("save error: %s", err)
+			return
+		}
+		return
+	}
+	q = bson.M{}
+
 	total, err := CountEntry(collectionName, q)
 	if err != nil {
 		log.Printf("count error: %s", err)
@@ -148,7 +183,7 @@ func main() {
 	// limit := 5
 	for skip < total {
 		log.Printf("start %d/%d", skip, total)
-		results, err := QueryEntry(collectionName, q, skip, limit)
+		results, err := QueryEntries(collectionName, q, skip, limit)
 		if err != nil {
 			log.Printf("query error: %s", err)
 		}
@@ -197,11 +232,11 @@ func withCollection(collection string, s func(*mgo.Collection) error) error {
 	return s(c)
 }
 
-func QueryEntry(collection string, q interface{}, skip int, limit int) (results []entryOut, err error) {
+func QueryEntries(collection string, q interface{}, skip int, limit int) (results []entryOut, err error) {
 	results = []entryOut{}
 	query := func(c *mgo.Collection) error {
 		fn := c.Find(q).Skip(skip).Limit(limit).All(&results)
-		if limit < 0 {
+		if limit < 1 {
 			fn = c.Find(q).Skip(skip).All(&results)
 		}
 		return fn
@@ -222,5 +257,17 @@ func CountEntry(collection string, q interface{}) (n int, err error) {
 		return withCollection(collection, query)
 	}
 	err = count()
+	return
+}
+
+func QueryEntry(collection string, id string) (eo entryOut, err error) {
+	query := func(c *mgo.Collection) error {
+		fn := c.FindId(id).One(&eo)
+		return fn
+	}
+	search := func() error {
+		return withCollection(collection, query)
+	}
+	err = search()
 	return
 }

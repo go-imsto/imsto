@@ -23,7 +23,6 @@ const (
 
 var (
 	ire            = regexp.MustCompile(image_url_regex)
-	ErrInvalidUrl  = errors.New("Err: Invalid Url")
 	ErrWriteFailed = errors.New("Err: Write file failed")
 )
 
@@ -183,7 +182,7 @@ func (o *outItem) prepare() (err error) {
 			err = ie
 			return
 		}
-		log.Printf("fetching [%s] file: '%s'", o.roof, entry.Path)
+		log.Printf("[%s] fetching: '%s'", o.roof, entry.Path)
 
 		var em Wagoner
 		em, err = FarmEngine(o.roof)
@@ -197,7 +196,7 @@ func (o *outItem) prepare() (err error) {
 			err = NewHttpError(404, err.Error())
 			return
 		}
-		log.Printf("fetched: %d", len(data))
+		log.Printf("[%s] fetched: %d bytes", o.roof, len(data))
 		err = saveFile(org_file, data)
 		if err != nil {
 			log.Printf("save fail: ", err)
@@ -286,7 +285,7 @@ func (o *outItem) thumbnail() (err error) {
 	} else if mode == "h" {
 		topt.MaxHeight = height
 	}
-	log.Printf("%s thumbnail(%s %s) starting", o.roof, o.k, topt)
+	log.Printf("[%s] thumbnail(%s %s) starting", o.roof, o.k, topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
 	if err != nil {
 		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
@@ -307,7 +306,7 @@ type harg map[string]string
 
 func parsePath(s string) (m harg, err error) {
 	if !ire.MatchString(s) {
-		err = NewHttpError(400, ErrInvalidUrl.Error())
+		err = NewHttpError(400, fmt.Sprintf("Invalid Path: %s", s))
 		return
 	}
 	match := ire.FindStringSubmatch(s)
