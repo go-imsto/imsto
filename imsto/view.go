@@ -1,8 +1,8 @@
 package main
 
 import (
-	"wpst.me/calf/storage"
 	"fmt"
+	"wpst.me/calf/storage"
 )
 
 var cmdView = &Command{
@@ -26,7 +26,7 @@ func runView(args []string) bool {
 		mw = storage.NewMetaWrapper("")
 		limit := 5
 		offset := 0
-		a, t, err := mw.Browse(limit, offset)
+		a, t, err := mw.Browse(limit, offset, map[string]int{"created": -1})
 		if err != nil {
 			fmt.Println(err)
 		}

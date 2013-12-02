@@ -68,8 +68,21 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m["rows"] = limit
 	m["page"] = page
 
+	sort := make(map[string]int)
+	sort_name := r.FormValue("sort_name")
+	sort_order := r.FormValue("sort_order")
+	if sort_name != "" {
+		var o int
+		if strings.ToUpper(sort_order) == "ASC" {
+			o = storage.ASCENDING
+		} else {
+			o = storage.DESCENDING
+		}
+		sort[sort_name] = o
+	}
+
 	mw := storage.NewMetaWrapper(roof)
-	a, t, err := mw.Browse(int(limit), int(offset))
+	a, t, err := mw.Browse(int(limit), int(offset), sort)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
