@@ -212,6 +212,10 @@ BEGIN
 		PERFORM map_save(m_v, a_path, a_name, a_mime, a_size, a_sev, a_roof);
 	END LOOP;
 
+	IF NOT a_ids @> ARRAY[a_id] THEN
+		PERFORM map_save(m_v, a_path, a_name, a_mime, a_size, a_sev, a_roof);
+	END IF;
+
 	-- save entry meta
 	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, meta, hashes, ids, size, sev) VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8
