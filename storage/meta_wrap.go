@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"log"
+	"strings"
 	"wpst.me/calf/config"
 	cdb "wpst.me/calf/db"
 	"wpst.me/calf/image"
@@ -18,7 +19,7 @@ const (
 )
 
 type MetaWrapper interface {
-	Browse(limit, offset int) ([]Entry, int, error)
+	Browse(limit, offset int, sort map[string]int) ([]Entry, int, error)
 	Save(entry *Entry) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id EntryId) (*Entry, error)
@@ -77,7 +78,25 @@ const (
 	valid_condition = " WHERE status = 0"
 )
 
-func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
+const (
+	ASCENDING  = 1
+	DESCENDING = -1
+)
+
+var (
+	sortable_fields = []string{"id", "created"}
+)
+
+func isSortable(k string) bool {
+	for _, sf := range sortable_fields {
+		if k == sf {
+			return true
+		}
+	}
+	return false
+}
+
+func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []Entry, t int, err error) {
 	if limit < 1 {
 		limit = 1
 	}
@@ -103,8 +122,26 @@ func (mw *MetaWrap) Browse(limit, offset int) (a []Entry, t int, err error) {
 		return
 	}
 
+	var orders []string
+	for k, v := range sort {
+		if isSortable(k) {
+			var o string
+			if v == ASCENDING {
+				o = "ASC"
+			} else {
+				o = "DESC"
+			}
+			orders = append(orders, k+" "+o)
+		}
+	}
+	str := "SELECT id, name, path, size, meta, sev, created, ids, hashes FROM " + table + valid_condition
+
+	if len(orders) > 0 {
+		str = str + " ORDER BY " + strings.Join(orders, ",")
+	}
+	// log.Printf("sql: %s", str)
 	var r *sql.Rows
-	r, err = db.Query("SELECT id, name, path, size, meta, sev, created, ids, hashes FROM "+table+valid_condition+" ORDER BY created DESC LIMIT $1 OFFSET $2", limit, offset)
+	r, err = db.Query(str+" LIMIT $1 OFFSET $2", limit, offset)
 	if err != nil {
 		return
 	}
