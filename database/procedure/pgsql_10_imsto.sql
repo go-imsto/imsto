@@ -188,17 +188,21 @@ DECLARE
 	tb_hash text;
 	tb_map text;
 	tb_meta text;
-	t_path text;
+	t_status text;
 BEGIN
 
 	tb_meta := 'meta_' || a_roof;
 
-	EXECUTE 'SELECT path FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
-	INTO t_path
+	EXECUTE 'SELECT status FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	INTO t_status
 	USING a_id;
 
-	IF t_path IS NOT NULL THEN
-		RAISE NOTICE 'exists meta %', t_path;
+	IF t_status IS NOT NULL THEN
+		RAISE NOTICE 'exists meta %', t_status;
+		IF t_status = 1 THEN
+			EXECUTE 'UPDATE ' || tb_meta || ' SET status = 0 WHERE id = $1'
+			USING a_id;
+		END IF;
 		RETURN -1;
 	END IF;
 
@@ -213,7 +217,7 @@ BEGIN
 	END LOOP;
 
 	IF NOT a_ids @> ARRAY[a_id] THEN
-		PERFORM map_save(m_v, a_path, a_name, a_mime, a_size, a_sev, a_roof);
+		PERFORM map_save(a_id, a_path, a_name, a_mime, a_size, a_sev, a_roof);
 	END IF;
 
 	-- save entry meta
