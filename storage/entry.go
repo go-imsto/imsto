@@ -117,14 +117,11 @@ func (e *Entry) trek(roof string) (err error) {
 	im, err = iimg.Open(rd)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("image open error: %s", err)
 		return
 	}
 
 	defer im.Close()
-
-	hashes := cdb.Qarray{e.h}
-	ids := cdb.Qarray{e.Id.String()}
 
 	ia := im.GetAttr()
 	// log.Println(ia)
@@ -132,23 +129,38 @@ func (e *Entry) trek(roof string) (err error) {
 	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
 	if ia.Quality > max_quality {
 		im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
-		log.Printf("set quality to max_quality %d", max_quality)
+		log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, max_quality)
+	}
+
+	max_width := iimg.Dimension(config.GetInt(roof, "max_width"))
+	max_height := iimg.Dimension(config.GetInt(roof, "max_height"))
+	if ia.Width > max_width || ia.Height > max_height {
+		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, e.Name)
+		return
+	}
+
+	min_width := iimg.Dimension(config.GetInt(roof, "min_width"))
+	min_height := iimg.Dimension(config.GetInt(roof, "min_height"))
+	if ia.Width < min_width || ia.Height < min_height {
+		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, e.Name)
+		return
 	}
 
 	var data []byte
 	data, err = im.GetBlob() // tack new data
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("GetBlob error: %s", err)
 		return
 	}
 
-	// TODO: 添加最小优化比率判断，如果过小，就忽略
+	hashes := cdb.Qarray{e.h}
+	ids := cdb.Qarray{e.Id.String()}
 
 	var hash2 string
 	size := len(data)
 	if max_file_size := config.GetInt(roof, "max_file_size"); size > max_file_size {
-		err = errors.New(fmt.Sprintf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size))
+		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size)
 		return
 	}
 
