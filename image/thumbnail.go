@@ -28,7 +28,11 @@ type ThumbOption struct {
 }
 
 func (topt ThumbOption) String() string {
-	return fmt.Sprintf("%dx%d q%d %v %v", topt.Width, topt.Height, topt.Quality, topt.IsFit, topt.IsCrop)
+	q := topt.Quality
+	if q < MIN_JPEG_QUALITY {
+		q = MIN_JPEG_QUALITY
+	}
+	return fmt.Sprintf("%dx%d q%d %v %v", topt.Width, topt.Height, q, topt.IsFit, topt.IsCrop)
 }
 
 func (topt *ThumbOption) calc(ow, oh uint) error {
