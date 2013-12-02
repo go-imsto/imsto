@@ -93,6 +93,11 @@ DECLARE
 	t_id text;
 BEGIN
 
+	IF char_length(a_hashed) < 20 THEN
+		RAISE NOTICE 'bad hash value {%}', a_hashed;
+		RETURN -1;
+	END IF;
+
 	suffix := substr(a_hashed, 1, 1);
 	tbname := 'imsto.hash_'||suffix;
 
