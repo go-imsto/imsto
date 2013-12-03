@@ -115,21 +115,22 @@ func Load() (err error) {
 	if cfgDir == "" {
 		dir = os.Getenv("IMSTO_CONF")
 		if dir == "" {
-			err = errors.New("IMSTO_CONF not found in environment or -root unset")
+			err = errors.New("IMSTO_CONF not found in environment or -conf unset")
 			return
 		}
 	} else {
 		dir = cfgDir
 	}
-	cfgFile := path.Join(dir, "config", "imsto.ini")
+	cfgFile := path.Join(dir, "imsto.ini")
 
 	loadedConfig, err = ini.LoadFile(cfgFile)
 
 	if err != nil {
-		log.Print(err)
-	} else {
+		// log.Print(err)
+		return
+	} /*else {
 		log.Print("config loaded from " + cfgFile)
-	}
+	}*/
 
 	err = loadThumbRoofs()
 
