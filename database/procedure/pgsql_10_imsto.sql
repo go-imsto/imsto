@@ -193,7 +193,7 @@ DECLARE
 	tb_hash text;
 	tb_map text;
 	tb_meta text;
-	t_status text;
+	t_status smallint;
 BEGIN
 
 	tb_meta := 'meta_' || a_roof;
