@@ -78,6 +78,7 @@ func _store_file(file, roof string) error {
 
 	if err != nil {
 		fmt.Printf("fail '%s' error:%s\n", file, err)
+		// fmt.Printf("entry meta: %s\n", entry.Meta)
 		return err
 	}
 

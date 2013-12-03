@@ -224,9 +224,10 @@ func (mw *MetaWrap) Save(entry *Entry) error {
 		return err
 	}
 
-	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
+	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
 	row := tx.QueryRow(sql, mw.table_suffix,
-		entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids)
+		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+		entry.AppId, entry.Author)
 
 	var ret int
 	err = row.Scan(&ret)

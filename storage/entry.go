@@ -181,6 +181,7 @@ func (e *Entry) trek(roof string) (err error) {
 	}
 
 	ia.Size = iimg.Size(size) // 更新后的大小
+	ia.Name = e.Name
 
 	path := newPath(e.Id, ia.Ext)
 

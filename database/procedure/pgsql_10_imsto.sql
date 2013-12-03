@@ -183,8 +183,9 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 -- 保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
-	a_id text, a_path text, a_name text, a_mime text, a_size int
-	, a_meta hstore, a_sev hstore, a_hashes text[], a_ids text[])
+	a_id text, a_path text, a_meta hstore, a_sev hstore
+	, a_hashes text[], a_ids text[]
+	, a_appid smallint, a_author int)
 
 RETURNS int AS
 $$
@@ -218,18 +219,18 @@ BEGIN
 
 	-- save entry map
 	FOR m_v IN SELECT UNNEST(a_ids) AS value LOOP
-		PERFORM map_save(m_v, a_path, a_name, a_mime, a_size, a_sev, a_roof);
+		PERFORM map_save(m_v, a_path, a_meta->'name', a_meta->'mime', (a_meta->'size')::int, a_sev, a_roof);
 	END LOOP;
 
 	IF NOT a_ids @> ARRAY[a_id] THEN
-		PERFORM map_save(a_id, a_path, a_name, a_mime, a_size, a_sev, a_roof);
+		PERFORM map_save(a_id, a_path, a_meta->'name', a_meta->'mime', (a_meta->'size')::int, a_sev, a_roof);
 	END IF;
 
 	-- save entry meta
-	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, meta, hashes, ids, size, sev) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8
+	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, size, meta, hashes, ids, sev, app_id, author) VALUES (
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 	)'
-	USING a_id, a_path, a_name, a_meta, a_hashes, a_ids, a_size, a_sev;
+	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author;
 
 RETURN 1;
 END;

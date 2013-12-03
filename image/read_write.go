@@ -21,6 +21,7 @@ type Attr struct {
 	Size    Size      `json:"size"`
 	Ext     string    `json:"ext,omitempty"`
 	Mime    string    `json:"mime,omitempty"`
+	Name    string    `json:"name,omitempty"`
 }
 
 // var attr_keys = []string{"width", "height", "quality", "size", "ext"}
@@ -36,7 +37,11 @@ type WriteOption struct {
 
 // export NewAttr
 func NewAttr(w, h uint, q uint8) *Attr {
-	return &Attr{Dimension(w), Dimension(h), Quality(q), Size(0), "", ""}
+	return &Attr{
+		Width:   Dimension(w),
+		Height:  Dimension(h),
+		Quality: Quality(q),
+	}
 }
 
 type ImageReader interface {

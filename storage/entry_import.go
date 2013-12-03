@@ -55,6 +55,11 @@ func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev db.Hsto
 		sev:     sev,
 		Created: created,
 	}
+	ia.Size = image.Size(size)
+	ia.Name = name
+	if ia.Mime == "" && mime != "" {
+		ia.Mime = mime
+	}
 
 	entry.Meta = &ia
 	entry.Hashes, err = db.NewQarray(hashes)
