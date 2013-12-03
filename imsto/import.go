@@ -9,7 +9,7 @@ import (
 )
 
 var cmdImport = &Command{
-	UsageLine: "import -s roof [filename]",
+	UsageLine: "import -s roof file1 [file2] [file3]\n\t\timport -s roof -dir directory",
 	Short:     "import data from local file",
 	Long: `
 import from a image file
