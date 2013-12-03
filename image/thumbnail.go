@@ -28,18 +28,21 @@ type ThumbOption struct {
 }
 
 func (topt ThumbOption) String() string {
-	q := topt.Quality
+	return fmt.Sprintf("%dx%d q%d %v %v", topt.Width, topt.Height, topt.GetQuality(), topt.IsFit, topt.IsCrop)
+}
+
+func (t ThumbOption) GetQuality() Quality {
+	// if topt.Quality < MIN_JPEG_QUALITY {
+	// 	topt.Quality = MIN_JPEG_QUALITY
+	// }
+	q := t.Quality
 	if q < MIN_JPEG_QUALITY {
 		q = MIN_JPEG_QUALITY
 	}
-	return fmt.Sprintf("%dx%d q%d %v %v", topt.Width, topt.Height, q, topt.IsFit, topt.IsCrop)
+	return q
 }
 
 func (topt *ThumbOption) calc(ow, oh uint) error {
-	if topt.Quality < MIN_JPEG_QUALITY {
-		topt.Quality = MIN_JPEG_QUALITY
-	}
-
 	if topt.Width >= ow && topt.Height >= oh {
 		return fmt.Errorf("%dx%d is too big", topt.Width, topt.Height)
 	}
@@ -130,7 +133,8 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	if err != nil {
 		return err
 	}
-	err = jpeg.Encode(w, m, &jpeg.Options{int(topt.Quality)})
+
+	err = jpeg.Encode(w, m, &jpeg.Options{int(topt.GetQuality())})
 
 	if err != nil {
 		log.Print(err)
