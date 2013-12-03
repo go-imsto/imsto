@@ -220,7 +220,7 @@ func (o *outItem) prepare() (err error) {
 			org_file := path.Join(o.thumbRoot(), o.m["size"], o.src)
 			dst_file := path.Join(o.thumbRoot(), o.m["size"]+"w", o.src)
 			watermark_file := path.Join(config.Root(), config.GetValue(o.roof, "watermark"))
-			copyright := config.GetValue(o.roof, "copyright_file")
+			copyright := config.GetValue(o.roof, "copyright")
 			opacity := config.GetInt(o.roof, "watermark_opacity")
 			waterOption := iimg.WaterOption{
 				Pos:      iimg.Golden,
