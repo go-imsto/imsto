@@ -55,7 +55,7 @@ var (
 	IsDebug    *bool
 	exitStatus = 0
 	exitMu     sync.Mutex
-	appDir     string
+	cfgDir     string
 	logDir     string
 )
 
@@ -77,19 +77,19 @@ func setExitStatus(n int) {
 }
 
 func init() {
-	flag.StringVar(&appDir, "root", "", "app root dir")
+	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app config dir")
 	flag.StringVar(&logDir, "logs", "/var/log/imsto", "app logs dir")
 	flag.Parse()
-	if appDir != "" {
-		config.SetAppRoot(appDir)
+	if cfgDir != "" {
+		config.SetRoot(cfgDir)
 	}
 	err := config.Load()
 	if err != nil {
 		log.Print("config load error: ", err)
 	}
 	if logDir == "" {
-		dir := config.AppRoot()
-		log.Printf("approot %s", dir)
+		dir := config.Root()
+		log.Printf("conf %s", dir)
 		if err != nil {
 			log.Print("getwd error: ", err)
 		}

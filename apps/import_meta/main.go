@@ -16,7 +16,7 @@ import (
 // url: localhost
 
 var (
-	appDir      string
+	cfgDir      string
 	mgo_url     string
 	mgo_db      string
 	roof        string
@@ -127,11 +127,11 @@ func init() {
 	flag.StringVar(&roof, "s", "", "config section name")
 	flag.IntVar(&skip, "skip", 0, "skip")
 	flag.IntVar(&limit, "limit", 5, "limit")
-	flag.StringVar(&appDir, "root", "", "app root dir")
+	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app conf dir")
 	flag.StringVar(&id, "id", "", "single item id")
 	flag.Parse()
-	if appDir != "" {
-		config.SetAppRoot(appDir)
+	if cfgDir != "" {
+		config.SetRoot(cfgDir)
 	}
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	err := config.Load()
@@ -142,7 +142,7 @@ func init() {
 }
 
 func main() {
-	if mgo_coll == "" || roof == "" || config.AppRoot() == "" {
+	if mgo_coll == "" || roof == "" || config.Root() == "" {
 		flag.PrintDefaults()
 		return
 	}

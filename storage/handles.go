@@ -219,16 +219,16 @@ func (o *outItem) prepare() (err error) {
 		if o.m["mop"] == "w" {
 			org_file := path.Join(o.thumbRoot(), o.m["size"], o.src)
 			dst_file := path.Join(o.thumbRoot(), o.m["size"]+"w", o.src)
-			watermark_file := path.Join(config.AppRoot(), config.GetValue(o.roof, "watermark"))
-			copyright_file := config.GetValue(o.roof, "copyright_file")
+			watermark_file := path.Join(config.Root(), config.GetValue(o.roof, "watermark"))
+			copyright := config.GetValue(o.roof, "copyright_file")
 			opacity := config.GetInt(o.roof, "watermark_opacity")
 			waterOption := iimg.WaterOption{
 				Pos:      iimg.Golden,
 				Filename: watermark_file,
 				Opacity:  iimg.Opacity(opacity),
 			}
-			if copyright_file != "" {
-				waterOption.Copyright = path.Join(config.AppRoot(), copyright_file)
+			if copyright != "" {
+				waterOption.Copyright = path.Join(config.Root(), copyright)
 			}
 			err = iimg.WatermarkFile(org_file, dst_file, waterOption)
 			if err != nil {

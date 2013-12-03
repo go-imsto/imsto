@@ -4,7 +4,7 @@
 
 # copy this file into /etc/init.d/ and named 'imsto'
 
-IMSTO_APP_ROOT=${IMSTO_APP_ROOT:-/opt/imsto}
+IMSTO_CONF=${IMSTO_CONF:-/etc/imsto}
 IMSTO_API_0_SALT=${IMSTO_API_0_SALT:-imstosalt}
 ACT=${SVCNAME#*.}
 if [ -z "${ACT}" -o ${ACT} != "stage" ]; then
@@ -13,7 +13,7 @@ fi
 
 IM_PID="/var/run/imsto.${ACT}.pid"
 # IM_LOG="/var/log/imsto/${ACT}_log"
-IM_CONF="${IMSTO_APP_ROOT}/config/imsto.ini"
+IM_CONF="${IMSTO_CONF}/config/imsto.ini"
 
 IM_BIN="/usr/local/bin/imsto"
 
@@ -34,7 +34,7 @@ start() {
 	${IM_BIN} \
 	-u nobody \
 	--make-pidfile --pidfile ${IM_PID} \
-	-- -root="${IMSTO_APP_ROOT}" -logs="/var/log/imsto" ${ACT}
+	-- -conf="${IMSTO_CONF}" -logs="/var/log/imsto" ${ACT}
 	eend $?
 }
 

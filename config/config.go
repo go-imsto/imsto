@@ -27,7 +27,7 @@ thumb_root = /opt/imsto/cache/thumb/
 temp_root = /tmp/
 support_size = 120,160,400
 ticket_table = upload_ticket
-watermark = config/watermark.png
+watermark = watermark.png
 watermark_opacity = 20
 copyright = imsto.net
 `
@@ -35,24 +35,24 @@ copyright = imsto.net
 // var once sync.Once
 
 var (
-	appRoot       string
+	cfgDir        string
 	defaultConfig ini.File
 	loadedConfig  ini.File
 	thumbRoofs    = make(map[string]string)
 )
 
-func AppRoot() string {
-	return appRoot
+func Root() string {
+	return cfgDir
 }
 
-func SetAppRoot(dir string) {
+func SetRoot(dir string) {
 
 	if _, err := os.Stat(dir); err != nil {
 		log.Println(err)
 		return
 	}
 
-	appRoot = dir
+	cfgDir = dir
 }
 
 func init() {
@@ -112,14 +112,14 @@ func Sections() []string {
 
 func Load() (err error) {
 	var dir string
-	if appRoot == "" {
-		dir = os.Getenv("IMSTO_APP_ROOT")
+	if cfgDir == "" {
+		dir = os.Getenv("IMSTO_CONF")
 		if dir == "" {
-			err = errors.New("IMSTO_APP_ROOT not found in environment or -root unset")
+			err = errors.New("IMSTO_CONF not found in environment or -root unset")
 			return
 		}
 	} else {
-		dir = appRoot
+		dir = cfgDir
 	}
 	cfgFile := path.Join(dir, "config", "imsto.ini")
 

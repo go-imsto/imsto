@@ -5,13 +5,13 @@ import (
 )
 
 const (
-	defaultAppRoot = "/opt/imsto"
+	defaultRoot    = "/etc/imsto"
 	defaultSection = ""
 )
 
-func TestAppRoot(t *testing.T) {
-	SetAppRoot(defaultAppRoot)
-	t.Logf("AppRoot: %v", AppRoot())
+func TestRoot(t *testing.T) {
+	SetRoot(defaultRoot)
+	t.Logf("Root: %v", Root())
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -21,7 +21,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Logf("loaded from: %s", defaultAppRoot)
+	t.Logf("loaded from: %s", defaultRoot)
 
 	sections := Sections()
 
