@@ -208,8 +208,9 @@ func (e *Entry) store(roof string) (err error) {
 
 	mw := NewMetaWrapper(roof)
 	eh, _err := mw.GetHash(e.h)
-	log.Printf("check hash: %s", eh)
-	if _err == nil && eh != nil && eh.id != "" {
+	if _err != nil { // ok, not exsits
+		log.Printf("check hash error: %s", _err)
+	} else if eh != nil && eh.id != "" {
 		if _id, _err := NewEntryId(eh.id); _err == nil {
 			e.Id = _id
 			_ne, _err := mw.GetEntry(*_id)
@@ -228,8 +229,6 @@ func (e *Entry) store(roof string) (err error) {
 				log.Printf("get entry error: %s", _err)
 			}
 		}
-	} else {
-		log.Printf("check hash exists error: %s", err)
 	}
 
 	if err = e.trek(roof); err != nil {
