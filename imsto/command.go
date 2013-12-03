@@ -106,7 +106,7 @@ func init() {
 }
 
 func main() {
-	fmt.Fprintf(os.Stdout, header)
+	// fmt.Fprintf(os.Stdout, header)
 	flag.Usage = func() { usage(1) }
 	args := flag.Args()
 
@@ -151,7 +151,7 @@ func main() {
 			// log.Printf("log dir: %s", logDir)
 			if logDir != "" {
 				logfile := path.Join(logDir, name+"_log")
-				log.Printf("logfile: %s", logfile)
+				// log.Printf("logfile: %s", logfile)
 				fd, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0664)
 				if err != nil {
 					log.Printf("logfile %s create failed", logfile)
@@ -186,10 +186,10 @@ func errorf(format string, args ...interface{}) {
 	// panic(LoggedError{}) // Panic instead of os.Exit so that deferred will run.
 }
 
-const header = `
-Welcome
+// const header = `
+// Welcome
 
-`
+// `
 
 const usageTemplate = `usage: imsto command [arguments]
 

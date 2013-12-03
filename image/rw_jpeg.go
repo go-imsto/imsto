@@ -39,6 +39,11 @@ import (
 	"unsafe"
 )
 
+//export debug_print
+func debug_print(cs *C.char) {
+	log.Printf(">\t%s\n", C.GoString(cs))
+}
+
 const jpeg_format = "JPEG"
 
 // jpeg simp_image
