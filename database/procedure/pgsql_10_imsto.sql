@@ -36,7 +36,7 @@ FOR i IN 0..15 LOOP
 	END IF;
 END LOOP;
 
-return count;
+RETURN count;
 END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
@@ -76,7 +76,7 @@ FOR i IN 1..36 LOOP
 	END IF;
 END LOOP;
 
-return count;
+RETURN count;
 END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
@@ -205,9 +205,10 @@ BEGIN
 
 	IF t_status IS NOT NULL THEN
 		RAISE NOTICE 'exists meta %', t_status;
-		IF t_status = 1 THEN
+		IF t_status = 1 THEN -- deleted, so restore it
 			EXECUTE 'UPDATE ' || tb_meta || ' SET status = 0 WHERE id = $1'
 			USING a_id;
+			RETURN -2;
 		END IF;
 		RETURN -1;
 	END IF;
