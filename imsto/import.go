@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"wpst.me/calf/storage"
 )
 
@@ -84,13 +85,22 @@ func _store_zip(zipfile string) {
 			continue
 		}
 
+		var name string
+		a := strings.Split(f.Name, "/")
+		l := len(a)
+		if l > 2 {
+			name = strings.Join(a[l-2:l], "/")
+		} else {
+			name = f.Name
+		}
+
 		log.Printf("file: %s\n", f.Name)
 		rc, err := f.Open()
 
-		entry, err := storage.StoredReader(rc, f.Name, roof, uint64(f.FileInfo().ModTime().Unix()))
+		entry, err := storage.StoredReader(rc, name, roof, uint64(f.FileInfo().ModTime().Unix()))
 
 		if err != nil {
-			fmt.Printf("fail '%s' error:%s\n", f.Name, err)
+			fmt.Printf("fail '%s' error:%s\n", name, err)
 			// fmt.Printf("entry meta: %s\n", entry.Meta)
 		}
 
