@@ -21,7 +21,11 @@ func init() {
 func locDial(sn string) (Wagoner, error) {
 	dir := config.GetValue(sn, "local_root")
 	if dir == "" {
-		return nil, errors.New("config local_root is empty")
+		dir = _check_local_dir()
+		if dir == "" {
+			return nil, errors.New("config local_root is empty")
+		}
+
 	}
 	l := &locWagon{
 		root: dir,
@@ -62,4 +66,31 @@ func (l *locWagon) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore, 
 func (l *locWagon) Del(key string) error {
 	name := path.Join(l.root, key)
 	return os.Remove(name)
+}
+
+func _exists_dir(dir string) bool {
+	if fi, err := os.Stat(dir); err == nil {
+		if fi.IsDir() {
+			return true
+		}
+	}
+	return false
+}
+
+func _check_local_dir() string {
+	if _home := os.Getenv("HOME"); _home != "" {
+		// check darwin User Library
+		_dir := path.Join(_home, "Library")
+		if _exists_dir(_dir) {
+			_dir = path.Join(_home, "Libarry", "imsto")
+			if _exists_dir(_dir) {
+				return _dir
+			} else {
+				if err := os.Mkdir(_dir, 0755); err == nil {
+					return _dir
+				}
+			}
+		}
+	}
+	return ""
 }

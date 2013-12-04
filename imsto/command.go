@@ -36,15 +36,13 @@ func (cmd *Command) Name() string {
 }
 
 func (cmd *Command) Usage() {
-	fmt.Fprintf(os.Stderr, "Example: imsto %s\n", cmd.UsageLine)
+	fmt.Fprintf(os.Stderr, "Usage: imsto %s\n", cmd.UsageLine)
 	fmt.Fprintf(os.Stderr, "Default Usage:\n")
 	cmd.Flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "Description:\n")
 	fmt.Fprintf(os.Stderr, "  %s\n", strings.TrimSpace(cmd.Long))
 	os.Exit(2)
 }
-
-type LoggedError struct{ error }
 
 const (
 	VERSION = "0.0.2"
@@ -183,7 +181,6 @@ func errorf(format string, args ...interface{}) {
 		format += "\n"
 	}
 	fmt.Fprintf(os.Stderr, format, args...)
-	// panic(LoggedError{}) // Panic instead of os.Exit so that deferred will run.
 }
 
 // const header = `

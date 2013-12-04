@@ -368,31 +368,18 @@ func saveFile(filename string, data []byte) (err error) {
 	return
 }
 
-func StoredFile(filename string, roof string) (entry *Entry, err error) {
-	var fi os.FileInfo
-	if fi, err = os.Stat(filename); err != nil {
-		if os.IsNotExist(err) {
-			log.Println(err)
-			return
-		}
-	}
-
+func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry, err error) {
 	var data []byte
-
-	data, err = ioutil.ReadFile(filename)
-
+	data, err = ioutil.ReadAll(r)
 	if err != nil {
-		log.Println(err)
 		return
 	}
-
-	entry, err = newEntry(data, path.Base(filename))
+	entry, err = newEntry(data, name)
 
 	if err != nil {
 		return
 	}
-	entry.Modified = uint64(fi.ModTime().Unix())
-	// err = entry.trek(roof)
+	entry.Modified = modified
 
 	err = entry.store(roof)
 	if err != nil {
@@ -401,6 +388,20 @@ func StoredFile(filename string, roof string) (entry *Entry, err error) {
 	}
 
 	return
+}
+
+func StoredFile(filename string, roof string) (*Entry, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	return StoredReader(f, path.Base(filename), roof, uint64(fi.ModTime().Unix()))
+
 }
 
 type entryStored struct {
