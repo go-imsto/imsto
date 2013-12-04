@@ -400,6 +400,11 @@ func StoredFile(filename string, roof string) (*Entry, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if fi.IsDir() {
+		return nil, fmt.Errorf("invalid: '%s' is a dir", filename)
+	}
+
 	return StoredReader(f, path.Base(filename), roof, uint64(fi.ModTime().Unix()))
 
 }
