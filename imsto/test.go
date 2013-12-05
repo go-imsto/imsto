@@ -23,19 +23,17 @@ Just a test command
 }
 
 var (
-	url = cmdTest.Flag.String("path", "", "entry path for load")
+	turl = cmdTest.Flag.String("path", "", "entry path for load")
 )
-
-const _head_size = 8
 
 func init() {
 	cmdTest.Run = testApp
 }
 
 func testApp(args []string) bool {
-	if *url != "" {
-		fmt.Println("url: ", *url)
-		item, err := storage.LoadPath(*url)
+	if *turl != "" {
+		fmt.Println("url: ", *turl)
+		item, err := storage.LoadPath(*turl)
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false

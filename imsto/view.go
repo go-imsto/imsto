@@ -1,32 +1,68 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"wpst.me/calf/storage"
 )
 
 var cmdView = &Command{
-	UsageLine: "view ID",
-	Short:     "view a id for item",
+	UsageLine: "view -s roof [-id ID]",
+	Short:     "view a id for item or browse",
 	Long: `
 Just a test command
 `,
 }
 
+var (
+	vroof       string
+	vid         string
+	limit, skip int
+)
+
 func init() {
 	cmdView.Run = runView
+	cmdView.Flag.StringVar(&vid, "id", "", "entry id")
+	cmdView.Flag.StringVar(&vroof, "s", "", "config section name")
+	cmdView.Flag.IntVar(&skip, "skip", 0, "skip")
+	cmdView.Flag.IntVar(&limit, "limit", 5, "limit")
 }
 
 func runView(args []string) bool {
-	al := len(args)
-	if al == 0 {
-		fmt.Println("noting")
-	} else if args[0] == "browse" {
+	if vroof == "" {
+		return false
+	}
+	if vid != "" {
+		id, err := storage.NewEntryId(vid)
+		if err != nil {
+			fmt.Printf("error: %s", err)
+			return true
+		}
+		// fmt.Println(id)
+
 		var mw storage.MetaWrapper
-		mw = storage.NewMetaWrapper("")
-		limit := 5
-		offset := 0
-		a, t, err := mw.Browse(limit, offset, map[string]int{"created": -1})
+		mw = storage.NewMetaWrapper(vroof)
+
+		var entry *storage.Entry
+		entry, err = mw.GetMeta(*id)
+
+		if err != nil {
+			fmt.Println(err)
+			return true
+		}
+
+		bytes, err := json.MarshalIndent(entry, "", "  ")
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("found entry: %s\n", bytes)
+		}
+
+	} else {
+		var mw storage.MetaWrapper
+		mw = storage.NewMetaWrapper(vroof)
+
+		a, t, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING})
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -35,21 +71,6 @@ func runView(args []string) bool {
 		for _, e := range a {
 			fmt.Printf("entry %s %s %d %s\n", e.Id, e.Path, e.Size, e.Mime)
 		}
-	} else {
-		id, err := storage.NewEntryId(args[0])
-		fmt.Println(id)
-
-		var mw storage.MetaWrapper
-		mw = storage.NewMetaWrapper("")
-
-		var entry *storage.Entry
-		entry, err = mw.GetMeta(*id)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		fmt.Println("entry:", entry)
 
 	}
 

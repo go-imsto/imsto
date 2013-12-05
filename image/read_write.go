@@ -21,7 +21,7 @@ type Attr struct {
 	Size    Size      `json:"size"`
 	Ext     string    `json:"ext,omitempty"`
 	Mime    string    `json:"mime,omitempty"`
-	Name    string    `json:"name,omitempty"`
+	Name    string    `json:"-"`
 }
 
 // var attr_keys = []string{"width", "height", "quality", "size", "ext"}
