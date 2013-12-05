@@ -134,7 +134,7 @@ func _store_file(file, roof string) {
 		name = filepath.Base(file)
 	}
 
-	fmt.Printf("%s\n", name)
+	// fmt.Printf("%s\n", name)
 	entry, err := storage.StoredFile(file, name, roof)
 	if err != nil {
 		log.Printf("store file error: %s", err)
