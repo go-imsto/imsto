@@ -99,12 +99,7 @@ func _store_zip(zipfile string) {
 
 		entry, err := storage.StoredReader(rc, name, roof, uint64(f.FileInfo().ModTime().Unix()))
 
-		if err != nil {
-			fmt.Printf("fail '%s' error:%s\n", name, err)
-			// fmt.Printf("entry meta: %s\n", entry.Meta)
-		}
-
-		fmt.Printf("ok %s %s '%s'\n", entry.Id, entry.Path, entry.Name)
+		_out_entry(entry, f.Name, err)
 		rc.Close()
 
 	}
@@ -117,16 +112,12 @@ func _store_dir(dir string) {
 			if !info.IsDir() {
 				if match != "" {
 					if ok, _ := filepath.Match(match, filepath.Base(path)); !ok {
+						log.Printf("file %s not match %s", path, match)
 						return nil
 					}
 				}
-				// return nil
-				e := _store_file(path, roof)
-				if e != nil {
-					log.Printf("store file error: %s", e)
-				}
-				// TODO: break or not break?
-				// return e
+
+				_store_file(path, roof)
 				return nil
 			}
 		} else {
@@ -136,15 +127,19 @@ func _store_dir(dir string) {
 	})
 }
 
-func _store_file(file, roof string) error {
+func _store_file(file, roof string) {
 	entry, err := storage.StoredFile(file, roof)
-
 	if err != nil {
-		fmt.Printf("fail '%s' error:%s\n", file, err)
-		// fmt.Printf("entry meta: %s\n", entry.Meta)
-		return err
+		log.Printf("store file error: %s", err)
+	}
+	_out_entry(entry, file, err)
+}
+
+func _out_entry(entry *storage.Entry, name string, err error) {
+	if err != nil {
+		fmt.Printf("fail \"%s\" \"%s\"\n", name, err)
+	} else {
+		fmt.Printf("ok %s %s \"%s\"\n", entry.Id, entry.Path, entry.Name)
 	}
 
-	fmt.Printf("ok %s %s '%s'\n", entry.Id, entry.Path, entry.Name)
-	return nil
 }

@@ -237,6 +237,7 @@ func (mw *MetaWrap) Save(entry *Entry) error {
 		return err
 		// log.Fatal(err)
 	}
+	entry.ret = ret
 
 	log.Printf("entry save ret: %v\n", ret)
 

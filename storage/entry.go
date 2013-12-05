@@ -71,6 +71,7 @@ type Entry struct {
 	b         []byte
 	h         string
 	_treked   bool
+	ret       int // db saved result
 }
 
 const (
