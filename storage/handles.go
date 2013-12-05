@@ -390,8 +390,8 @@ func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry
 	return
 }
 
-func StoredFile(filename string, roof string) (*Entry, error) {
-	f, err := os.Open(filename)
+func StoredFile(file, name, roof string) (*Entry, error) {
+	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
@@ -402,10 +402,14 @@ func StoredFile(filename string, roof string) (*Entry, error) {
 	}
 
 	if fi.IsDir() {
-		return nil, fmt.Errorf("invalid: '%s' is a dir", filename)
+		return nil, fmt.Errorf("invalid: '%s' is a dir", file)
 	}
 
-	return StoredReader(f, path.Base(filename), roof, uint64(fi.ModTime().Unix()))
+	if name == "" {
+		name = path.Base(file)
+	}
+
+	return StoredReader(f, name, roof, uint64(fi.ModTime().Unix()))
 
 }
 

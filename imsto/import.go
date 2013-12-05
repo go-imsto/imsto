@@ -24,10 +24,11 @@ import from local system
 }
 
 var (
-	roof  string
-	idir  string
-	match string
-	arch  string
+	roof           string
+	idir           string
+	match          string
+	arch           string
+	include_parent bool
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	cmdImport.Flag.StringVar(&idir, "dir", "", "Import the whole folder recursively if specified.")
 	cmdImport.Flag.StringVar(&arch, "archive", "", "Import the whole files in archive.zip if specified.")
 	cmdImport.Flag.StringVar(&match, "match", "*.jpg", "pattens of files to import, e.g., *.jpg, *.png, works together with -dir")
+	cmdImport.Flag.BoolVar(&include_parent, "iip", false, "is include parent dir name?")
 }
 
 func runImport(args []string) bool {
@@ -85,21 +87,18 @@ func _store_zip(zipfile string) {
 			continue
 		}
 
-		var name string
-		a := strings.Split(f.Name, "/")
-		l := len(a)
-		if l > 2 {
-			name = strings.Join(a[l-2:l], "/")
-		} else {
-			name = f.Name
-		}
-
 		log.Printf("file: %s\n", f.Name)
+
 		rc, err := f.Open()
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+		name := _shrink_name(f.Name)
 
 		entry, err := storage.StoredReader(rc, name, roof, uint64(f.FileInfo().ModTime().Unix()))
 
-		_out_entry(entry, f.Name, err)
+		_out_entry(entry, name, err)
 		rc.Close()
 
 	}
@@ -128,18 +127,36 @@ func _store_dir(dir string) {
 }
 
 func _store_file(file, roof string) {
-	entry, err := storage.StoredFile(file, roof)
+	var name string
+	if include_parent {
+		name = _shrink_name(file)
+	} else {
+		name = filepath.Base(file)
+	}
+
+	fmt.Printf("%s\n", name)
+	entry, err := storage.StoredFile(file, name, roof)
 	if err != nil {
 		log.Printf("store file error: %s", err)
 	}
-	_out_entry(entry, file, err)
+	_out_entry(entry, name, err)
 }
 
 func _out_entry(entry *storage.Entry, name string, err error) {
 	if err != nil {
-		fmt.Printf("fail \"%s\" \"%s\"\n", name, err)
+		fmt.Printf("fail %q %q\n", name, err)
 	} else {
-		fmt.Printf("ok %s %s \"%s\"\n", entry.Id, entry.Path, entry.Name)
+		fmt.Printf("ok %s %s %q\n", entry.Id, entry.Path, entry.Name)
 	}
+
+}
+
+func _shrink_name(fname string) string {
+	a := strings.Split(fname, "/")
+	l := len(a)
+	if l > 1 {
+		return strings.Join(a[l-2:l], "/")
+	}
+	return fname
 
 }
