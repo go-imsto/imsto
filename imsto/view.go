@@ -10,7 +10,7 @@ var cmdView = &Command{
 	UsageLine: "view -s roof [-id ID]",
 	Short:     "view a id for item or browse",
 	Long: `
-Just a test command
+view a id for item or browse
 `,
 }
 
@@ -36,7 +36,7 @@ func runView(args []string) bool {
 		id, err := storage.NewEntryId(vid)
 		if err != nil {
 			fmt.Printf("error: %s", err)
-			return true
+			return false
 		}
 		// fmt.Println(id)
 
@@ -48,7 +48,7 @@ func runView(args []string) bool {
 
 		if err != nil {
 			fmt.Println(err)
-			return true
+			return false
 		}
 
 		bytes, err := json.MarshalIndent(entry, "", "  ")
@@ -65,6 +65,7 @@ func runView(args []string) bool {
 		a, t, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING})
 		if err != nil {
 			fmt.Println(err)
+			return false
 		}
 		fmt.Printf("total: %d\n", t)
 		fmt.Printf(" %26s %34s %7s %11s %13s\n", "id", "path", "size", "mime", "name")
