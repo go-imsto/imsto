@@ -67,9 +67,9 @@ func runView(args []string) bool {
 			fmt.Println(err)
 		}
 		fmt.Printf("total: %d\n", t)
-		// fmt.Printf("rows: %s", a)
+		fmt.Printf(" %28s %34s %7s %11s %13s\n", "id", "path", "size", "mime", "name")
 		for _, e := range a {
-			fmt.Printf("entry %s %s %d %s\n", e.Id, e.Path, e.Size, e.Mime)
+			fmt.Printf(" %28s %34s %7d %11s %13s\n", e.Id, e.Path, e.Size, e.Mime, e.Name)
 		}
 
 	}
