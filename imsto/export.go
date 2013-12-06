@@ -21,6 +21,7 @@ var (
 	eroof  string
 	edir   string
 	etotal int
+	elimit int
 )
 
 const (
