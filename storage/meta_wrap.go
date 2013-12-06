@@ -19,13 +19,18 @@ const (
 )
 
 type MetaWrapper interface {
-	Browse(limit, offset int, sort map[string]int) ([]Entry, int, error)
+	Browse(limit, offset int, sort map[string]int) ([]*Entry, error)
+	Count() (int, error)
 	Save(entry *Entry) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id EntryId) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
 	GetEntry(id EntryId) (*Entry, error)
 	Delete(id EntryId) error
+}
+
+type rowScanner interface {
+	Scan(...interface{}) error
 }
 
 type MetaWrap struct {
@@ -84,6 +89,7 @@ const (
 )
 
 var (
+	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, status, created"
 	sortable_fields = []string{"id", "created"}
 )
 
@@ -96,7 +102,22 @@ func isSortable(k string) bool {
 	return false
 }
 
-func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []Entry, t int, err error) {
+func (mw *MetaWrap) Count() (t int, err error) {
+	db := mw.getDb()
+	defer db.Close()
+	table := mw.table()
+
+	t = 0
+	err = db.QueryRow("SELECT COUNT(id) FROM " + table + valid_condition).Scan(&t)
+	if err != nil {
+		log.Printf("query count error: %s", err)
+		return
+	}
+
+	return
+}
+
+func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []*Entry, err error) {
 	if limit < 1 {
 		limit = 1
 	}
@@ -110,18 +131,6 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []Entry, t
 	db := mw.getDb()
 	defer db.Close()
 
-	t = 0
-	err = db.QueryRow("SELECT COUNT(id) FROM " + table + valid_condition).Scan(&t)
-	if err != nil {
-		log.Printf("query count error: %s", err)
-		return
-	}
-
-	if t == 0 {
-		log.Print("browse empty meta")
-		return
-	}
-
 	var orders []string
 	for k, v := range sort {
 		if isSortable(k) {
@@ -134,7 +143,7 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []Entry, t
 			orders = append(orders, k+" "+o)
 		}
 	}
-	str := "SELECT id, name, path, size, meta, sev, created, ids, hashes FROM " + table + valid_condition
+	str := "SELECT " + meta_columns + " FROM " + table + valid_condition
 
 	if len(orders) > 0 {
 		str = str + " ORDER BY " + strings.Join(orders, ",")
@@ -149,66 +158,55 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []Entry, t
 	defer r.Close()
 
 	for r.Next() {
-		e := Entry{}
-		var id string
-		var meta, sev cdb.Hstore
-		err = r.Scan(&id, &e.Name, &e.Path, &e.Size, &meta, &sev, &e.Created, &e.Ids, &e.Hashes)
+		var entry *Entry
+		entry, err = _bindRow(r)
 		if err != nil {
 			return
 		}
-		e.Id, err = NewEntryId(id)
-		if err != nil {
-			return
-		}
-
-		var ia image.Attr
-		err = meta.ToStruct(&ia)
-		if err != nil {
-			return
-		}
-
-		e.Meta = &ia
-		e.Mime = fmt.Sprint(meta.Get("mime"))
-
-		a = append(a, e)
+		a = append(a, entry)
 	}
 	return
+}
+
+func _bindRow(rs rowScanner) (*Entry, error) {
+
+	e := Entry{}
+	var id string
+	var meta cdb.Hstore
+	// "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, status, created"
+	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
+		&e.sev, &e.exif, &e.AppId, &e.Author, &e.Status, &e.Created)
+	if err != nil {
+		return nil, err
+	}
+	e.Id, err = NewEntryId(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var ia image.Attr
+	err = meta.ToStruct(&ia)
+	if err != nil {
+		return nil, err
+	}
+
+	e.Meta = &ia
+	e.Mime = fmt.Sprint(meta.Get("mime"))
+
+	// log.Printf("bind name: %s, path: %s, size: %d, mime: %s\n", e.Name, e.Path, e.Size, e.Mime)
+
+	return &e, nil
 }
 
 func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	db := mw.getDb()
 	defer db.Close()
 
-	sql := "SELECT name, path, size, meta, sev, ids, hashes FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
-	entry := Entry{Id: &id}
+	sql := "SELECT " + meta_columns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
+
 	row := db.QueryRow(sql, id.String())
 
-	var meta cdb.Hstore
-	err := row.Scan(&entry.Name, &entry.Path, &entry.Size, &meta, &entry.sev, &entry.Ids, &entry.Hashes)
-
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	log.Println("first id:", entry.Ids[0])
-
-	log.Println("meta:", meta)
-	log.Println("sev:", entry.sev)
-	var ia image.Attr
-	err = meta.ToStruct(&ia)
-	if err != nil {
-		log.Println(err)
-		return &entry, err
-	}
-	log.Println("ia:", ia)
-
-	entry.Meta = &ia
-	entry.Mime = fmt.Sprint(meta.Get("mime"))
-
-	log.Printf("name: %s, path: %s, size: %d, mime: %s\n", entry.Name, entry.Path, entry.Size, entry.Mime)
-
-	return &entry, nil
+	return _bindRow(row)
 }
 
 func (mw *MetaWrap) Save(entry *Entry) error {

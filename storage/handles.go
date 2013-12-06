@@ -184,20 +184,14 @@ func (o *outItem) prepare() (err error) {
 		}
 		log.Printf("[%s] fetching: '%s'", o.roof, entry.Path)
 
-		var em Wagoner
-		em, err = FarmEngine(o.roof)
-		if err != nil {
-			log.Println(err)
-			return
-		}
 		var data []byte
-		data, err = em.Get(entry.Path)
+		data, err = FetchBlob(entry, o.roof)
 		if err != nil {
 			err = NewHttpError(404, err.Error())
 			return
 		}
 		log.Printf("[%s] fetched: %d bytes", o.roof, len(data))
-		err = saveFile(org_file, data)
+		err = SaveFile(org_file, data)
 		if err != nil {
 			log.Printf("save fail: ", err)
 			return
@@ -320,6 +314,18 @@ func parsePath(s string) (m harg, err error) {
 	return
 }
 
+func FetchBlob(e *Entry, roof string) (data []byte, err error) {
+	var em Wagoner
+	em, err = FarmEngine(roof)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	// var data []byte
+	data, err = em.Get(e.Path)
+	return
+}
+
 func LoadPath(url string) (item *outItem, err error) {
 	// log.Printf("load: %s", url)
 	item, err = newOutItem(url)
@@ -358,7 +364,7 @@ func writeFile(f *os.File, data []byte) error {
 	return err
 }
 
-func saveFile(filename string, data []byte) (err error) {
+func SaveFile(filename string, data []byte) (err error) {
 	dir := path.Dir(filename)
 	err = os.MkdirAll(dir, os.FileMode(0755))
 	if err != nil {

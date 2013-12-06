@@ -39,7 +39,6 @@ func roofsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
-	m := make(map[string]interface{})
 	roof := r.FormValue("roof")
 	// log.Printf("browse roof: %s", roof)
 	var (
@@ -65,9 +64,6 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	offset := limit * (page - 1)
 
-	m["rows"] = limit
-	m["page"] = page
-
 	sort := make(map[string]int)
 	sort_name := r.FormValue("sort_name")
 	sort_order := r.FormValue("sort_order")
@@ -82,12 +78,22 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mw := storage.NewMetaWrapper(roof)
-	a, t, err := mw.Browse(int(limit), int(offset), sort)
+	t, err := mw.Count()
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
 	}
+	a, err := mw.Browse(int(limit), int(offset), sort)
+	if err != nil {
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+	m := make(map[string]interface{})
+	m["rows"] = limit
+	m["page"] = page
+
 	m["data"] = a
 	m["total"] = t
 

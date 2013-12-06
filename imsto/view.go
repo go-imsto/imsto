@@ -61,8 +61,13 @@ func runView(args []string) bool {
 	} else {
 		var mw storage.MetaWrapper
 		mw = storage.NewMetaWrapper(vroof)
+		t, err := mw.Count()
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
 
-		a, t, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING})
+		a, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING})
 		if err != nil {
 			fmt.Println(err)
 			return false
@@ -73,7 +78,7 @@ func runView(args []string) bool {
 			fmt.Println("empty result")
 			return true
 		}
-		fmt.Printf(" %26s %34s %7s %11s %13s\n", "id", "path", "size", "mime", "name")
+		fmt.Printf(" %26s %34s %9s %11s %13s\n", "id", "path", "size", "mime", "name")
 		for _, e := range a {
 			fmt.Printf(" %29s %35s %7d %11s %13s\n", e.Id, e.Path, e.Size, e.Mime, e.Name)
 		}
