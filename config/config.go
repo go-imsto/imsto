@@ -100,11 +100,19 @@ func HasSection(sname string) bool {
 	return false
 }
 
-func Sections() []string {
-	a := []string{}
-	for name, _ := range loadedConfig {
-		if name != "common" {
-			a = append(a, name)
+// return administrable sections
+func Sections() map[string]string {
+	a := make(map[string]string)
+	for k, v := range loadedConfig {
+		if k != "common" {
+			// a = append(a, k)
+			if _, oka := v["administrable"]; oka {
+				label, ok := v["label"]
+				if !ok {
+					label = strings.ToTitle(k)
+				}
+				a[k] = label
+			}
 		}
 	}
 	return a
@@ -141,13 +149,13 @@ func Load() (err error) {
 }
 
 func loadThumbRoofs() error {
-	for _, sec := range Sections() {
+	for sec, _ := range Sections() {
 		s := GetValue(sec, "thumb_path")
 		tp := strings.TrimPrefix(s, "/")
 		if _, ok := thumbRoofs[tp]; !ok {
 			thumbRoofs[tp] = sec
 		} else {
-			return fmt.Errorf("duplicate 'thumb_root=%s' in config", s)
+			return fmt.Errorf("duplicate 'thumb_path=%s' in config", s)
 			// log.Printf("duplicate thumb_root in config")
 		}
 	}
