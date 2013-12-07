@@ -65,7 +65,7 @@ func newOutItem(url string) (oi *outItem, err error) {
 		return
 	}
 	// log.Print(m)
-	roof := config.ThumbRoof(m["tp"])
+	roof := getThumbRoof(m["tp"])
 	var id *EntryId
 	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
 	if err != nil {
@@ -328,6 +328,7 @@ func FetchBlob(e *Entry, roof string) (data []byte, err error) {
 
 func LoadPath(url string) (item *outItem, err error) {
 	// log.Printf("load: %s", url)
+
 	item, err = newOutItem(url)
 	if err != nil {
 		log.Print(err)
@@ -637,4 +638,32 @@ func getApiToken(roof string, appid AppId) (token *apiToken, err error) {
 	ver := apiVer(0)
 	token, err = newToken(ver, appid, salt)
 	return
+}
+
+var thumbRoofs = make(map[string]string)
+
+func loadThumbRoofs() error {
+	for sec, _ := range config.Sections() {
+		s := config.GetValue(sec, "thumb_path")
+		tp := strings.TrimPrefix(s, "/")
+		if _, ok := thumbRoofs[tp]; !ok {
+			thumbRoofs[tp] = sec
+		} else {
+			return fmt.Errorf("duplicate 'thumb_path=%s' in config", s)
+			// log.Printf("duplicate thumb_root in config")
+		}
+	}
+	return nil
+}
+
+func getThumbRoof(s string) string {
+	tp := strings.Trim(s, "/")
+	if v, ok := thumbRoofs[tp]; ok {
+		return v
+	}
+	return ""
+}
+
+func init() {
+	config.AtLoaded(loadThumbRoofs)
 }

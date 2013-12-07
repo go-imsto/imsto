@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"github.com/vaughan0/go-ini"
 	"log"
 	"os"
@@ -38,7 +37,6 @@ var (
 	cfgDir        string
 	defaultConfig ini.File
 	loadedConfig  ini.File
-	thumbRoofs    = make(map[string]string)
 )
 
 func Root() string {
@@ -106,12 +104,12 @@ func Sections() map[string]string {
 	for k, v := range loadedConfig {
 		if k != "common" {
 			// a = append(a, k)
-			if _, oka := v["administrable"]; oka {
+			if admin, oka := v["administrable"]; oka && admin == "true" {
 				label, ok := v["label"]
 				if !ok {
 					label = strings.ToTitle(k)
 				}
-				a[k] = label
+				a[k] = strings.Trim(label, "\"")
 			}
 		}
 	}
@@ -140,32 +138,20 @@ func Load() (err error) {
 		log.Print("config loaded from " + cfgFile)
 	}*/
 
-	err = loadThumbRoofs()
-
-	if err != nil {
-		log.Printf("%s %s", err, cfgFile)
+	for _, f := range afterCalles {
+		err = f()
+		if err != nil {
+			log.Printf("loaded call error: %s %s", err, cfgFile)
+		}
 	}
+
 	return
 }
 
-func loadThumbRoofs() error {
-	for sec, _ := range Sections() {
-		s := GetValue(sec, "thumb_path")
-		tp := strings.TrimPrefix(s, "/")
-		if _, ok := thumbRoofs[tp]; !ok {
-			thumbRoofs[tp] = sec
-		} else {
-			return fmt.Errorf("duplicate 'thumb_path=%s' in config", s)
-			// log.Printf("duplicate thumb_root in config")
-		}
-	}
-	return nil
-}
+var (
+	afterCalles [](func() error)
+)
 
-func ThumbRoof(s string) string {
-	tp := strings.Trim(s, "/")
-	if v, ok := thumbRoofs[tp]; ok {
-		return v
-	}
-	return ""
+func AtLoaded(f func() error) {
+	afterCalles = append(afterCalles, f)
 }
