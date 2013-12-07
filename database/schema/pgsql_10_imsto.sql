@@ -78,22 +78,12 @@ CREATE TABLE meta_demo
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
 
-CREATE TABLE meta_wpitem
+CREATE TABLE meta_s3
 (
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
 
-CREATE TABLE meta_crafts
-(
-	LIKE meta_template INCLUDING ALL
-) WITHOUT OIDS;
-
-CREATE TABLE meta_avatar
-(
-	LIKE meta_template INCLUDING ALL
-) WITHOUT OIDS;
-
-CREATE TABLE meta_wpcms
+CREATE TABLE meta_grid
 (
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
