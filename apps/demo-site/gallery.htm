@@ -3,13 +3,13 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title>imsto manage</title>
-	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.8/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.24/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" title="no title" charset="utf-8">
 	<link rel="stylesheet" href="/css/base.css" type="text/css" media="screen" charset="utf-8">
 	<link rel="stylesheet" href="/css/images.css" type="text/css" media="screen" charset="utf-8">
 	<link rel="stylesheet" href="/css/colorbox.css" type="text/css" media="screen" charset="utf-8">
 	<link rel="stylesheet" href="/css/pager.css" type="text/css" media="screen" charset="utf-8">
 	
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.24/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.colorbox-min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.pager.js" type="text/javascript" charset="utf-8"></script>
@@ -33,15 +33,15 @@
 	};
 	var allow_delete = true, default_roof = 'demo', roof;
 		$(document).ready(function(){
-				var page_size = 20;
-				var post_data = {roof:default_roof, sort_name:'created', sort_order:'desc'};
-				var pageClick = function(page) {
-					//arr = $("input:checked"); 
-					//post_data.source = arr[0].value;
-					//post_data.sort_order = arr[1].value;
-					loadImages(page,post_data);
-				};
-				// loadImages(1, post_data);
+			var page_size = 20;
+			var post_data = {roof:default_roof, sort_name:'created', sort_order:'desc'};
+			var pageClick = function(page) {
+				//arr = $("input:checked"); 
+				//post_data.source = arr[0].value;
+				//post_data.sort_order = arr[1].value;
+				loadImages(page,post_data);
+			};
+			// loadImages(1, post_data);
 
 			$.getJSON('/imsto/roofs', function(res){
 				// console.log(typeof res.roofs)
@@ -132,11 +132,9 @@
 					$("#image-list a").colorbox();
 					
 				}, 'json');
-				}
+			}
 
-
-				//$("#radio").buttonset();
-				$(".button").button();
+			$(".button").button();
 				
 		});
 	</script>

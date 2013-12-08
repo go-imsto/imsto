@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" title="no title" charset="utf-8" />
+	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.24/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" title="no title" charset="utf-8" />
 	<title>imsto upload</title>
 	<link rel="stylesheet" href="/css/base.css" type="text/css" media="screen" charset="utf-8" />
 	<link rel="stylesheet" href="/css/upload.css" type="text/css" media="screen" charset="utf-8" />
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.7/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.24/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.imgupload.js" type="text/javascript" charset="utf-8"></script>
 
@@ -80,7 +80,7 @@ $(document).ready(function(){
 		}
 	});
 	$("#image-pic-list").disableSelection();
-	$("#image_images_form").submit(function(form){
+	$("#upload_form").submit(function(form){
 		if ($("#image-pic-list li").length == 0) return false;
 		$("#image-pic-list li.new").each(function(i){
 			$(this).attr('id','li_new'+i);
@@ -112,6 +112,7 @@ $(document).ready(function(){
 			Dust.alert('New file not found, please select one or more files');
 			return false;
 		}
+
 		$.imgupload({
 			
 			url: url_stored,
@@ -141,6 +142,7 @@ $(document).ready(function(){
 								showMessage('save ' + (i+1) + ': ' + file.name + ' failed, error: ' + item.error);
 							}
 							else {
+								$(imgs[i]).parent().removeClass('new');
 								showMessage('save ' + (i+1) + ': ' + file.name + ' OK, path: ' + item.path);
 							}
 						});
@@ -184,6 +186,7 @@ $(document).ready(function(){
 					}, 6000);
 					
 				});*/
+				$("#pic-input").val(null);
 			}
 		});
 		
@@ -250,8 +253,7 @@ $(document).ready(function(){
 			<span id="radios1" class="button_box"></span>
 		</div>
 
-			<form action="/Manage/Stored" method="post" id="image_images_form" name="image_images_form" enctype="multipart/form-data">
-				<input type="hidden" name="oper" value="add" />
+			<form action="" method="post" id="upload_form" name="upload_form" enctype="multipart/form-data">
 
 			<div class="box">
 				<label>select one or more pictures<input type="file" multiple="" name="new_file" id="pic-input" /><a href="javascript:void(0);" id="clear">clear</a></label>

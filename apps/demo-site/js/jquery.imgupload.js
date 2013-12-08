@@ -1,117 +1,7 @@
 
 
 (function($){
-	/////////////////////////////////////////////////////////////////////////////////////////////
 
-	var B10000000 = 0x80;
-	var B11000000 = 0xC0;
-	var B11100000 = 0xE0;
-	var B11110000 = 0xF0;
-	var B11111000 = 0xF8;
-	var B11111100 = 0xFC;
-	var B11111110 = 0xFE;
-	var B01111111 = 0x7F;
-	var B00111111 = 0x3F;
-	var B00011111 = 0x1F;
-	var B00001111 = 0x0F;
-	var B00000111 = 0x07;
-	var B00000011 = 0x03;
-	var B00000001 = 0x01;
-
-	function str2utf8( str ){
-		var result = [];
-		var length = str.length;
-		var idx=0;
-		for ( var i=0; i<length; i++ ){
-		var c = str.charCodeAt( i );
-		if ( c <= 0x7f ) {
-			result[idx++] = c;
-		} else if ( c <= 0x7ff ) {
-			result[idx++] = B11000000 | ( B00011111 & ( c >>>  6 ) );
-			result[idx++] = B10000000 | ( B00111111 & ( c >>>  0 ) );
-		} else if ( c <= 0xffff ) {
-			result[idx++] = B11100000 | ( B00001111 & ( c >>> 12 ) ) ;
-			result[idx++] = B10000000 | ( B00111111 & ( c >>>  6 ) ) ;
-			result[idx++] = B10000000 | ( B00111111 & ( c >>>  0 ) ) ;
-		} else if ( c <= 0x10ffff ) {
-			result[idx++] = B11110000 | ( B00000111 & ( c >>> 18 ) ) ;
-			result[idx++] = B10000000 | ( B00111111 & ( c >>> 12 ) ) ;
-			result[idx++] = B10000000 | ( B00111111 & ( c >>>  6 ) ) ;
-			result[idx++] = B10000000 | ( B00111111 & ( c >>>  0 ) ) ;
-		} else {
-			throw "error";
-		}
-		}
-		return result;
-	}
-
-	function utf82str( data ) {
-		var result = "";
-		var length = data.length;
-
-		for ( var i=0; i<length; ){
-		var c = data[i++];
-		if ( c < 0x80 ) {
-			result += String.fromCharCode( c );
-		} else if ( ( c < B11100000 ) ) {
-			result += String.fromCharCode(
-			( ( B00011111 & c		) <<  6 ) |
-			( ( B00111111 & data[i++] ) <<  0 )
-			);
-		} else if ( ( c < B11110000 ) ) {
-			result += String.fromCharCode(
-			( ( B00001111 & c	) << 12 ) |
-			( ( B00111111 & data[i++] ) <<  6 ) |
-			( ( B00111111 & data[i++] ) <<  0 )
-			);
-		} else if ( ( c < B11111000 ) ) {
-			result += String.fromCharCode(
-			( ( B00000111 & c	) << 18 ) |
-			( ( B00111111 & data[i++] ) << 12 ) |
-			( ( B00111111 & data[i++] ) <<  6 ) |
-			( ( B00111111 & data[i++] ) <<  0 )
-			);
-		} else if ( ( c < B11111100 ) ) {
-			result += String.fromCharCode(
-			( ( B00000011 & c		) << 24 ) |
-			( ( B00111111 & data[i++] ) << 18 ) |
-			( ( B00111111 & data[i++] ) << 12 ) |
-			( ( B00111111 & data[i++] ) <<  6 ) |
-			( ( B00111111 & data[i++] ) <<  0 )
-			);
-		} else if ( ( c < B11111110 ) ) {
-			result += String.fromCharCode(
-			( ( B00000001 & c		) << 30 ) |
-			( ( B00111111 & data[i++] ) << 24 ) |
-			( ( B00111111 & data[i++] ) << 18 ) |
-			( ( B00111111 & data[i++] ) << 12 ) |
-			( ( B00111111 & data[i++] ) <<  6 ) |
-			( ( B00111111 & data[i++] ) <<  0 )
-			);
-		}
-		}
-		return result;
-	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-
-	// convert unicode character array to string
-	function char2str( ca ) {
-		var result = "";
-		for ( var i=0; i<ca.length; i++ ) {
-		result += String.fromCharCode( ca[i] );
-		}
-		return result;
-	}
-
-	// convert string to unicode character array
-	function str2char( str ) {
-		var result = new Array( str.length );
-		for ( var i=0; i<str.length; i++ ) {
-		result[i] = str.charCodeAt( i );
-		}
-		return result;
-	}
-	
 	// image drop box support
 	
 	jQuery.event.props.push("dataTransfer");
@@ -445,10 +335,24 @@
 					file = files[e.target.index],
 					index = e.target.index,
 					start_time = new Date().getTime(),
-					boundary = '------multipartformboundary' + (new Date).getTime(),
-					binary;
+					formData = new FormData();
 
-			binary = buildBlob(boundary, file, e.target.result);
+			// binary = buildBlob(boundary, file, e.target.result);
+
+			if (opts.data) {
+				$.each(opts.data, function(i, item) {
+					formData.append(item.name, item.value);
+				});
+			}
+
+			var name = (typeof file.id === "string" ? file.id : opts.field_name);
+			if (typeof file.index !== "undefined") {
+				formData.append(name + '_index', file.index)
+			}
+			if (typeof file.label === "string") {
+				formData.append(name + '_label', file.label)
+			}
+			formData.append(name, file)
 
 			if (this.ctrl) upload.ctrl = this.ctrl;
 			upload.index = index;
@@ -460,14 +364,15 @@
 			upload.addEventListener("progress", progress, false);
 
 			xhr.open("POST", opts.url, true);
-			xhr.setRequestHeader('content-type', 'multipart/form-data; boundary=' + boundary);
+			// xhr.setRequestHeader('content-type', 'multipart/form-data; boundary=' + boundary);
 
 			// Add headers
 			$.each(opts.headers, function(k, v) {
 				xhr.setRequestHeader(k, v);
 			});
 
-			xhr.sendAsBinary(binary);
+			// xhr.sendAsBinary(binary);
+			xhr.send(formData);
 
 			opts.uploadStarted(index, file, files_count);
 
@@ -506,44 +411,6 @@
 
 	}
 	
-	//var boundary = '----sp-boundary' + parseInt(Math.random()*(2 << 16));
-	function buildBlob(boundary, file, content) {//log(file)
-		var dash = '--', crlf = '\r\n', blob = '';
-		
-		if (opts.data) {
-			$.each(opts.data, function(i, item) {
-				blob += dash + boundary + crlf +
-					'Content-Disposition: form-data; name="' + item.name + '"' + crlf + crlf;
-				blob += (typeof item.value == "string" ? char2str(str2utf8(item.value)) : item.value) + crlf;
-			});
-		}
-		
-		
-		var name = (typeof file.id === "string" ? file.id : opts.field_name);
-		if (typeof file.index !== "undefined") {
-			blob += dash + boundary + crlf + 
-				'Content-Disposition: form-data; name="' + name + '_index' + '"' + crlf + crlf;
-			blob += file.index + crlf;
-		}
-		if (typeof file.label === "string") {
-			blob += dash + boundary + crlf + 
-				'Content-Disposition: form-data; name="' + name + '_label' + '"' + crlf + crlf;
-			blob += char2str(str2utf8(file.label)) + crlf;
-		}
-		
-		blob += dash + boundary + crlf +
-			'Content-Disposition: form-data; name="' + name;
-		if (typeof file.name !== "undefined" && file.name !== '') {
-			blob += '"; filename="' + char2str(str2utf8(file.name)) + '"' + crlf +
-				'Content-Type: ' + file.type + crlf + crlf + content + crlf;
-		} else { // 允许空着，占位
-			blob += '"; filename=""' + crlf +
-				'Content-Type: application/octet-stream ' + crlf + crlf + '' + crlf;
-		}
-		
-		blob += dash + boundary + dash + crlf;
-		return blob;
-	}
 
 	function createThrobber(img) {
 		var offset = $(img).offset(), x = offset.left, y = offset.top;
@@ -603,18 +470,5 @@
 		imgpreview: preview,
 		imgupload: upload
 	});
-
-	try {
-		if (!XMLHttpRequest.prototype.sendAsBinary) {
-			XMLHttpRequest.prototype.sendAsBinary = function(datastr) {
-			function byteValue(x) {
-				return x.charCodeAt(0) & 0xff;
-			}
-			var ords = Array.prototype.map.call(datastr, byteValue);
-			var ui8a = new Uint8Array(ords);
-			this.send(ui8a.buffer);
-			}
-		}		
-	} catch (e) {log(e)}
 
 })(jQuery);
