@@ -190,7 +190,7 @@ simp_close(Simp_Image *im)
 	if (im->buf)       free(im->buf);
 	if (im->out.f)     jpeg_destroy_compress(&(im->out.ji));
 	if (im->out.f)     fclose(im->out.f);
-	free(im);
+	if (im) free(im);
 }
 
 static bool

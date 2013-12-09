@@ -67,13 +67,19 @@ func runImport(args []string) bool {
 	return true
 }
 
-func _store_zip(zipfile string) {
+func _store_zip(zipfile string) bool {
 	log.Printf("reading zip %s", zipfile)
 	r, err := zip.OpenReader(zipfile)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("fail %q\n", err)
+		return false
 	}
 	defer r.Close()
+
+	if len(r.File) == 0 {
+		fmt.Printf("fail %q is empty\n", zipfile)
+		return false
+	}
 
 	for _, f := range r.File {
 		if f.FileInfo().IsDir() {
@@ -102,6 +108,7 @@ func _store_zip(zipfile string) {
 		rc.Close()
 
 	}
+	return true
 }
 
 func _store_dir(dir string) {
