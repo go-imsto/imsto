@@ -44,7 +44,7 @@ func (t ThumbOption) GetQuality() Quality {
 
 func (topt *ThumbOption) calc(ow, oh uint) error {
 	if topt.Width >= ow && topt.Height >= oh {
-		return fmt.Errorf("%dx%d is too big", topt.Width, topt.Height)
+		return fmt.Errorf("%dx%d is too big, orig is %dx%d", topt.Width, topt.Height, ow, oh)
 	}
 
 	if topt.IsFit {
@@ -62,7 +62,7 @@ func (topt *ThumbOption) calc(ow, oh uint) error {
 			// :resize
 
 			if topt.ctWidth == topt.Width && topt.ctHeight == topt.Height {
-				return fmt.Errorf("crop %dx%d is too big", topt.Width, topt.Height)
+				return nil
 			}
 
 			topt.CropX = int(float32(topt.ctWidth-topt.Width) / 2)
