@@ -78,7 +78,7 @@ const (
 	min_size = 43
 )
 
-func newEntry(data []byte, name string) (e *Entry, err error) {
+func NewEntry(data []byte, name string) (e *Entry, err error) {
 	if len(data) < min_size {
 		err = errors.New("data is too small, maybe not a valid image")
 		return
@@ -108,7 +108,7 @@ func newEntry(data []byte, name string) (e *Entry, err error) {
 }
 
 // 处理图片信息并填充
-func (e *Entry) trek(roof string) (err error) {
+func (e *Entry) Trek(roof string) (err error) {
 	if e._treked {
 		return
 	}
@@ -233,7 +233,7 @@ func (e *Entry) store(roof string) (err error) {
 		}
 	}
 
-	if err = e.trek(roof); err != nil {
+	if err = e.Trek(roof); err != nil {
 		return
 	}
 	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)

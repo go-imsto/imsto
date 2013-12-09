@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -23,7 +24,8 @@ Just a test command
 }
 
 var (
-	turl = cmdTest.Flag.String("path", "", "entry path for load")
+	turl  = cmdTest.Flag.String("path", "", "entry path for load")
+	tfile = cmdTest.Flag.String("file", "", "test a entry from a file")
 )
 
 func init() {
@@ -50,6 +52,27 @@ func testApp(args []string) bool {
 			fmt.Println("Err: ", err)
 			return false
 		}
+		return true
+	}
+
+	if *tfile != "" {
+		data, err := ioutil.ReadFile(*tfile)
+		if err != nil {
+			fmt.Println("read file error: ", err)
+			return false
+		}
+		entry, err := storage.NewEntry(data, path.Base(*tfile))
+		if err != nil {
+			fmt.Println("new entry error: ", err)
+			return false
+		}
+		err = entry.Trek("demo")
+		if err != nil {
+			fmt.Println("trek error: ", err)
+			return false
+		}
+
+		fmt.Printf("new id: %v, size: %d, path: %v, %v\n", entry.Id, entry.Size, entry.Path, entry.Hashes)
 		return true
 	}
 

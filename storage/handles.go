@@ -381,7 +381,7 @@ func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry
 	if err != nil {
 		return
 	}
-	entry, err = newEntry(data, name)
+	entry, err = NewEntry(data, name)
 
 	if err != nil {
 		return
@@ -481,7 +481,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 			continue
 		}
 		log.Printf("post %s (%s) size %d\n", fh.Filename, mime, len(data))
-		entry, ee := newEntry(data, fh.Filename)
+		entry, ee := NewEntry(data, fh.Filename)
 		if ee != nil {
 			entries[i].Err = ee.Error()
 			continue
