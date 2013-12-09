@@ -91,6 +91,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m := make(map[string]interface{})
+	m["status"] = "ok"
 	m["rows"] = limit
 	m["page"] = page
 
