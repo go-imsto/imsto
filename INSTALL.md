@@ -4,7 +4,7 @@
 
 ### C lib
 
-1. jpeg
+1. libjpeg-turbo (recommend) or jpeg
 2. png (option)
 3. ImageMagick
 
