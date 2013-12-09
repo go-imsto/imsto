@@ -153,7 +153,7 @@ func _out_entry(entry *storage.Entry, name string, err error) {
 	if err != nil {
 		fmt.Printf("fail %q %q\n", name, err)
 	} else {
-		fmt.Printf("ok %s %s %q\n", entry.Id, entry.Path, entry.Name)
+		fmt.Printf("ok %s %s %q\n", entry.Id, entry.Path, name)
 	}
 
 }
