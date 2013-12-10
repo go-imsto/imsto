@@ -243,8 +243,9 @@ func (e *Entry) store(roof string) (err error) {
 	// size := len(data)
 	// log.Printf("blob length: %d", size)
 
+	en := config.GetValue(roof, "engine")
 	var em Wagoner
-	if em, err = FarmEngine(roof); err != nil {
+	if em, err = FarmEngine(en); err != nil {
 		// log.Println(err)
 		return
 	}

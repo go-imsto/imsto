@@ -18,7 +18,8 @@ type gridfsConn struct {
 }
 
 func init() {
-	RegisterEngine("mongodb", gridfsDial)
+	RegisterEngine("grid", gridfsDial)
+	RegisterEngine("mongodb", gridfsDial) // for old imsto config
 }
 
 func gridfsDial(sn string) (Wagoner, error) {
