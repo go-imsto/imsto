@@ -126,7 +126,7 @@ func init() {
 	flag.StringVar(&mgo_coll, "c", "", "mongodb collection name (without '.files')")
 	flag.StringVar(&roof, "s", "", "config section name")
 	flag.IntVar(&skip, "skip", 0, "skip")
-	flag.IntVar(&limit, "limit", 5, "limit")
+	flag.IntVar(&limit, "limit", 10, "limit")
 	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app conf dir")
 	flag.StringVar(&id, "id", "", "single item id")
 	flag.Parse()

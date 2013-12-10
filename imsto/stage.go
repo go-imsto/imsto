@@ -32,7 +32,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 	item, err := storage.LoadPath(r.URL.Path)
 
 	if err != nil {
-		log.Print(err)
+		log.Printf("error: %s, ref: %s", err, r.Referer())
 		switch err.(type) {
 		case *storage.HttpError:
 			ie := err.(*storage.HttpError)
