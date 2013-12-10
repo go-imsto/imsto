@@ -60,6 +60,7 @@ type Entry struct {
 	Status    uint8      `json:"-"`
 	Hashes    cdb.Qarray `json:"-"`
 	Ids       cdb.Qarray `json:"-"`
+	Roofs     cdb.Qarray `json:"roofs"`
 	Meta      *iimg.Attr `json:"meta,omitempty"`
 	AppId     AppId      `json:"appid,omitempty"`
 	Author    Author     `json:"author,omitempty"`

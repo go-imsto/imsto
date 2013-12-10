@@ -126,15 +126,14 @@ func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) 
 		return err
 	}
 
+	// if cr == nil {
+	// 	log.Print("copyright is nil")
+	// }
+
 	var cp image.Image
-	if cr != nil {
-		// log.Printf("cr: %v %s", cr, cr == nil)
-		// TODO: 此处有一个Bug cr == nil
-		cp, _, err = image.Decode(cr)
-		if err != nil {
-			log.Printf("Copyright: decode water error: %s", err)
-			// return err
-		}
+	cp, _, err = image.Decode(cr)
+	if err != nil {
+		log.Printf("decode copyright error: %s", err)
 	}
 
 	m, err := WatermarkImage(im, water, cp, pos, opacity)
@@ -167,6 +166,7 @@ func WatermarkFile(src, dest string, wo WaterOption) (err error) {
 
 	// log.Printf("copyright: %s", wo.Copyright)
 
+	cr = nil
 	if wo.Copyright != "" {
 		cr, err = os.Open(wo.Copyright)
 		if err != nil {
@@ -174,8 +174,6 @@ func WatermarkFile(src, dest string, wo WaterOption) (err error) {
 			return
 		}
 		defer cr.Close()
-	} else {
-		cr = nil
 	}
 
 	dir := path.Dir(dest)

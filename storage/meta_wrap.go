@@ -291,10 +291,10 @@ func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 	db := mw.getDb()
 	defer db.Close()
-	sql := "SELECT name, path, mime, size, sev, status, created FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT name, path, mime, size, sev, status, created, roofs FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id.String())
 	var e = Entry{Id: &id}
-	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created)
+	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
 	if err != nil {
 		log.Printf("[%s]getEntry %s error %s", mw.roof, id.String(), err)
 		return nil, err

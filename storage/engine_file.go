@@ -59,6 +59,10 @@ func (l *locWagon) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore, 
 	}
 	err = ioutil.WriteFile(name, data, os.FileMode(0644))
 	// sev = db.Hstore{"root": l.root}
+	if err != nil {
+		return
+	}
+	sev = db.Hstore{"engine": "file"}
 
 	return
 }

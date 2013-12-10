@@ -24,6 +24,8 @@ Just a test command
 }
 
 var (
+	troof = cmdTest.Flag.String("s", "demo", "entry id for load")
+	tiid  = cmdTest.Flag.String("id", "", "entry id for load")
 	turl  = cmdTest.Flag.String("path", "", "entry path for load")
 	tfile = cmdTest.Flag.String("file", "", "test a entry from a file")
 )
@@ -33,6 +35,23 @@ func init() {
 }
 
 func testApp(args []string) bool {
+	if *tiid != "" {
+		id, err := storage.NewEntryId(*tiid)
+		if err != nil {
+			fmt.Println("Err: ", err)
+			return false
+		}
+		mw := storage.NewMetaWrapper(*troof)
+		entry, err := mw.GetEntry(*id)
+		if err != nil {
+			fmt.Println("Err: ", err)
+			return false
+		}
+		fmt.Printf("found: \t%s\n", entry.Id)
+		fmt.Printf("size: \t%d\npath: \t%v\nname: \t%q\nroofs: \t%s\n", entry.Size, entry.Path, entry.Name, entry.Roofs)
+		return true
+	}
+
 	if *turl != "" {
 		fmt.Println("url: ", *turl)
 		item, err := storage.LoadPath(*turl)

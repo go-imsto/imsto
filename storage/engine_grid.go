@@ -117,6 +117,7 @@ func (g *gridfsConn) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore
 		return nil
 	}
 	err = g.withFs(c)
+	sev = db.Hstore{"engine": "grid"}
 	return
 }
 

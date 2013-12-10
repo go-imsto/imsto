@@ -173,24 +173,34 @@ func (o *outItem) prepare() (err error) {
 			err = NewHttpError(404, err.Error())
 			return
 		}
-		// log.Printf("got %s", entry)
+		// log.Printf("got %s", entry.Path)
+		roof := o.roof
+		thumb_path := config.GetValue(roof, "thumb_path")
 		if o.src != entry.Path { // 302 found
-			thumb_path := config.GetValue(o.roof, "thumb_path")
 			new_path := path.Join(thumb_path, o.m["size"], entry.Path)
 			ie := NewHttpError(302, "Found "+new_path)
 			ie.Path = new_path
 			err = ie
 			return
 		}
-		log.Printf("[%s] fetching: '%s'", o.roof, entry.Path)
+
+		if len(entry.Roofs) > 0 {
+			roof0 := fmt.Sprint(entry.Roofs[0])
+			if roof != roof0 {
+				log.Printf("mismatch roof: %s => %s", o.roof, roof0)
+				roof = roof0
+			}
+		}
+
+		log.Printf("[%s] fetching: '%s'", roof, entry.Path)
 
 		var data []byte
-		data, err = FetchBlob(entry, o.roof)
+		data, err = FetchBlob(entry, roof)
 		if err != nil {
 			err = NewHttpError(404, err.Error())
 			return
 		}
-		log.Printf("[%s] fetched: %d bytes", o.roof, len(data))
+		log.Printf("[%s] fetched: %d bytes", roof, len(data))
 		err = SaveFile(org_file, data)
 		if err != nil {
 			log.Printf("save fail: ", err)
