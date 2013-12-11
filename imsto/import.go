@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"wpst.me/calf/storage"
 )
 
@@ -147,6 +148,23 @@ func _store_file(file, roof string) {
 		log.Printf("store file error: %s", err)
 	}
 	_out_entry(entry, name, err)
+	if entry.HasReady() {
+		go func() {
+			// log.Printf("enter go %d", time.Now().Nanosecond())
+			for {
+				// log.Printf("go for %d", time.Now().Nanosecond())
+				select {
+				case <-entry.Done:
+					log.Print("entry done!!")
+					return
+				case <-time.After(9 * time.Second):
+					log.Print("timeout")
+					return
+				}
+			}
+		}()
+		<-entry.Done
+	}
 }
 
 func _out_entry(entry *storage.Entry, name string, err error) {

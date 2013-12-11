@@ -181,6 +181,10 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
+-- Function: entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer)
+
+-- DROP FUNCTION entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer);
+
 -- 保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
 	a_id text, a_path text, a_meta hstore, a_sev hstore
@@ -234,6 +238,57 @@ BEGIN
 	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author;
 
 RETURN 1;
+END;
+$$
+LANGUAGE 'plpgsql' VOLATILE;
+
+
+-- 预先保存某条完整 entry 信息
+CREATE OR REPLACE FUNCTION imsto.entry_ready (a_roof text,
+	a_id text, a_path text, a_meta hstore
+	, a_hashes text[], a_ids text[]
+	, a_appid smallint, a_author int)
+
+RETURNS int AS
+$$
+BEGIN
+
+IF NOT EXISTS(SELECT created FROM prepared_entry WHERE id = a_id) THEN
+	INSERT INTO prepared_entry (id, roof, path, meta, hashes, ids, app_id, author)
+	VALUES (a_id, a_roof, a_path, a_meta, a_hashes, a_ids, a_appid, a_author);
+	IF FOUND THEN
+		RETURN 1;
+	ELSE
+		RETURN -1;
+	END IF;
+ELSE
+	RETURN -2;
+END IF;
+
+END;
+$$
+LANGUAGE 'plpgsql' VOLATILE;
+
+CREATE OR REPLACE FUNCTION imsto.entry_set_done(a_id text, a_sev hstore)
+RETURNS int AS
+$$
+DECLARE
+	m_rec RECORD;
+	t_ret int;
+BEGIN
+
+SELECT * FROM prepared_entry WHERE id = a_id INTO m_rec;
+IF NOT FOUND THEN
+	RETURN -2;
+END IF;
+
+SELECT entry_save(m_rec.roof, m_rec.id, m_rec.path, m_rec.meta, a_sev,
+ m_rec.hashes, m_rec.ids, m_rec.app_id, m_rec.author) INTO t_ret;
+
+DELETE FROM prepared_entry WHERE id = a_id;
+
+RETURN t_ret;
+
 END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;

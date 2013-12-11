@@ -168,7 +168,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "Default Parameters:\n")
 				cmd.Flag.PrintDefaults()
 			}
-			exit()
+			// exit()
 			return
 		}
 	}

@@ -73,5 +73,21 @@ CREATE TABLE meta_common
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
 
+-- entry presave
+CREATE TABLE prepared_entry (
+	id entry_id NOT NULL,
+	path entry_path NOT NULL , 
+	roof varCHAR(12) NOT NULL ,
+	meta hstore,
+	hashes varCHAR(40)[],
+	ids varCHAR(38)[],
+	exif hstore, -- exif info
+	app_id smallint NOT NULL DEFAULT 0,
+	author int NOT NULL DEFAULT 0,
+	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (id)
+) WITHOUT OIDS;
+CREATE INDEX idx_prepared_created ON prepared_entry (created) ;
+
 
 END;

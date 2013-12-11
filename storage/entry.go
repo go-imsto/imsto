@@ -73,7 +73,9 @@ type Entry struct {
 	b         []byte
 	h         string
 	_treked   bool
-	ret       int // db saved result
+	ret       int       // db saved result
+	Done      chan bool `json:"-"`
+	ready     int
 }
 
 const (
@@ -208,6 +210,14 @@ func (e *Entry) Blob() []byte {
 	return e.b
 }
 
+func (e *Entry) HasReady() bool {
+	return e.ready == 1
+}
+
+func (e *Entry) IsDone() bool {
+	return e.ready != 1
+}
+
 func (e *Entry) store(roof string) (err error) {
 
 	mw := NewMetaWrapper(roof)
@@ -228,6 +238,7 @@ func (e *Entry) store(roof string) (err error) {
 				e.reset()
 				e._treked = true
 				log.Printf("exist: %s, %s", e.Id, e.Path)
+				// e.Done <- true
 				return
 			} else {
 				log.Printf("get entry error: %s", _err)
@@ -250,19 +261,33 @@ func (e *Entry) store(roof string) (err error) {
 		return
 	}
 
-	e._save(roof)
+	err = mw.Ready(e)
 	if err != nil {
 		return
 	}
+	e.ready = 1
 
-	log.Printf("[%s] store done %s", roof, e.Path)
+	e.Done = make(chan bool, 1)
+	go func() {
+		err = e._save(roof)
+		if err != nil {
+			log.Printf("_save error: %s", err)
+		}
+		e.Done <- true
+	}()
+
+	// if err != nil {
+	// 	return
+	// }
+
+	log.Printf("[%s] store ready ok %s", roof, e.Path)
 
 	return
 }
 
 func (e *Entry) _save(roof string) (err error) {
-	// en := config.GetValue(roof, "engine")
-	// log.Printf("start save to engine %s", en)
+	en := config.GetValue(roof, "engine")
+	log.Printf("start save to engine %s", en)
 	var em Wagoner
 	if em, err = FarmEngine(roof); err != nil {
 		log.Printf("farm engine error: %s", err)
@@ -275,15 +300,20 @@ func (e *Entry) _save(roof string) (err error) {
 		err = dbe
 		return
 	}
-	// log.Print("engine save done")
+	log.Print("engine save done")
 
 	e.sev = sev
 
 	mw := NewMetaWrapper(roof)
-	if err = mw.Save(e); err != nil {
-		// log.Println(err)
-		return
+	if err = mw.SetDone(*e.Id, e.sev); err != nil {
+		log.Println(err)
+		// if err = mw.Save(e); err != nil {
+		// 	return
+		// }
+		// return
 	}
+	e.ready = -1
+	log.Print("meta set done ok")
 	return
 }
 

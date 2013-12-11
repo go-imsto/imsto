@@ -21,6 +21,8 @@ const (
 type MetaWrapper interface {
 	Browse(limit, offset int, sort map[string]int) ([]*Entry, error)
 	Count() (int, error)
+	Ready(entry *Entry) error
+	SetDone(id EntryId, sev cdb.Hstore) error
 	Save(entry *Entry) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id EntryId) (*Entry, error)
@@ -207,6 +209,40 @@ func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	row := db.QueryRow(sql, id.String())
 
 	return _bindRow(row)
+}
+
+func (mw *MetaWrap) Ready(entry *Entry) error {
+	db := mw.getDb()
+	defer db.Close()
+
+	sql := "SELECT entry_ready($1, $2, $3, $4, $5, $6, $7, $8);"
+	row := db.QueryRow(sql, mw.table_suffix,
+		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.Hashes, entry.Ids,
+		entry.AppId, entry.Author)
+
+	var ret int
+	err := row.Scan(&ret)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("entry ready ret: %v\n", ret)
+
+	return nil
+}
+
+func (mw *MetaWrap) SetDone(id EntryId, sev cdb.Hstore) error {
+	db := mw.getDb()
+	defer db.Close()
+	var ret int
+	err := db.QueryRow("SELECT entry_set_done($1, $2)", id.String(), sev).Scan(&ret)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("entry set done ret: %v\n", ret)
+
+	return nil
 }
 
 func (mw *MetaWrap) Save(entry *Entry) error {
