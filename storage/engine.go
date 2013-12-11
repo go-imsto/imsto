@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"wpst.me/calf/config"
 	"wpst.me/calf/db"
 )
 
@@ -32,10 +33,11 @@ func RegisterEngine(name string, farm FarmFunc) {
 	engines[name] = engine{name, farm}
 }
 
-// get a intance of Wagoner by a special engine name
-func FarmEngine(name string) (Wagoner, error) {
+// get a intance of Wagoner by a special config name
+func FarmEngine(sn string) (Wagoner, error) {
+	name := config.GetValue(sn, "engine")
 	if engine, ok := engines[name]; ok {
-		return engine.farm(name)
+		return engine.farm(sn)
 	}
 
 	return nil, errors.New("invalid engine name: " + name)

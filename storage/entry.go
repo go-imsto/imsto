@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path"
 	"time"
 	"wpst.me/calf/base"
 	"wpst.me/calf/config"
@@ -242,23 +243,43 @@ func (e *Entry) store(roof string) (err error) {
 	data := e.Blob()
 	// size := len(data)
 	// log.Printf("blob length: %d", size)
-
-	en := config.GetValue(roof, "engine")
-	var em Wagoner
-	if em, err = FarmEngine(en); err != nil {
-		// log.Println(err)
+	thumb_root := config.GetValue(roof, "thumb_root")
+	filename := path.Join(thumb_root, "orig", e.Path)
+	err = SaveFile(filename, data)
+	if err != nil {
 		return
 	}
 
-	sev, dbe := em.Put(e.Path, data, e.Meta.Hstore())
+	e._save(roof)
+	if err != nil {
+		return
+	}
+
+	log.Printf("[%s] store done %s", roof, e.Path)
+
+	return
+}
+
+func (e *Entry) _save(roof string) (err error) {
+	// en := config.GetValue(roof, "engine")
+	// log.Printf("start save to engine %s", en)
+	var em Wagoner
+	if em, err = FarmEngine(roof); err != nil {
+		log.Printf("farm engine error: %s", err)
+		return
+	}
+
+	sev, dbe := em.Put(e.Path, e.Blob(), e.Meta.Hstore())
 	if dbe != nil {
 		log.Printf("engine put error: %s", dbe)
 		err = dbe
 		return
 	}
+	// log.Print("engine save done")
 
 	e.sev = sev
 
+	mw := NewMetaWrapper(roof)
 	if err = mw.Save(e); err != nil {
 		// log.Println(err)
 		return

@@ -361,24 +361,22 @@ func stringInSlice(s string, a []string) bool {
 	return false
 }
 
-func prepareDir(filename string) error {
+func ReadyDir(filename string) error {
 	dir := path.Dir(filename)
 	return os.MkdirAll(dir, os.FileMode(0755))
 }
 
-func writeFile(f *os.File, data []byte) error {
-	f.Seek(0, 0)
-	n, err := f.Write(data)
-	if err == nil && n < len(data) {
-		err = io.ErrShortWrite
-	}
-	return err
-}
+// func writeFile(f *os.File, data []byte) error {
+// 	f.Seek(0, 0)
+// 	n, err := f.Write(data)
+// 	if err == nil && n < len(data) {
+// 		err = io.ErrShortWrite
+// 	}
+// 	return err
+// }
 
 func SaveFile(filename string, data []byte) (err error) {
-	dir := path.Dir(filename)
-	err = os.MkdirAll(dir, os.FileMode(0755))
-	if err != nil {
+	if err = ReadyDir(filename); err != nil {
 		return
 	}
 	err = ioutil.WriteFile(filename, data, os.FileMode(0644))

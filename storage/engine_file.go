@@ -3,6 +3,7 @@ package storage
 import (
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"wpst.me/calf/config"
@@ -63,7 +64,7 @@ func (l *locWagon) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore, 
 		return
 	}
 	sev = db.Hstore{"engine": "file"}
-
+	log.Printf("engine file save %s done", key)
 	return
 }
 
