@@ -148,7 +148,7 @@ func _store_file(file, roof string) {
 		log.Printf("store file error: %s", err)
 	}
 	_out_entry(entry, name, err)
-	if entry.HasReady() {
+	if !entry.IsDone() {
 		go func() {
 			// log.Printf("enter go %d", time.Now().Nanosecond())
 			for {

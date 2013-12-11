@@ -210,10 +210,6 @@ func (e *Entry) Blob() []byte {
 	return e.b
 }
 
-func (e *Entry) HasReady() bool {
-	return e.ready == 1
-}
-
 func (e *Entry) IsDone() bool {
 	return e.ready != 1
 }
