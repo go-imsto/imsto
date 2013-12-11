@@ -97,14 +97,9 @@ func runExport(args []string) bool {
 }
 
 func _save_export(entry *storage.Entry, edir string) bool {
-	data, err := storage.PullBlob(entry, eroof)
-	if err != nil {
-		fmt.Println(err)
-		return false
-	}
 	filename := path.Join(edir, entry.Path)
 	fmt.Printf("save to: %s ", filename)
-	err = storage.SaveFile(filename, data)
+	err := storage.Dump(entry, eroof, filename)
 	if err != nil {
 		fmt.Println(err)
 		return false

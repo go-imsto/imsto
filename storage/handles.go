@@ -192,18 +192,9 @@ func (o *outItem) prepare() (err error) {
 			}
 		}
 
-		log.Printf("[%s] fetching: '%s'", roof, entry.Path)
-
-		var data []byte
-		data, err = PullBlob(entry, roof)
+		err = Dump(entry, roof, org_file)
 		if err != nil {
-			err = NewHttpError(404, err.Error())
-			return
-		}
-		log.Printf("[%s] fetched: %d bytes", roof, len(data))
-		err = SaveFile(org_file, data)
-		if err != nil {
-			log.Printf("save fail: ", err)
+			log.Printf("dump fail: ", err)
 			return
 		}
 		if fi, fe := os.Stat(org_file); fe != nil {
@@ -349,26 +340,27 @@ func stringInSlice(s string, a []string) bool {
 	return false
 }
 
+func Dump(e *Entry, roof, file string) error {
+	log.Printf("[%s] pulling: '%s'", roof, e.Path)
+
+	data, err := PullBlob(e, roof)
+	if err != nil {
+		return NewHttpError(404, err.Error())
+	}
+	log.Printf("[%s] pulled: %d bytes", roof, len(data))
+	return SaveFile(file, data)
+}
+
 func ReadyDir(filename string) error {
 	dir := path.Dir(filename)
 	return os.MkdirAll(dir, os.FileMode(0755))
 }
 
-// func writeFile(f *os.File, data []byte) error {
-// 	f.Seek(0, 0)
-// 	n, err := f.Write(data)
-// 	if err == nil && n < len(data) {
-// 		err = io.ErrShortWrite
-// 	}
-// 	return err
-// }
-
-func SaveFile(filename string, data []byte) (err error) {
-	if err = ReadyDir(filename); err != nil {
-		return
+func SaveFile(filename string, data []byte) error {
+	if err := ReadyDir(filename); err != nil {
+		return err
 	}
-	err = ioutil.WriteFile(filename, data, os.FileMode(0644))
-	return
+	return ioutil.WriteFile(filename, data, os.FileMode(0644))
 }
 
 func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry, err error) {
