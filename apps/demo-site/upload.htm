@@ -14,7 +14,7 @@
 	<script type="text/javascript">
 //<![CDATA[
 var dropbox, preview, message, url_stored = '/imsto/';
-var roof = '', appid = 0, userid = 0, token = '', default_roof = 'demo';
+var roof = 'demo', appid = 0, userid = 0, token = '', default_roof = 'demo';
 if (Dust) {Dust.dev = true;};
 
 $(document).ready(function(){
@@ -200,21 +200,9 @@ $(document).ready(function(){
 	});
 
 	$("input:submit").hide();
-	$.getJSON('/imsto/roofs', function(res){
-		// console.log(typeof res.roofs)
-		var roofs = res.roofs;
-		$('#radios1').radioButtons({
-			data: roofs,
-			name: 'roof',
-			selected: default_roof
-		});
-
-		req_token();
-		$("input:submit").show();
-	});
 
 	function req_token () {
-		roof = $("input:radio[name=roof]:checked").val();
+		// roof = $("input:radio[name=roof]:checked").val();
 		// console.log(roof)
 		$.post('/imsto/token', {
 			roof: roof,
@@ -227,17 +215,33 @@ $(document).ready(function(){
 			} else if (typeof res.error == "string") {
 				showMessage(res.error)
 			}
+			$("input:submit").show();
 		}, 'json');
 	}
-	
 
-	$("input:radio[name=roof]").click(function(){
-		// log(this.value + (now - 0))
-		if (this.checked) {
-			roof = this.value
-			req_token();
-		}
+	var now = new Date();
+
+	$.getJSON('/imsto/roofs', function(res){
+		// console.log(typeof res.roofs)
+		var roofs = res.roofs;
+		$('#radios1').radioButtons({
+			data: roofs,
+			name: 'roof',
+			selected: default_roof
+		});
+		
+		req_token();
+
+		$("input[name=roof]:radio").click(function(){
+			// log(this.value);
+			if (this.checked) {
+				roof = this.value
+				req_token();
+			}
+		});
 	});
+
+	log(now);
 });
 
 //]]>
