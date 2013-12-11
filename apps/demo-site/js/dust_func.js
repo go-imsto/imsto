@@ -12,10 +12,10 @@ if (!this.Dust) {
 	};
 	$$.cache = {};
 	$$.extend(window, {
-		log: ($$.dev && window.console) ? function() { console.log.apply(console, arguments); } : function() { },
-		error: ($$.dev && window.console) ? function() { console.error.apply(console, arguments); } : function() { },
-		dir: ($$.dev && window.console) ? function(a) { console.dir(a); } : function() { },
-		info: ($$.dev && window.console) ? function(a) { console.info(a); } : function() { },
+		log: (window.console) ? function() { $$.dev && console.log.apply(console, arguments); } : function() { },
+		error: (window.console) ? function() { $$.dev && console.error.apply(console, arguments); } : function() { },
+		dir: (window.console) ? function(a) { $$.dev && console.dir(a); } : function() { },
+		info: (window.console) ? function(a) { $$.dev && console.info(a); } : function() { },
 	}, function(){
 		log("logging enabled");
 		log("Window object extended");
