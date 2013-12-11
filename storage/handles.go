@@ -195,7 +195,7 @@ func (o *outItem) prepare() (err error) {
 		log.Printf("[%s] fetching: '%s'", roof, entry.Path)
 
 		var data []byte
-		data, err = FetchBlob(entry, roof)
+		data, err = PullBlob(entry, roof)
 		if err != nil {
 			err = NewHttpError(404, err.Error())
 			return
@@ -321,18 +321,6 @@ func parsePath(s string) (m harg, err error) {
 			m[n] = match[i]
 		}
 	}
-	return
-}
-
-func FetchBlob(e *Entry, roof string) (data []byte, err error) {
-	var em Wagoner
-	em, err = FarmEngine(roof)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	// var data []byte
-	data, err = em.Get(e.Path)
 	return
 }
 

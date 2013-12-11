@@ -97,7 +97,7 @@ func runExport(args []string) bool {
 }
 
 func _save_export(entry *storage.Entry, edir string) bool {
-	data, err := storage.FetchBlob(entry, eroof)
+	data, err := storage.PullBlob(entry, eroof)
 	if err != nil {
 		fmt.Println(err)
 		return false

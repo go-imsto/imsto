@@ -14,6 +14,7 @@ import (
 	"wpst.me/calf/config"
 	cdb "wpst.me/calf/db"
 	iimg "wpst.me/calf/image"
+	"wpst.me/calf/storage/backend"
 )
 
 type EntryId struct {
@@ -284,21 +285,13 @@ func (e *Entry) store(roof string) (err error) {
 func (e *Entry) _save(roof string) (err error) {
 	en := config.GetValue(roof, "engine")
 	log.Printf("start save to engine %s", en)
-	var em Wagoner
-	if em, err = FarmEngine(roof); err != nil {
-		log.Printf("farm engine error: %s", err)
+
+	e.sev, err = PushBlob(e, roof)
+	if err != nil {
+		log.Printf("engine push error: %s", err)
 		return
 	}
-
-	sev, dbe := em.Put(e.Path, e.Blob(), e.Meta.Hstore())
-	if dbe != nil {
-		log.Printf("engine put error: %s", dbe)
-		err = dbe
-		return
-	}
-	log.Print("engine save done")
-
-	e.sev = sev
+	log.Print("engine push ok")
 
 	mw := NewMetaWrapper(roof)
 	if err = mw.SetDone(*e.Id, e.sev); err != nil {
@@ -326,4 +319,27 @@ func newPath(ei *EntryId, ext string) string {
 
 func HashContent(data []byte) string {
 	return fmt.Sprintf("%x", md5.Sum(data))
+}
+
+func PullBlob(e *Entry, roof string) (data []byte, err error) {
+	var em backend.Wagoner
+	em, err = backend.FarmEngine(roof)
+	if err != nil {
+		// log.Println(err)
+		return
+	}
+	// var data []byte
+	data, err = em.Get(e.Path)
+	return
+}
+
+func PushBlob(e *Entry, roof string) (sev cdb.Hstore, err error) {
+	var em backend.Wagoner
+	em, err = backend.FarmEngine(roof)
+	if err != nil {
+		log.Printf("farm engine error: %s", err)
+		return
+	}
+	sev, err = em.Put(e.Path, e.Blob(), e.Meta.Hstore())
+	return
 }
