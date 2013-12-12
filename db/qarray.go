@@ -74,3 +74,29 @@ func (q *Qarray) Scan(src interface{}) (err error) {
 	}
 	return
 }
+
+// Index returns the index of the string s in Qarray, or -1 if s is not found.
+func (q Qarray) Index(s string) int {
+	for i, v := range q {
+		if vs := v.(string); s == vs {
+			return i
+		}
+		if s == fmt.Sprint(v) {
+			return i
+		}
+	}
+	return -1
+}
+
+// Contains returns true if the string s is found
+func (q Qarray) Contains(s string) bool {
+	return q.Index(s) > -1
+}
+
+func (q Qarray) ToStringSlice() []string {
+	a := make([]string, len(q))
+	for i, v := range q {
+		a[i] = fmt.Sprint(v)
+	}
+	return a
+}

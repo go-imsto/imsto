@@ -195,7 +195,7 @@ func (o *outItem) prepare() (err error) {
 		err = Dump(entry, roof, org_file)
 		if err != nil {
 			log.Printf("dump fail: ", err)
-			return
+			return NewHttpError(404, err.Error())
 		}
 		if fi, fe := os.Stat(org_file); fe != nil {
 			if os.IsNotExist(fe) || fi.Size() == 0 {
@@ -345,7 +345,7 @@ func Dump(e *Entry, roof, file string) error {
 
 	data, err := PullBlob(e, roof)
 	if err != nil {
-		return NewHttpError(404, err.Error())
+		return err
 	}
 	log.Printf("[%s] pulled: %d bytes", roof, len(data))
 	return SaveFile(file, data)

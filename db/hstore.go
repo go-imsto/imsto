@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
-	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"regexp"
 	"strings"
@@ -11,9 +10,12 @@ import (
 
 const hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9_/\\.-]*)\"),?"
 
+// data type for storing sets of key/value pairs within a single PostgreSQL value.
 type Hstore map[string]interface{}
 
-// text := `"ext"=>".jpg", "size"=>"34508", "width"=>"758", "height"=>"140", "quality"=>"93"`
+// build a hstore from string.
+//   example:
+//   text := `"ext"=>".jpg", "size"=>"34508", "width"=>"758", "height"=>"140", "quality"=>"93"`
 func NewHstore(text string) (Hstore, error) {
 	h := make(Hstore)
 	err := h.fill(text)
@@ -23,7 +25,7 @@ func NewHstore(text string) (Hstore, error) {
 	return h, nil
 }
 
-// hstore map 转成 string 值
+// hstore map convert to string
 func (h Hstore) String() string {
 	var a = make([]string, len(h))
 	r := strings.NewReplacer("\\", "\\\\", "'", "''", "\"", "\\\"")
@@ -94,32 +96,13 @@ func (h *Hstore) fill(text string) error {
 	return nil
 }
 
-func (h Hstore) ToStruct(i interface{}) error {
-	return MapToStruct(h, i)
-}
-
-func MapToStruct(h map[string]interface{}, i interface{}) error {
-	config := &mapstructure.DecoderConfig{
-		Metadata:         nil,
-		WeaklyTypedInput: true,
-		Result:           i,
-	}
-
-	decoder, err := mapstructure.NewDecoder(config)
-	if err != nil {
-		return err
-	}
-
-	return decoder.Decode(h)
-}
-
 type Hstorer interface {
 	Hstore() Hstore
 }
 
-func StructToHstore(i interface{}) Hstore {
+func StructToHstore(s interface{}) Hstore {
 	h := make(Hstore)
-	iVal := reflect.ValueOf(i)
+	iVal := reflect.ValueOf(s)
 	typ := iVal.Type()
 	for i := 0; i < iVal.NumField(); i++ {
 		f := iVal.Field(i)

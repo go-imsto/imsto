@@ -5,8 +5,8 @@
 ### C lib
 
 1. libjpeg-turbo (recommend) or jpeg
-2. png (option)
-3. ImageMagick
+2. png (option in plan)
+3. ~~ImageMagick~~ (*not need anymore*)
 
 ### Go lib
 
@@ -17,6 +17,7 @@ go get github.com/vaughan0/go-ini
 go get github.com/lib/pq
 go get github.com/mitchellh/mapstructure
 go get github.com/crowdmob/goamz/s3
+go get github.com/nfnt/resize
 ~~~
 
 
@@ -24,11 +25,11 @@ go get github.com/crowdmob/goamz/s3
 
 ### prepare C libraries
    - osx:
-     - `port install jpeg`
-     - `port install ImageMagick`
+     - `port install libjpeg-turbo`
+     - ~~`port install ImageMagick`~~
    - gentoo:
-     - `emerge jpeg`
-     - `emerge imagemagick`
+     - `emerge libjpeg-turbo`
+     - ~~`emerge imagemagick`~~
 
 ### get and build
 
@@ -37,15 +38,15 @@ go get github.com/crowdmob/goamz/s3
 
 ## Launch
 
-### Launch tiring backend
+### Launch tiring service
 ~~~
-IMSTO_API_0_SALT=$SALT $GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT tiring -port 8964
+IMSTO_API_0_SALT=mysalt $GOPATH/bin/imsto -conf=CONF_DIR -logs=LOG_DIR tiring -port 8964
 ~~~
 
 
-### Launch stage backend
+### Launch stage service
 ~~~
-$GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT stage -port 8968
+$GOPATH/bin/imsto -conf=CONF_DIR -logs=LOG_DIR stage -port 8968
 ~~~
 
 ## Change nginx config
@@ -53,8 +54,8 @@ $GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT stage -port 8968
 - add imsto blocks into locations
 
 ~~~
-	location /thumb {
-		alias /opt/imsto/cache/thumb/;
+	location ~* ^/(thumb|t2|t3)/(.+\.(?:gif|jpe?g|png))$ {
+		alias /opt/imsto/cache/thumb/$2;
 		error_page 404 = @imsto_stage;
 	}
 
@@ -64,7 +65,7 @@ $GOPATH/bin/imsto -root=$APP_ROOT -logs=$LOG_ROOT stage -port 8968
 		proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
 	}
 
-	location /imsto {
+	location /imsto/ {
 		proxy_pass   http://localhost:8964;
 		proxy_set_header   X-Real-IP        $remote_addr;
 		proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;

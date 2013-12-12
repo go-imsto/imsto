@@ -226,17 +226,35 @@ func (e *Entry) store(roof string) (err error) {
 			e.Id = _id
 			_ne, _err := mw.GetEntry(*_id)
 			if _err == nil { // path, mime, size, sev, status, created
-				e.Name = _ne.Name
-				e.Path = _ne.Path
-				e.Size = _ne.Size
-				e.Mime = _ne.Mime
-				e.sev = _ne.sev
-				e.Created = _ne.Created
-				e.reset()
-				e._treked = true
-				log.Printf("exist: %s, %s", e.Id, e.Path)
+				if _ne.Roofs.Contains(roof) {
+					e.Name = _ne.Name
+					e.Path = _ne.Path
+					e.Size = _ne.Size
+					e.Mime = _ne.Mime
+					// e.Meta = _ne.Meta
+					// e.sev = _ne.sev
+					e.Created = _ne.Created
+					e.Roofs = _ne.Roofs
+					e.reset()
+					e._treked = true
+
+					log.Printf("exist: %s, %s", e.Id, e.Path)
+					return
+				}
+
+				log.Printf("[%s]%s not in %s, so resubmit it", roof, e.Id, _ne.Roofs)
+
+				// for _, _roof := range _ne.Roofs {
+				// 	_mw := NewMetaWrapper(fmt.Sprint(_roof))
+				// 	t, te := _mw.GetMeta(*_ne.Id)
+				// 	if te == nil {
+				// 		e = t
+				// 		err = mw.Save(t)
+				// 		return
+				// 	}
+				// }
+
 				// e.Done <- true
-				return
 			} else {
 				log.Printf("get entry error: %s", _err)
 			}
@@ -272,10 +290,6 @@ func (e *Entry) store(roof string) (err error) {
 		}
 		e.Done <- true
 	}()
-
-	// if err != nil {
-	// 	return
-	// }
 
 	log.Printf("[%s] store ready ok %s", roof, e.Path)
 
