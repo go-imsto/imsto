@@ -1,6 +1,8 @@
 # Installation
 
 ## Dependencies
+* PostgreSQL 9+
+* PostgreSQL extension: `hstore`
 
 ### C lib
 
@@ -37,6 +39,26 @@ go get github.com/nfnt/resize
 
 
 ## Launch
+
+### Prepare Database
+
+~~~
+psql -Upostgres
+-- copy database/schema/pgsql_00_base.sql contents and execute them
+
+-- basic schema
+psql -Uimsto -f database/schema/pgsql_10_imsto.sql
+
+-- mobile upload schema
+psql -Uimsto -f database/schema/pgsql_11_imsto_auth.sql
+
+-- demo schema
+psql -Uimsto -f database/schema/pgsql_12_imsto_demo.sql
+
+-- procedure
+psql -Uimsto database/procedure/pgsql_10_imsto.sql
+psql -Uimsto database/procedure/pgsql_11_imsto_auth.sql
+~~~
 
 ### Configuration
 - `mkdir /etc/imsto`
