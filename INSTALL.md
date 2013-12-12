@@ -38,15 +38,20 @@ go get github.com/nfnt/resize
 
 ## Launch
 
+### Configuration
+- `mkdir /etc/imsto`
+- `vim /etc/imsto/imsto.ini`, see also: `demo-config`
+- `mkdir /var/log/imsto`
+
 ### Launch tiring service
 ~~~
-IMSTO_API_0_SALT=mysalt $GOPATH/bin/imsto -conf=CONF_DIR -logs=LOG_DIR tiring -port 8964
+IMSTO_API_0_SALT=mysalt $GOPATH/bin/imsto tiring
 ~~~
 
 
 ### Launch stage service
 ~~~
-$GOPATH/bin/imsto -conf=CONF_DIR -logs=LOG_DIR stage -port 8968
+$GOPATH/bin/imsto stage
 ~~~
 
 ## Change nginx config
