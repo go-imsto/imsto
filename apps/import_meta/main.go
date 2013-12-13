@@ -206,7 +206,7 @@ func main() {
 		skip += limit
 	}
 
-	log.Printf("[%s] %s.%s (%d) all done!", roof, mgo_db, mgo_coll, total)
+	log.Printf("%s.%s => [%s] (%d) all done!", mgo_db, mgo_coll, roof, total)
 }
 
 func getSession() (*mgo.Session, error) {
