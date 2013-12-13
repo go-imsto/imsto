@@ -14,6 +14,9 @@ const (
 var base62 = []byte(BASE62_STR)
 
 func BaseConvert(num string, frombase int, tobase int) (string, error) {
+	if num == "" {
+		return "", nil
+	}
 
 	if frombase == tobase {
 		return num, nil

@@ -15,6 +15,10 @@ func TestRoot(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
+	var tc = func() error {
+		return nil
+	}
+	AtLoaded(tc)
 	err := Load()
 
 	if err != nil {
