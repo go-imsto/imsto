@@ -259,21 +259,17 @@ func (mw *MetaWrap) Save(entry *Entry) error {
 	}
 
 	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-	row := tx.QueryRow(sql, mw.table_suffix,
-		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
-		entry.AppId, entry.Author)
 
-	var ret int
-	err = row.Scan(&ret)
+	err = tx.QueryRow(sql, mw.table_suffix,
+		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+		entry.AppId, entry.Author).Scan(&entry.ret)
 
 	if err != nil {
 		tx.Rollback()
 		return err
-		// log.Fatal(err)
 	}
-	entry.ret = ret
 
-	log.Printf("entry save ret: %v\n", ret)
+	log.Printf("entry save ret: %v\n", entry.ret)
 
 	tx.Commit()
 	return nil
@@ -289,18 +285,18 @@ func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 		return err
 	}
 
-	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);"
+	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
 	st, err := tx.Prepare(sql)
 	for _, entry := range entries {
-		var ret int
 		err := st.QueryRow(mw.table_suffix,
-			entry.Id.String(), entry.Path, entry.Name, entry.Mime, entry.Size, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids).Scan(&ret)
+			entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+			entry.AppId, entry.Author).Scan(&entry.ret)
 		if err != nil {
 			log.Printf("batchSave %s %s error: %s", entry.Id.String(), entry.Path, err)
 			tx.Rollback()
 			return err
 		}
-		log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, ret)
+		log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, entry.ret)
 	}
 	tx.Commit()
 	return nil
