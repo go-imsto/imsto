@@ -3,19 +3,19 @@
 
 -- BEGIN;
 
--- （参观者）只读角色
+-- visitor (readonly)
 CREATE ROLE im_visitor CONNECTION LIMIT 8;
 ALTER ROLE im_visitor SET client_encoding=utf8;
--- （维护者）读写角色
+-- keeper (read, write)
 CREATE ROLE im_keeper CONNECTION LIMIT 6;
 ALTER ROLE im_keeper SET client_encoding=utf8;
 
--- 只读登录账户
+-- readonly account
 CREATE ROLE im_reader LOGIN PASSWORD 'read0fromlink';
 GRANT im_visitor TO im_reader;
 
 
--- 账户相关
+-- imsto database
 
 CREATE ROLE imsto LOGIN PASSWORD 'aside26,dicx';
 CREATE DATABASE imsto WITH OWNER = imsto ENCODING = 'UTF8';
