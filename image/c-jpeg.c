@@ -37,10 +37,10 @@ my_error_exit (j_common_ptr cinfo)
 
 
 Simp_Image *
-simp_open_stdio(FILE *infile)
+simp_open_file(FILE *infile)
 {
 #ifdef IM_DEBUG
-	debug_print("[start simp_open_stdio]\n");
+	debug_print("[start simp_open_file]\n");
 #endif
 
 	Simp_Image *im;
@@ -362,10 +362,10 @@ int read_jpeg_file (FILE * infile, jpeg_attr_ptr ia_ptr)
 {
 	Simp_Image *im;
 	// UINT8 quality;
-	im = simp_open_stdio(infile);
+	im = simp_open_file(infile);
 
 	if (im == NULL) {
-		fprintf(stderr, "simp_open_stdio failed\n");
+		fprintf(stderr, "simp_open_file failed\n");
 		return 0;
 	}
 
@@ -392,7 +392,7 @@ int write_jpeg_file (FILE * infile, FILE * outfile, jpeg_option_ptr option)
 		return 0;
 	}
 	Simp_Image *im;
-	im = simp_open_stdio(infile);
+	im = simp_open_file(infile);
 	// im->wopt.strip_all = option.strip_all;
 	im->wopt.quality = option->quality;
 	simp_output_file(im, outfile);

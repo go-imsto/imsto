@@ -52,7 +52,7 @@ struct _Simp_Image {
 	JSAMPARRAY 					 	buf; // ptr for unsigned char **lines
 };
 
-Simp_Image  *simp_open_stdio 	(FILE *infile);
+Simp_Image  *simp_open_file 	(FILE *infile);
 Simp_Image  *simp_open_mem	 	(unsigned char *data, unsigned int size);
 void         simp_close      	(Simp_Image *im);
 bool         simp_output_file   (Simp_Image *im, FILE *outfile);

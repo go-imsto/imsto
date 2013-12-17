@@ -75,9 +75,9 @@ func (self *simpJPEG) Open(r io.Reader) error {
 		defer C.free(unsafe.Pointer(cmode))
 		infile := C.fdopen(C.int(f.Fd()), cmode)
 		//defer C.fclose(infile)
-		si = C.simp_open_stdio(infile)
+		si = C.simp_open_file(infile)
 		if si == nil {
-			return errors.New("simp_open_stdio failed")
+			return errors.New("simp_open_file failed")
 		}
 		fi, _ := f.Stat()
 		size = Size(fi.Size())
