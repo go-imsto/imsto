@@ -41,7 +41,7 @@ CREATE TABLE map_template (
 	path entry_path NOT NULL , 
 	mime varCHAR(64) NOT NULL DEFAULT '' , 
 	size int NOT NULL DEFAULT 0 CHECK (size >= 0),
-	sev hstore, -- storage info
+	sev hstore NOT NULL DEFAULT '', -- storage info
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
 	roofs varCHAR(12)[] NOT NULL DEFAULT '{}',
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -53,13 +53,13 @@ CREATE TABLE meta_template (
 	id entry_id NOT NULL,
 	path entry_path NOT NULL , 
 	name name NOT NULL DEFAULT '',
-	meta hstore,
+	meta hstore NOT NULL DEFAULT '',
 	hashes varCHAR(40)[],
 	ids varCHAR(38)[],
 	-- mime varCHAR(64) NOT NULL DEFAULT '' , 
 	size int NOT NULL DEFAULT 0,
-	sev hstore,
-	exif hstore, -- exif info
+	sev hstore NOT NULL DEFAULT '',
+	exif hstore NOT NULL DEFAULT '', -- exif info
 	app_id int NOT NULL DEFAULT 0,
 	author int NOT NULL DEFAULT 0,
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
@@ -78,10 +78,10 @@ CREATE TABLE prepared_entry (
 	id entry_id NOT NULL,
 	path entry_path NOT NULL , 
 	roof varCHAR(12) NOT NULL ,
-	meta hstore,
+	meta hstore NOT NULL DEFAULT '',
 	hashes varCHAR(40)[],
 	ids varCHAR(38)[],
-	exif hstore, -- exif info
+	exif hstore NOT NULL DEFAULT '', -- exif info
 	app_id smallint NOT NULL DEFAULT 0,
 	author int NOT NULL DEFAULT 0,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
