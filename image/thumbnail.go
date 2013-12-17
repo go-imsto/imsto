@@ -1,6 +1,7 @@
 package image
 
 import (
+	"errors"
 	"fmt"
 	"github.com/nfnt/resize"
 	"image"
@@ -15,6 +16,10 @@ import (
 
 const (
 	MIN_JPEG_QUALITY = jpeg.DefaultQuality // 75
+)
+
+var (
+	ErrOrigTooSmall = errors.New("Original Image Too Small")
 )
 
 type ThumbOption struct {
@@ -99,8 +104,9 @@ func ThumbnailImage(img image.Image, topt *ThumbOption) (image.Image, error) {
 	ow := uint(ob.Dx())
 	oh := uint(ob.Dy())
 
-	if topt.Width >= ow && topt.Height >= oh {
-		return img, nil
+	if ow <= topt.Width && oh <= topt.Height {
+		log.Printf("ThumbnailImage %dx%d <= %dx%d", ow, oh, topt.Width, topt.Height)
+		return nil, ErrOrigTooSmall
 	}
 
 	err := topt.calc(ow, oh)
@@ -131,6 +137,19 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 
 	m, err := ThumbnailImage(im, &topt)
 	if err != nil {
+		if err == ErrOrigTooSmall {
+			if rr, ok := r.(io.Seeker); ok {
+				rr.Seek(0, 0)
+			}
+			var written int64
+			written, err = io.Copy(w, r)
+			if err == nil {
+				log.Printf("written %d", written)
+				return nil
+			} else {
+				log.Printf("copy error %s", err)
+			}
+		}
 		return err
 	}
 
