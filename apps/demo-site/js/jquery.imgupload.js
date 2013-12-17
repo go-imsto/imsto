@@ -31,7 +31,7 @@
 			error: function(err, file, i) {
 				alert(err);
 			},
-			createImage: empty,
+			imageCreated: empty,
 			imageLoaded: empty,
 			uploadStarted: empty,
 			uploadFinished: empty,
@@ -87,7 +87,7 @@
 		}
 	}
 
-	function prettysize(bytes){	// simple function to show a friendly size
+	function prettySize(bytes){	// simple function to show a friendly size
 		var i = 0;
 		while(1023 < bytes){
 			bytes /= 1024;
@@ -101,15 +101,17 @@
 		if (!file.type.match(imageType)) return false;
 		var img = document.createElement("img");
 		img.file = file;
-		opts.createImage(img);
+		opts.imageCreated(img);
 		var reader = new FileReader();
-		reader.onload = (function(img) {
-			return function(e) {
-				img.src = e.target.result;
-				$(img).attr('title',''+img.naturalWidth+'x'+img.naturalHeight+', '+prettysize(img.file.size));
-				opts.imageLoaded(img);
+		reader.onload = function(e) {
+			img.src = e.target.result;
+			img.onload = function() {
+				img.title = ''+img.naturalWidth+'x'+img.naturalHeight+', '+prettySize(img.file.size)
+			// $(img).attr('title',''+img.naturalWidth+'x'+img.naturalHeight+', '+prettySize(img.file.size));
+			opts.imageLoaded(img);
+			// log('loaded image')
 			};
-		})(img);
+		};
 		reader.readAsDataURL(file);
 	}
 	
@@ -337,8 +339,6 @@
 					start_time = new Date().getTime(),
 					formData = new FormData();
 
-			// binary = buildBlob(boundary, file, e.target.result);
-
 			if (opts.data) {
 				$.each(opts.data, function(i, item) {
 					formData.append(item.name, item.value);
@@ -364,7 +364,6 @@
 			upload.addEventListener("progress", progress, false);
 
 			xhr.open("POST", opts.url, true);
-			// xhr.setRequestHeader('content-type', 'multipart/form-data; boundary=' + boundary);
 
 			// Add headers
 			$.each(opts.headers, function(k, v) {
@@ -466,7 +465,7 @@
 	
 	// image upload
 	$.extend({
-		prettysize: prettysize,
+		prettySize: prettySize,
 		imgpreview: preview,
 		imgupload: upload
 	});

@@ -59,7 +59,7 @@ $(document).ready(function(){
 			//log('drop');
 			dropbox.removeAttr('dragenter');
 		},
-		createImage: function(img) {
+		imageCreated: function(img) {
 			//log(img);
 			var li = $('<li />').addClass('new').append(img);	//alert(li.html());
 			li.append('<label class="lbl"></label>');
@@ -159,6 +159,7 @@ $(document).ready(function(){
 				// this function is used for large files and updates intermittently
 				// progress is the integer value of file being uploaded percentage to completion
 				log('progress: ' + i + ': ' + progress);
+				$("#progressbar").progressbar("option", "value", progress);
 			},
 			speedUpdated: function(i, file, speed) {
 				// speed in kb/s
@@ -169,7 +170,7 @@ $(document).ready(function(){
 				// return false to cancel upload
 				
 				if(!file.type.match(/^image\//)){
-					alert('Only images are allowed!');
+					Dust.alert('Only images are allowed!');
 
 					// Returning false will cause the
 					// file to be rejected
