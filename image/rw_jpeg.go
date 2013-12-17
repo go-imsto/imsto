@@ -90,7 +90,7 @@ func (self *simpJPEG) Open(r io.Reader) error {
 		}
 
 		ln := len(blob)
-		log.Printf("jpeg blob head: %x, tail: %x", blob[0:8], blob[ln-2:ln])
+		log.Printf("jpeg blob (%d) head: %x, tail: %x", ln, blob[0:8], blob[ln-2:ln])
 
 		log.Printf("open mem buf len %d\n", ln)
 		p := (*C.uchar)(unsafe.Pointer(&blob[0]))
@@ -127,14 +127,16 @@ func (self *simpJPEG) GetAttr() *Attr {
 }
 
 func (self *simpJPEG) SetOption(wopt WriteOption) {
-	self.wopt = wopt
-	log.Printf("setOption: q %d, s %v", self.wopt.Quality, self.wopt.StripAll)
-	if self.wopt.Quality > 0 && self.Quality > self.wopt.Quality {
-		C.simp_set_quality(self.si, C.int(self.wopt.Quality))
-		self.Quality = self.wopt.Quality
-		log.Printf("set quality: %d", self.wopt.Quality)
+	log.Printf("setOption: q %d, s %v", wopt.Quality, wopt.StripAll)
+	if wopt.Quality < MIN_JPEG_QUALITY {
+		self.wopt.Quality = MIN_JPEG_QUALITY
+	} else {
+		self.wopt.Quality = wopt.Quality
 	}
+	C.simp_set_quality(self.si, C.int(self.wopt.Quality))
+	log.Printf("set quality: %d", self.wopt.Quality)
 
+	self.wopt.StripAll = wopt.StripAll
 }
 
 func (self *simpJPEG) WriteTo(out io.Writer) error {
