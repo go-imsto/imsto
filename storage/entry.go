@@ -134,9 +134,12 @@ func (e *Entry) Trek(roof string) (err error) {
 
 	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
 	if ia.Quality > max_quality {
-		im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 		log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, max_quality)
+	} else {
+		max_quality = ia.Quality
+		log.Printf("jpeg quality %d is too low", ia.Quality)
 	}
+	im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 
 	max_width := iimg.Dimension(config.GetInt(roof, "max_width"))
 	max_height := iimg.Dimension(config.GetInt(roof, "max_height"))
