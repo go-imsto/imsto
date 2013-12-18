@@ -3,8 +3,8 @@ package image
 /*
 #cgo linux CFLAGS: -I/usr/include
 #cgo linux LDFLAGS: -ljpeg -L/usr/lib
-#cgo darwin CFLAGS: -I/opt/local/include -DIM_DEBUG
-#cgo darwin LDFLAGS: -ljpeg -L/opt/local/lib
+#cgo darwin CFLAGS: -I/usr/include -I/opt/local/include -DIM_DEBUG
+#cgo darwin LDFLAGS: -ljpeg -L/usr/lib -L/opt/local/lib
 
 // debug CFLAGS:
 // -DIM_DEBUG for simp_image output
