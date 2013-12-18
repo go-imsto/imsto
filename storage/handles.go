@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	image_url_regex  = `(?P<tp>[a-z][a-z0-9]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	image_url_regex  = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/(?P<t2>[a-z0-9]{2})/(?P<t3>[a-z0-9]{19,36})\.(?P<ext>gif|jpg|jpeg|png)$`
 	defaultMaxMemory = 16 << 20 // 16 MB
 )
 
@@ -66,6 +66,7 @@ func newOutItem(url string) (oi *outItem, err error) {
 	}
 	// log.Print(m)
 	roof := getThumbRoof(m["tp"])
+	// log.Printf("check roof from %s: %s", m["tp"], roof)
 	var id *EntryId
 	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
 	if err != nil {
