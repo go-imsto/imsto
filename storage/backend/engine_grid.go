@@ -85,6 +85,7 @@ func (g *gridfsConn) Get(key string) (data []byte, err error) {
 	c := func(fs *mgo.GridFS) error {
 		r, err := fs.OpenId(id)
 		if err != nil {
+			log.Printf("OpenId(%s) error: %s", id, err)
 			return err
 		}
 		defer r.Close()
