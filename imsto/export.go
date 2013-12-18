@@ -23,6 +23,7 @@ var (
 	eid    string
 	etotal int
 	elimit int
+	eskip  int
 )
 
 const (
@@ -35,7 +36,8 @@ func init() {
 	cmdExport.Flag.StringVar(&edir, "o", "", "a local direcotry to export into.")
 	cmdExport.Flag.StringVar(&eid, "id", "", "only export a special id.")
 	cmdExport.Flag.IntVar(&etotal, "total", 0, "export total count.")
-	cmdExport.Flag.IntVar(&elimit, "limit", 10, "export total count.")
+	cmdExport.Flag.IntVar(&elimit, "limit", 10, "page size.")
+	cmdExport.Flag.IntVar(&eskip, "skip", 0, "offset.")
 }
 
 func runExport(args []string) bool {
@@ -71,7 +73,7 @@ func runExport(args []string) bool {
 
 	var (
 		limit = elimit
-		skip  = 0
+		skip  = eskip
 	)
 	if total < max_limit {
 		limit = total
