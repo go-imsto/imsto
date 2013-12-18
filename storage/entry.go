@@ -342,11 +342,14 @@ func PullBlob(e *Entry, roof string) (data []byte, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
-		// log.Println(err)
+		log.Printf("FarmEngine(%s) error: %s", roof, err)
 		return
 	}
 	// var data []byte
 	data, err = em.Get(e.Path)
+	if err != nil {
+		log.Printf("[%s] engine Get(%s) error: %s", roof, e.Path, err)
+	}
 	return
 }
 
