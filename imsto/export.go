@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	// "log"
-	// "os"
+	"os"
 	"path"
 	// "strings"
 	"wpst.me/calf/storage"
@@ -97,9 +97,13 @@ func runExport(args []string) bool {
 }
 
 func _save_export(entry *storage.Entry, edir string) bool {
-	filename := path.Join(edir, entry.Path)
-	fmt.Printf("save to: %s ", filename)
-	err := storage.Dump(entry, eroof, filename)
+	name := path.Join(edir, entry.Path)
+	fmt.Printf("save to: %s ", name)
+	if fi, fe := os.Stat(name); fe == nil && fi.Size() == int64(entry.Size) {
+		fmt.Println("exist")
+		return true
+	}
+	err := storage.Dump(entry, eroof, name)
 	if err != nil {
 		fmt.Println(err)
 		return false
