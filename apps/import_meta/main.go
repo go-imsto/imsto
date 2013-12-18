@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 	"log"
+	"path"
 	"time"
 	"wpst.me/calf/config"
 	"wpst.me/calf/db"
@@ -24,6 +26,7 @@ var (
 	skip, limit int
 	mgoSession  *mgo.Session
 	id          string
+	odir        string
 )
 
 type entryOut struct {
@@ -129,6 +132,7 @@ func init() {
 	flag.IntVar(&limit, "limit", 10, "limit")
 	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app conf dir")
 	flag.StringVar(&id, "id", "", "single item id")
+	flag.StringVar(&odir, "o", "", "export the single item to a special directory")
 	flag.Parse()
 	if cfgDir != "" {
 		config.SetRoot(cfgDir)
@@ -155,6 +159,33 @@ func main() {
 		eo, err := QueryEntry(collectionName, id)
 		if err != nil {
 			log.Printf("query error: %s", err)
+			return
+		}
+
+		if odir != "" {
+			f := func(fs *mgo.GridFS) error {
+				r, err := fs.OpenId(id)
+				if err != nil {
+					log.Printf("OpenId(%s) error: %s", id, err)
+					return err
+				}
+				defer r.Close()
+				data, err := ioutil.ReadAll(r)
+				if err != nil {
+					return err
+				}
+				name := path.Join(odir, r.Name())
+				err = storage.SaveFile(name, data)
+				if err == nil {
+					log.Printf("save %s to %s ok", id, name)
+				}
+				return err
+			}
+			err = withFs(mgo_coll, f)
+			if err != nil {
+				log.Printf("fs error: %s", err)
+			}
+
 			return
 		}
 		mw := storage.NewMetaWrapper(roof)
@@ -270,4 +301,14 @@ func QueryEntry(collection string, id string) (eo entryOut, err error) {
 	}
 	err = search()
 	return
+}
+
+func withFs(prefix string, f func(*mgo.GridFS) error) error {
+	session, err := getSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+	fs := session.DB(mgo_db).GridFS(prefix)
+	return f(fs)
 }
