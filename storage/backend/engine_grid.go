@@ -45,14 +45,14 @@ func gridfsDial(sn string) (Wagoner, error) {
 
 func (g *gridfsConn) getSession() (*mgo.Session, error) {
 	if g.session == nil {
-		var err error
-		g.session, err = mgo.Dial(g.url)
-		if err != nil {
-			log.Printf("error: %s", err)
-			return nil, err
-		}
+		// var err error
+		g.session = g.sessionInit() //mgo.Dial(g.url)
+		// if err != nil {
+		// 	log.Printf("error: %s", err)
+		// 	return nil, err
+		// }
 	}
-	return g.session.Clone(), nil
+	return g.session, nil
 }
 
 func (g *gridfsConn) withFs(f func(*mgo.GridFS) error) error {
@@ -140,4 +140,38 @@ func pathToId(key string) string {
 		}
 	}
 	return key
+}
+
+var MAX_POOL_SIZE = 20
+
+var mgoSessPool chan *mgo.Session
+
+func (g *gridfsConn) sessionInit() *mgo.Session {
+	if mgoSessPool == nil {
+		mgoSessPool = make(chan *mgo.Session, MAX_POOL_SIZE)
+	}
+	if len(mgoSessPool) == 0 {
+		go func() {
+			for i := 0; i < MAX_POOL_SIZE/2; i++ {
+				s, err := mgo.Dial(g.url)
+				if err != nil {
+					log.Printf("mgo Dial(%s) error: %s", g.url, err)
+					// panic(err)
+				}
+				putSession(s)
+			}
+		}()
+	}
+	return <-mgoSessPool
+}
+
+func putSession(s *mgo.Session) {
+	if mgoSessPool == nil {
+		mgoSessPool = make(chan *mgo.Session, MAX_POOL_SIZE)
+	}
+	if len(mgoSessPool) >= MAX_POOL_SIZE {
+		s.Close()
+		return
+	}
+	mgoSessPool <- s
 }
