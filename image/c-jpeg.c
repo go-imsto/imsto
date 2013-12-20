@@ -185,12 +185,12 @@ simp_set_quality(Simp_Image *im, int quality)
 void
 simp_close(Simp_Image *im)
 {
-	if (im->in.f)      jpeg_destroy_decompress(&(im->in.ji));
+	if (&(im->in.ji))   jpeg_destroy_decompress(&(im->in.ji));
 	if (im->in.f)      fclose(im->in.f);
 	if (im->buf)       free(im->buf);
-	if (im->out.f)     jpeg_destroy_compress(&(im->out.ji));
+	if (&(im->out.ji))  jpeg_destroy_compress(&(im->out.ji));
 	if (im->out.f)     fclose(im->out.f);
-	if (im) free(im);
+	if (im)            free(im);
 }
 
 static bool
