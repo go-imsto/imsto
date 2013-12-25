@@ -181,7 +181,7 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
--- Function: entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer)
+-- FUNCTION: entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer)
 
 -- DROP FUNCTION entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer);
 
@@ -288,6 +288,40 @@ SELECT entry_save(m_rec.roof, m_rec.id, m_rec.path, m_rec.meta, a_sev,
 DELETE FROM prepared_entry WHERE id = a_id;
 
 RETURN t_ret;
+
+END;
+$$
+LANGUAGE 'plpgsql' VOLATILE;
+
+
+CREATE OR REPLACE FUNCTION imsto.entry_delete(a_roof text, a_id text)
+RETURNS int AS
+$$
+DECLARE
+	tb_meta text;
+	t_status smallint;
+BEGIN
+	tb_meta := 'meta_' || a_roof;
+
+	EXECUTE 'SELECT status FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	INTO t_status
+	USING a_id;
+
+	IF t_status IS NULL THEN
+		RETURN -1;
+	END IF;
+
+	IF NOT EXISTS (SELECT status FROM meta__deleted WHERE id = a_id) THEN
+		EXECUTE 'INSERT INTO meta__deleted SELECT *, $1, CURRENT_TIMESTAMP FROM '||tb_meta||' WHERE id = $2'
+		USING a_roof, a_id;
+	END IF;
+
+	EXECUTE 'DELETE FROM '||tb_meta||' WHERE id = $1'
+	USING a_id;
+
+	-- TODO: delete mapping and hash
+
+	RETURN 1;
 
 END;
 $$

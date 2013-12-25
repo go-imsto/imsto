@@ -337,19 +337,25 @@ func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 func (mw *MetaWrap) Delete(id EntryId) error {
 	db := mw.getDb()
 	defer db.Close()
-	sql := "UPDATE " + mw.table() + " SET status = 1 WHERE id = $1"
-	r, err := db.Exec(sql, id.String())
+
+	tx, err := db.Begin()
 	if err != nil {
-		log.Println(err)
+		tx.Rollback()
 		return err
 	}
-	var af int64
-	af, err = r.RowsAffected()
+
+	sql := "SELECT entry_delete($1, $2);"
+	var ret int
+	err = tx.QueryRow(sql, mw.table_suffix, id.String()).Scan(&ret)
+
 	if err != nil {
-		log.Println(err)
+		tx.Rollback()
 		return err
 	}
-	log.Printf("delete entry %s result %v", id.String(), af)
+
+	tx.Commit()
+
+	log.Printf("delete entry [%s]%s result %v", mw.table_suffix, id.String(), ret)
 	return nil
 }
 

@@ -73,6 +73,13 @@ CREATE TABLE meta_common
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
 
+CREATE TABLE meta__deleted
+(
+	LIKE meta_template INCLUDING ALL,
+	roof varCHAR(12) NOT NULL DEFAULT '',
+	deleted timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) WITHOUT OIDS;
+
 -- entry presave
 CREATE TABLE prepared_entry (
 	id entry_id NOT NULL,
