@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"([a-zA-Z0-9_/\\.-]*)\"),?"
+const hstore_pattern = "\"([a-zA-Z-_]+)\"\\s?=\\>(NULL|\"\"|\"([^\"\\\\]+)\"),?"
 
 // data type for storing sets of key/value pairs within a single PostgreSQL value.
 type Hstore map[string]interface{}
