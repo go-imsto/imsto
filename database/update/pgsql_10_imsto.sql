@@ -33,3 +33,17 @@ ALTER TABLE prepared_entry ALTER exif SET NOT NULL;
 
 END;
 
+-- 20131225
+ALTER TABLE meta_template ADD roof varCHAR(12) NOT NULL DEFAULT '';
+CREATE INDEX idx_meta_meta ON meta_template (meta) ;
+CREATE INDEX idx_meta_size ON meta_template (size) ;
+
+BEGIN;
+ALTER TABLE meta_demo ADD roof varCHAR(12) NOT NULL DEFAULT '';
+UPDATE meta_demo SET meta = meta || hstore('name', name) WHERE not meta ? 'name';
+CREATE INDEX ON meta_demo (meta) ;
+CREATE INDEX ON meta_demo (size) ;
+END;
+
+UPDATE meta__prepared SET size = (meta -> 'size')::int WHERE size = 0;
+

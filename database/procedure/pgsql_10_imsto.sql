@@ -232,10 +232,11 @@ BEGIN
 	END IF;
 
 	-- save entry meta
-	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, size, meta, hashes, ids, sev, app_id, author) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, size, meta, hashes, ids, sev, app_id, author, roof)
+	 VALUES (
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 	)'
-	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author;
+	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof;
 
 RETURN 1;
 END;
@@ -253,8 +254,8 @@ RETURNS int AS
 $$
 BEGIN
 
-IF NOT EXISTS(SELECT created FROM prepared_entry WHERE id = a_id) THEN
-	INSERT INTO prepared_entry (id, roof, path, meta, hashes, ids, app_id, author)
+IF NOT EXISTS(SELECT created FROM meta__prepared WHERE id = a_id) THEN
+	INSERT INTO meta__prepared (id, roof, path, meta, hashes, ids, app_id, author)
 	VALUES (a_id, a_roof, a_path, a_meta, a_hashes, a_ids, a_appid, a_author);
 	IF FOUND THEN
 		RETURN 1;
@@ -277,7 +278,7 @@ DECLARE
 	t_ret int;
 BEGIN
 
-SELECT * FROM prepared_entry WHERE id = a_id INTO m_rec;
+SELECT * FROM meta__prepared WHERE id = a_id INTO m_rec;
 IF NOT FOUND THEN
 	RETURN -2;
 END IF;
@@ -285,7 +286,7 @@ END IF;
 SELECT entry_save(m_rec.roof, m_rec.id, m_rec.path, m_rec.meta, a_sev,
  m_rec.hashes, m_rec.ids, m_rec.app_id, m_rec.author) INTO t_ret;
 
-DELETE FROM prepared_entry WHERE id = a_id;
+DELETE FROM meta__prepared WHERE id = a_id;
 
 RETURN t_ret;
 

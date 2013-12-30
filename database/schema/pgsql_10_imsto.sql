@@ -53,20 +53,22 @@ CREATE TABLE meta_template (
 	id entry_id NOT NULL,
 	path entry_path NOT NULL , 
 	name name NOT NULL DEFAULT '',
+	roof varCHAR(12) NOT NULL DEFAULT '',
 	meta hstore NOT NULL DEFAULT '',
 	hashes varCHAR(40)[],
 	ids varCHAR(38)[],
-	-- mime varCHAR(64) NOT NULL DEFAULT '' , 
 	size int NOT NULL DEFAULT 0,
 	sev hstore NOT NULL DEFAULT '',
 	exif hstore NOT NULL DEFAULT '', -- exif info
-	app_id int NOT NULL DEFAULT 0,
+	app_id smallint NOT NULL DEFAULT 0,
 	author int NOT NULL DEFAULT 0,
-	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
+	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=hidden
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;
+CREATE INDEX idx_meta_meta ON meta_template (meta) ;
+CREATE INDEX idx_meta_size ON meta_template (size) ;
 
 CREATE TABLE meta_common
 (
@@ -76,25 +78,13 @@ CREATE TABLE meta_common
 CREATE TABLE meta__deleted
 (
 	LIKE meta_template INCLUDING ALL,
-	roof varCHAR(12) NOT NULL DEFAULT '',
 	deleted timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) WITHOUT OIDS;
 
 -- entry presave
-CREATE TABLE prepared_entry (
-	id entry_id NOT NULL,
-	path entry_path NOT NULL , 
-	roof varCHAR(12) NOT NULL ,
-	meta hstore NOT NULL DEFAULT '',
-	hashes varCHAR(40)[],
-	ids varCHAR(38)[],
-	exif hstore NOT NULL DEFAULT '', -- exif info
-	app_id smallint NOT NULL DEFAULT 0,
-	author int NOT NULL DEFAULT 0,
-	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY (id)
+CREATE TABLE meta__prepared (
+	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
-CREATE INDEX idx_prepared_created ON prepared_entry (created) ;
 
 
 END;
