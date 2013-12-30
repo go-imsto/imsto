@@ -30,6 +30,7 @@ var (
 	match          string
 	arch           string
 	include_parent bool
+	readydone      bool
 )
 
 func init() {
@@ -39,9 +40,14 @@ func init() {
 	cmdImport.Flag.StringVar(&arch, "archive", "", "Import the whole files in archive.zip if specified.")
 	cmdImport.Flag.StringVar(&match, "match", "*.jpg", "pattens of files to import, e.g., *.jpg, *.png, works together with -dir")
 	cmdImport.Flag.BoolVar(&include_parent, "iip", false, "is include parent dir name?")
+	cmdImport.Flag.BoolVar(&readydone, "ready", false, "pop prepared entry and set it done")
 }
 
 func runImport(args []string) bool {
+	if readydone {
+		_ready_done()
+		return true
+	}
 
 	if roof == "" {
 		return false
@@ -184,4 +190,13 @@ func _shrink_name(fname string) string {
 	}
 	return fname
 
+}
+
+func _ready_done() {
+	entry, err := storage.PopReadyDone()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("entry: %s\n", entry.Path)
 }

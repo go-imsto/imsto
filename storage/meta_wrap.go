@@ -91,7 +91,7 @@ const (
 )
 
 var (
-	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, status, created"
+	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, created, roof"
 	sortable_fields = []string{"id", "created"}
 )
 
@@ -173,11 +173,11 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []*Entry, 
 func _bindRow(rs rowScanner) (*Entry, error) {
 
 	e := Entry{}
-	var id string
+	var id, roof string
 	var meta cdb.Hstore
-	// "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, status, created"
+	// "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, created, roof"
 	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
-		&e.sev, &e.exif, &e.AppId, &e.Author, &e.Status, &e.Created)
+		&e.sev, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +192,11 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 		return nil, err
 	}
 
+	log.Printf("bind meta %s: %v", meta, ia)
+
 	e.Meta = &ia
 	e.Mime = fmt.Sprint(meta.Get("mime"))
+	e.Roofs = cdb.Qarray{roof}
 
 	// log.Printf("bind name: %s, path: %s, size: %d, mime: %s\n", e.Name, e.Path, e.Size, e.Mime)
 
@@ -207,6 +210,20 @@ func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	sql := "SELECT " + meta_columns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 
 	row := db.QueryRow(sql, id.String())
+
+	return _bindRow(row)
+}
+
+func popPrepared() (*Entry, error) {
+	mwr := NewMetaWrapper("common")
+	mw := mwr.(*MetaWrap)
+
+	db := mw.getDb()
+	defer db.Close()
+
+	sql := "SELECT " + meta_columns + " FROM meta__prepared ORDER BY created ASC LIMIT 1"
+
+	row := db.QueryRow(sql)
 
 	return _bindRow(row)
 }

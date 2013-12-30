@@ -54,29 +54,28 @@ type AppId uint8
 type Author uint32
 
 type Entry struct {
-	Id        *EntryId   `json:"id,omitempty"`
-	Name      string     `json:"name,omitempty"`
-	Size      uint32     `json:"size"`
-	Path      string     `json:"path"`
-	Mime      string     `json:"mime,omitempty"`
-	Status    uint8      `json:"-"`
-	Hashes    cdb.Qarray `json:"-"`
-	Ids       cdb.Qarray `json:"-"`
-	Roofs     cdb.Qarray `json:"roofs"`
-	Meta      *iimg.Attr `json:"meta,omitempty"`
-	AppId     AppId      `json:"appid,omitempty"`
-	Author    Author     `json:"author,omitempty"`
-	Modified  uint64     `json:"modified,omitempty"`
-	Created   time.Time  `json:"created,omitempty"`
-	imageType int
-	exif      cdb.Hstore
-	sev       cdb.Hstore
-	b         []byte
-	h         string
-	_treked   bool
-	ret       int       // db saved result
-	Done      chan bool `json:"-"`
-	ready     int
+	Id       *EntryId   `json:"id,omitempty"`
+	Name     string     `json:"name,omitempty"`
+	Size     uint32     `json:"size"`
+	Path     string     `json:"path"`
+	Mime     string     `json:"mime,omitempty"`
+	Status   uint8      `json:"-"`
+	Hashes   cdb.Qarray `json:"-"`
+	Ids      cdb.Qarray `json:"-"`
+	Roofs    cdb.Qarray `json:"roofs"`
+	Meta     *iimg.Attr `json:"meta,omitempty"`
+	AppId    AppId      `json:"appid,omitempty"`
+	Author   Author     `json:"author,omitempty"`
+	Modified uint64     `json:"modified,omitempty"`
+	Created  time.Time  `json:"created,omitempty"`
+	exif     cdb.Hstore
+	sev      cdb.Hstore
+	b        []byte
+	h        string
+	_treked  bool
+	ret      int       // db saved result
+	Done     chan bool `json:"-"`
+	ready    int
 }
 
 const (
@@ -316,15 +315,42 @@ func (e *Entry) _save(roof string) (err error) {
 		// if err = mw.Save(e); err != nil {
 		// 	return
 		// }
-		// return
+		return
 	}
 	e.ready = -1
 	log.Print("meta set done ok")
 	return
 }
 
+func (e *Entry) fill(data []byte) error {
+	if size := len(data); size != int(e.Size) {
+		return fmt.Errorf("invliad size: %d (%d)", size, e.Size)
+	}
+
+	hash := HashContent(data)
+
+	if !e.Hashes.Contains(hash) {
+		return fmt.Errorf("invalid hash: %s (%s)", hash, e.Hashes)
+	}
+
+	e.b = data
+	return nil
+}
+
 func (e *Entry) reset() {
 	e.b = []byte{}
+}
+
+func (e *Entry) origName() string {
+	thumb_root := config.GetValue(e.roof(), "thumb_root")
+	return path.Join(thumb_root, "orig", e.Path)
+}
+
+func (e *Entry) roof() string {
+	if len(e.Roofs) > 0 {
+		return e.Roofs[0].(string)
+	}
+	return ""
 }
 
 func newPath(ei *EntryId, ext string) string {

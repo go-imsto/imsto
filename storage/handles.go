@@ -364,6 +364,26 @@ func SaveFile(filename string, data []byte) error {
 	return ioutil.WriteFile(filename, data, os.FileMode(0644))
 }
 
+func PopReadyDone() (entry *Entry, err error) {
+	entry, err = popPrepared()
+	if err != nil {
+		return
+	}
+	log.Printf("poped %s", entry.Path)
+
+	var data []byte
+	data, err = ioutil.ReadFile(entry.origName())
+	if err != nil {
+		return
+	}
+	err = entry.fill(data)
+	if err != nil {
+		return
+	}
+	err = entry._save(entry.roof())
+	return
+}
+
 func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry, err error) {
 	var data []byte
 	data, err = ioutil.ReadAll(r)
