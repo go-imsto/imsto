@@ -47,3 +47,6 @@ END;
 
 UPDATE meta__prepared SET size = (meta -> 'size')::int WHERE size = 0;
 
+-- for i in {1..30}; do echo $i && imsto import -ready; done;
+
+
