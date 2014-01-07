@@ -189,7 +189,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
 	a_id text, a_path text, a_meta hstore, a_sev hstore
 	, a_hashes text[], a_ids text[]
-	, a_appid smallint, a_author int)
+	, a_appid int, a_author int)
 
 RETURNS int AS
 $$
