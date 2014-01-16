@@ -255,8 +255,8 @@ $$
 BEGIN
 
 IF NOT EXISTS(SELECT created FROM meta__prepared WHERE id = a_id) THEN
-	INSERT INTO meta__prepared (id, roof, path, meta, hashes, ids, app_id, author)
-	VALUES (a_id, a_roof, a_path, a_meta, a_hashes, a_ids, a_appid, a_author);
+	INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author)
+	VALUES (a_id, a_roof, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_appid, a_author);
 	IF FOUND THEN
 		RETURN 1;
 	ELSE
