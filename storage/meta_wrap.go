@@ -192,7 +192,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 		return nil, err
 	}
 
-	log.Printf("bind meta %s: %v", meta, ia)
+	// log.Printf("bind meta %s: %v", meta, ia)
 
 	e.Meta = &ia
 	e.Mime = fmt.Sprint(meta.Get("mime"))
