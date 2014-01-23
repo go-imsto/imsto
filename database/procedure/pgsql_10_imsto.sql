@@ -21,15 +21,15 @@ FOR i IN 0..15 LOOP
 	-- some computations here
 	suffix := to_hex(i%16);
 	tbname := 'hash_' || suffix;
-	
-	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE 
+
+	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE
 		schemaname = 'imsto' AND tablename = tbname) THEN
 	RAISE NOTICE 'tb is %', tbname;
 	EXECUTE 'CREATE TABLE imsto.' || tbname || '
 	(
-		LIKE imsto.hash_template INCLUDING ALL , 
+		LIKE imsto.hash_template INCLUDING ALL ,
 		CHECK (hashed LIKE ' || quote_literal(suffix||'%') || ')
-	) 
+	)
 	INHERITS (imsto.hash_template)
 	WITHOUT OIDS ;';
 	count := count + 1;
@@ -61,15 +61,15 @@ FOR i IN 1..36 LOOP
 	suffix := substr(basestr, i, 1);
 	tbname := 'mapping_' || suffix;
 
-	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE 
+	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE
 		schemaname = 'imsto' AND tablename = tbname) THEN
 	RAISE NOTICE 'tb is %', tbname;
-	
+
 	EXECUTE 'CREATE TABLE imsto.' || tbname || '
 	(
-		LIKE imsto.map_template INCLUDING ALL , 
+		LIKE imsto.map_template INCLUDING ALL ,
 		CHECK (id LIKE ' || quote_literal(suffix||'%') || ')
-	) 
+	)
 	INHERITS (imsto.map_template)
 	WITHOUT OIDS ;';
 	count := count + 1;
@@ -195,8 +195,8 @@ RETURNS int AS
 $$
 DECLARE
 	m_v text;
-	tb_hash text;
-	tb_map text;
+	-- tb_hash text;
+	-- tb_map text;
 	tb_meta text;
 	t_status smallint;
 BEGIN
@@ -299,23 +299,42 @@ CREATE OR REPLACE FUNCTION imsto.entry_delete(a_roof text, a_id text)
 RETURNS int AS
 $$
 DECLARE
+	tb_hash text;
+	tb_map text;
 	tb_meta text;
-	t_status smallint;
+	rec RECORD;
+	s text;
 BEGIN
 	tb_meta := 'meta_' || a_roof;
 
-	EXECUTE 'SELECT status FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
-	INTO t_status
+	EXECUTE 'SELECT * FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	INTO rec
 	USING a_id;
 
-	IF t_status IS NULL THEN
+	IF rec.status IS NULL THEN
 		RETURN -1;
 	END IF;
 
 	IF NOT EXISTS (SELECT status FROM meta__deleted WHERE id = a_id) THEN
-		EXECUTE 'INSERT INTO meta__deleted SELECT *, $1, CURRENT_TIMESTAMP FROM '||tb_meta||' WHERE id = $2'
-		USING a_roof, a_id;
+		INSERT INTO meta__deleted (id, path, name, roof, meta, hashes, ids, size
+			, sev, exif, app_id, author, status, created)
+		 VALUES(rec.id, rec.path, rec.name, rec.roof, rec.meta, rec.hashes, rec.ids, rec.size
+		 , rec.sev, rec.exif, rec.app_id, rec.author, rec.status, rec.created);
 	END IF;
+
+	-- delete hashes
+	FOR s IN SELECT UNNEST(rec.hashes) AS value LOOP
+		tb_hash := 'hash_' || substr(s, 1, 1);
+		RAISE NOTICE 'delete hashed: %.% ', tb_hash, s;
+		EXECUTE 'DELETE FROM '||tb_hash||' WHERE hashed = $1' USING s;
+	END LOOP;
+
+	-- delete mapping
+	FOR s IN SELECT UNNEST(rec.ids) AS value LOOP
+		tb_map := 'mapping_' || substr(s, 1, 1);
+		RAISE NOTICE 'delete hashed: %.%', tb_map, s;
+		EXECUTE 'DELETE FROM '||tb_map||' WHERE id = $1' USING s;
+	END LOOP;
 
 	EXECUTE 'DELETE FROM '||tb_meta||' WHERE id = $1'
 	USING a_id;
