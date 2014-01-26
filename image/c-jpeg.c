@@ -12,7 +12,7 @@ void 		_simp_init      (Simp_Image *im);
 Simp_Image *_simp_read_head (Simp_Image *im);
 
 #if defined IM_DEBUG && defined JPEG_DEBUG
-static void 
+static void
 my_message_handle(j_common_ptr cinfo, int msg_level)
 {
 	char message[JMSG_LENGTH_MAX];
@@ -26,7 +26,7 @@ my_message_handle(j_common_ptr cinfo, int msg_level)
 }
 #endif
 
-static void 
+static void
 my_error_exit (j_common_ptr cinfo)
 {
 	my_error_ptr myerr = (my_error_ptr) cinfo->err;
@@ -45,7 +45,7 @@ simp_open_file(FILE *infile)
 
 	Simp_Image *im;
 	im = calloc(1, sizeof(Simp_Image));
-	
+
 	if (infile == NULL) {
 		fprintf(stderr, "infile is null\n");
 		return NULL;
@@ -93,7 +93,7 @@ _simp_init(Simp_Image *im)
 	im->jerr.pub.emit_message = my_message_handle;
 #endif
 	im->jerr.pub.error_exit = my_error_exit;
-	
+
 	if (setjmp(im->jerr.setjmp_buffer)) {
 		// error:
 		simp_close(im);
@@ -190,7 +190,10 @@ simp_close(Simp_Image *im)
 	if (im->buf)       free(im->buf);
 	if (&(im->out.ji))  jpeg_destroy_compress(&(im->out.ji));
 	if (im->out.f)     fclose(im->out.f);
-	if (im)            free(im);
+	if (im != NULL)            {im = NULL; /*free(im);*/}
+#ifdef IM_DEBUG
+	debug_print("[simp_close]\n");
+#endif
 }
 
 static bool
@@ -283,7 +286,13 @@ _simp_write(Simp_Image *im)
 	im->out.ji.input_components=im->in.ji.output_components;
 	im->out.ji.image_width=im->in.ji.image_width;
 	im->out.ji.image_height=im->in.ji.image_height;
-	jpeg_set_defaults(&(im->out.ji)); 
+	jpeg_set_defaults(&(im->out.ji));
+
+	// if (im->out.ji.in_color_space == JCS_CMYK)
+	// {
+	// 	jpeg_set_colorspace(&(im->out.ji), JCS_RGB);
+	// }
+
 	if (im->wopt.quality > 0 && im->wopt.quality < 100) {
 // #ifdef IM_DEBUG
 // 	printf("[set wopt quality %d]\n", im->wopt.quality);
@@ -299,7 +308,7 @@ _simp_write(Simp_Image *im)
 
 	j=0;
 	jpeg_start_compress(&(im->out.ji),TRUE);
-	
+
 	/* write image */
 	while (im->out.ji.next_scanline < im->out.ji.image_height) {
 		jpeg_write_scanlines(&(im->out.ji),&im->buf[im->out.ji.next_scanline],
