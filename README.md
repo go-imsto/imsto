@@ -1,4 +1,4 @@
-# Imsto redesigne with Golang
+# Imsto redesigned in Golang
 
 
 ## Installation
