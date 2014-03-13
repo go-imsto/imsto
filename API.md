@@ -7,7 +7,7 @@
 
 ### roof
 - type: string
-- Section name that config 'imsto.ini'
+- Section name that in config 'imsto.ini'
 - All apis must include this argument
 
 ### app
