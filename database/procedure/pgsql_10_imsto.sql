@@ -319,7 +319,7 @@ BEGIN
 		INSERT INTO meta__deleted (id, path, name, roof, meta, hashes, ids, size
 			, sev, exif, app_id, author, status, created)
 		 VALUES(rec.id, rec.path, rec.name, rec.roof, rec.meta, rec.hashes, rec.ids, rec.size
-		 , rec.sev, rec.exif, rec.app_id, rec.author, rec.status, rec.created);
+		 , rec.sev, COALESCE(rec.exif, ''), rec.app_id, rec.author, rec.status, rec.created);
 	END IF;
 
 	-- delete hashes
