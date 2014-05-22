@@ -1,0 +1,4 @@
+
+PATH=/opt/local/bin:/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/opt/bin:$HOME/bin:$HOME/gocode/bin
+
+10 * * * * nobody imsto import -ready
