@@ -3,22 +3,25 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
-	"log"
+	// "log"
 	"reflect"
 	"strings"
 )
 
 type Qarray []interface{}
 
-func NewQarrayText(text string) (Qarray, error) {
-	if strings.HasPrefix(text, "{") && strings.HasSuffix(text, "}") {
-		s := strings.Trim(text, "{}")
-		a := strings.Split(s, ",")
-		return NewQarray(a)
+func NewQarrayText(s string) (Qarray, error) {
+	if strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}") {
+		s = strings.Trim(s, "{}")
 	}
+	if len(s) == 0 {
+		return Qarray{}, nil
+	}
+	a := strings.Split(s, ",")
+	return NewQarray(a)
 
-	log.Println("invalid Qarray format")
-	return Qarray{}, nil
+	// log.Println("invalid Qarray format")
+	// return Qarray{}, nil
 }
 
 func NewQarray(a []string) (Qarray, error) {
