@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"wpst.me/calf/config"
+	cdb "wpst.me/calf/db"
 	iimg "wpst.me/calf/image"
 )
 
@@ -456,7 +457,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		return
 	}
 
-	lastModified, _ := strconv.ParseUint(r.FormValue("ts"), 10, 64)
+	lastModified, _ := strconv.ParseUint(r.FormValue("file_ts"), 10, 64)
 	log.Printf("lastModified: %s", lastModified)
 
 	form := r.MultipartForm
@@ -470,6 +471,8 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		err = errors.New("browser error: input 'file' not found")
 		return
 	}
+
+	tags, _ := cdb.NewQarrayText(r.FormValue("file_tags"))
 
 	n := len(form.File["file"])
 
@@ -498,6 +501,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		entry.AppId = cr.appid
 		entry.Author = cr.author
 		entry.Modified = lastModified
+		entry.Tags = tags
 		ee = entry.store(cr.roof)
 		if ee != nil {
 			log.Printf("%02d stored error: %s", i, ee)

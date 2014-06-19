@@ -34,3 +34,6 @@ form textarea:focus{
 
 #rsp-status {position:absolute; z-index: 5; left:76px; top: 16px;}
 
+.clear {
+	clear: both;
+}

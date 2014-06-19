@@ -26,10 +26,10 @@ CREATE SEQUENCE hash_id_seq;
 -- all file hash values
 CREATE TABLE hash_template (
 	id bigint DEFAULT nextval('hash_id_seq'),
-	hashed varCHAR(40) NOT NULL UNIQUE , 
-	item_id entry_id NOT NULL , 
-	-- prefix varCHAR(10) NOT NULL DEFAULT '' , 
-	path entry_path NOT NULL , 
+	hashed varCHAR(40) NOT NULL UNIQUE ,
+	item_id entry_id NOT NULL ,
+	-- prefix varCHAR(10) NOT NULL DEFAULT '' ,
+	path entry_path NOT NULL ,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
@@ -38,8 +38,8 @@ CREATE TABLE hash_template (
 CREATE TABLE map_template (
 	id entry_id NOT NULL, -- id = base_convert(hash,16,36)
 	name name NOT NULL DEFAULT '',
-	path entry_path NOT NULL , 
-	mime varCHAR(64) NOT NULL DEFAULT '' , 
+	path entry_path NOT NULL ,
+	mime varCHAR(64) NOT NULL DEFAULT '' ,
 	size int NOT NULL DEFAULT 0 CHECK (size >= 0),
 	sev hstore NOT NULL DEFAULT '', -- storage info
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
@@ -51,7 +51,7 @@ CREATE TABLE map_template (
 -- meta browsable
 CREATE TABLE meta_template (
 	id entry_id NOT NULL,
-	path entry_path NOT NULL , 
+	path entry_path NOT NULL ,
 	name name NOT NULL DEFAULT '',
 	roof varCHAR(12) NOT NULL DEFAULT '',
 	meta hstore NOT NULL DEFAULT '',
@@ -64,11 +64,13 @@ CREATE TABLE meta_template (
 	author int NOT NULL DEFAULT 0,
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=hidden
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	tags varCHAR(40)[] NOT NULL DEFAULT '{}',
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;
 CREATE INDEX idx_meta_meta ON meta_template (meta) ;
 CREATE INDEX idx_meta_size ON meta_template (size) ;
+CREATE INDEX idx_meta_tags ON meta_template (tags) ;
 
 CREATE TABLE meta_common
 (

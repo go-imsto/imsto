@@ -2,12 +2,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="zh-CN">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.24/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" title="no title" charset="utf-8" />
 	<title>imsto upload</title>
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" charset="utf-8" />
 	<link rel="stylesheet" href="/css/base.css" type="text/css" media="screen" charset="utf-8" />
 	<link rel="stylesheet" href="/css/upload.css" type="text/css" media="screen" charset="utf-8" />
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.24/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="//code.jquery.com/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="//code.jquery.com/ui/1.10.4/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
 	<script src="/js/jquery.imgupload.js" type="text/javascript" charset="utf-8"></script>
 
@@ -18,7 +18,7 @@ var roof = 'demo', appid = 0, userid = 0, token = '', default_roof = 'demo';
 if (Dust) {Dust.dev = true;};
 
 $(document).ready(function(){
-	
+
 	dropbox = $('#dropbox'), message = $('#message');
 
 	function showMessage(msg){
@@ -62,7 +62,7 @@ $(document).ready(function(){
 		imageCreated: function(img) {
 			//log(img);
 			var li = $('<li />').addClass('new').append(img);	//alert(li.html());
-			li.append('<label class="lbl"></label>');
+			li.append('<div class="left"><label class="lbl"></label><input type="text" name="tags" value="" placeholder="tags"/></div>');
 			li.append($('<span class="btn" />').addClass('btn ui-corner-all ui-icon ui-icon-trash').attr('title','delete').click(function(){$(this).parent().fadeOut(function(){$(this).remove();});return false;}));
 			$("#image-pic-list").prepend(li);
 		},
@@ -72,29 +72,31 @@ $(document).ready(function(){
 	});
 
 	$("#progressbar").progressbar().hide();
-	
-	$("#image-pic-list").sortable({
-		//placeholder: 'ui-state-highlight',
-		update: function(event, ui) {
-			//console.log(event, ui);
-		}
-	});
-	$("#image-pic-list").disableSelection();
+
+	// $("#image-pic-list").sortable({
+	// 	//placeholder: 'ui-state-highlight',
+	// 	update: function(event, ui) {
+	// 		//console.log(event, ui);
+	// 	}
+	// });
+	// $("#image-pic-list").disableSelection();
 	$("#upload_form").submit(function(form){
 		if ($("#image-pic-list li").length == 0) return false;
 		$("#image-pic-list li.new").each(function(i){
 			$(this).attr('id','li_new'+i);
 		});
 		var params = [{name:'image_id', value:''},{name: 'act', value: 'image_store'}];//$(form).serializeArray();
-		var sorted = $("#image-pic-list").sortable( 'toArray' );
-		$.each(sorted, function(i, item){
-			var res = item.match(/(.+)[-=_](.+)/);
-			if(res) params.push({name:'li[]',value:res[2]});
-		});
+		// var sorted = $("#image-pic-list").sortable( 'toArray' );
+		// $.each(sorted, function(i, item){
+		// 	var res = item.match(/(.+)[-=_](.+)/);
+		// 	if(res) params.push({name:'li[]',value:res[2]});
+		// });
 		var files = [], imgs = [];
 		$("li.new").each(function(i, li){
 			var img = $("img", this).get(0);
 			if (typeof img.file !== "undefined") {
+				var tags = $('input[name=tags]', this);
+				if (tags.length > 0) {img.file.tags = tags.val();}
 				files.push(img.file);
 				imgs.push(img);
 			}
@@ -114,7 +116,7 @@ $(document).ready(function(){
 		}
 
 		$.imgupload({
-			
+
 			url: url_stored,
 			files: files,
 			images: imgs,
@@ -168,7 +170,7 @@ $(document).ready(function(){
 			beforeEach: function(file) {
 				// file is a file object
 				// return false to cancel upload
-				
+
 				if(!file.type.match(/^image\//)){
 					Dust.alert('Only images are allowed!');
 
@@ -185,12 +187,12 @@ $(document).ready(function(){
 					setTimeout(function(){
 						message.fadeOut(900).text('').hide();
 					}, 6000);
-					
+
 				});*/
 				$("#pic-input").val(null);
 			}
 		});
-		
+
 		return false;
 	});
 
@@ -230,7 +232,7 @@ $(document).ready(function(){
 			name: 'roof',
 			selected: default_roof
 		});
-		
+
 		req_token();
 
 		$("input[name=roof]:radio").click(function(){
@@ -275,7 +277,7 @@ $(document).ready(function(){
 					<input class="btn" type="submit" value="save all"/>
 					<div class="btn" id="progressbar"></div>
 				</div>
-				
+
 			<br/>
 			<br/>
 				<div>

@@ -16,11 +16,12 @@ const (
 	hash_table_prefix = "hash_"
 	map_table_prefix  = "mapping_"
 	meta_table_prefix = "meta_"
+	max_args          = 10
 )
 
 type MetaWrapper interface {
-	Browse(limit, offset int, sort map[string]int) ([]*Entry, error)
-	Count() (int, error)
+	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
+	Count(filter MetaFilter) (int, error)
 	Ready(entry *Entry) error
 	SetDone(id EntryId, sev cdb.Hstore) error
 	Save(entry *Entry) error
@@ -82,16 +83,12 @@ func (mw *MetaWrap) table() string {
 }
 
 const (
-	valid_condition = " WHERE status = 0"
-)
-
-const (
 	ASCENDING  = 1
 	DESCENDING = -1
 )
 
 var (
-	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, created, roof"
+	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, tags, exif, app_id, author, created, roof"
 	sortable_fields = []string{"id", "created"}
 )
 
@@ -104,22 +101,55 @@ func isSortable(k string) bool {
 	return false
 }
 
-func (mw *MetaWrap) Count() (t int, err error) {
-	db := mw.getDb()
-	defer db.Close()
-	table := mw.table()
+type MetaFilter struct {
+	Tags string
+}
 
-	t = 0
-	err = db.QueryRow("SELECT COUNT(id) FROM " + table + valid_condition).Scan(&t)
-	if err != nil {
-		log.Printf("query count error: %s", err)
-		return
+func buildWhere(filter MetaFilter) (where string, args []interface{}) {
+	where = " WHERE status = 0"
+
+	argc := 0
+	args = make([]interface{}, 0, max_args)
+
+	var qtags, _ = cdb.NewQarrayText(filter.Tags)
+
+	if len(qtags) > 0 {
+		log.Printf("qtags len: %d", len(qtags))
+		where = fmt.Sprintf("%s AND tags @> $%d", where, argc+1)
+		args = append(args, qtags)
+		argc++
 	}
 
 	return
 }
 
-func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []*Entry, err error) {
+func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
+	db := mw.getDb()
+	defer db.Close()
+	table := mw.table()
+
+	t = 0
+	where, args := buildWhere(filter)
+	// err = db.QueryRow("SELECT COUNT(id) FROM "+table+where, args...).Scan(&t)
+	rows, err := db.Query("SELECT COUNT(id) FROM "+table+where, args...)
+	// return &Row{rows: rows, err: err}
+	if err != nil {
+		log.Printf("query count error: %s", err)
+		return
+	}
+
+	defer rows.Close()
+
+	if rows.Next() {
+		err = rows.Scan(&t)
+	}
+
+	err = rows.Err()
+
+	return
+}
+
+func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
 	if limit < 1 {
 		limit = 1
 	}
@@ -145,14 +175,16 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []*Entry, 
 			orders = append(orders, k+" "+o)
 		}
 	}
-	str := "SELECT " + meta_columns + " FROM " + table + valid_condition
+	where, args := buildWhere(filter)
+	str := "SELECT " + meta_columns + " FROM " + table + where
 
 	if len(orders) > 0 {
 		str = str + " ORDER BY " + strings.Join(orders, ",")
 	}
 	// log.Printf("sql: %s", str)
 	var r *sql.Rows
-	r, err = db.Query(str+" LIMIT $1 OFFSET $2", limit, offset)
+	argc := len(args)
+	r, err = db.Query(fmt.Sprintf("%s LIMIT $%d OFFSET $%d", str, argc+1, argc+2), append(args, limit, offset)...)
 	if err != nil {
 		return
 	}
@@ -170,6 +202,7 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int) (a []*Entry, 
 	return
 }
 
+// depends meta_columns
 func _bindRow(rs rowScanner) (*Entry, error) {
 
 	e := Entry{}
@@ -177,7 +210,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	var meta cdb.Hstore
 	// "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, created, roof"
 	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
-		&e.sev, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
+		&e.sev, &e.Tags, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
 		return nil, err
 	}
@@ -232,10 +265,10 @@ func (mw *MetaWrap) Ready(entry *Entry) error {
 	db := mw.getDb()
 	defer db.Close()
 
-	sql := "SELECT entry_ready($1, $2, $3, $4, $5, $6, $7, $8);"
+	sql := "SELECT entry_ready($1, $2, $3, $4, $5, $6, $7, $8, $9);"
 	row := db.QueryRow(sql, mw.table_suffix,
 		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.Hashes, entry.Ids,
-		entry.AppId, entry.Author)
+		entry.AppId, entry.Author, entry.Tags)
 
 	var ret int
 	err := row.Scan(&ret)

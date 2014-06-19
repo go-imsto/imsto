@@ -60,14 +60,15 @@ func runView(args []string) bool {
 
 	} else {
 		var mw storage.MetaWrapper
+		filter := storage.MetaFilter{}
 		mw = storage.NewMetaWrapper(vroof)
-		t, err := mw.Count()
+		t, err := mw.Count(filter)
 		if err != nil {
 			fmt.Println(err)
 			return false
 		}
 
-		a, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING})
+		a, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING}, filter)
 		if err != nil {
 			fmt.Println(err)
 			return false

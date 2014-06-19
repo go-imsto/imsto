@@ -3,9 +3,9 @@
 (function($){
 
 	// image drop box support
-	
+
 	jQuery.event.props.push("dataTransfer");
-	
+
 	var opts = {},
 		default_opts = {
 			url: '',
@@ -47,7 +47,7 @@
 	$.fn.imgdrop = function(options) {
 		opts = $.extend( {}, default_opts, options );
 		// 经测试发现：Firefox 13 dragLeave 事件不支持了, 貌似从4开始就不支持了
-		
+
 		this.bind('drop', drop).bind('dragenter', dragEnter).bind('dragover', dragOver).bind('dragleave', dragLeave);
 		$(document).bind('drop', docDrop).bind('dragenter', docEnter).bind('dragover', docOver).bind('dragleave', docLeave);
 		$('#' + opts.field_id).change(function(e) {
@@ -57,7 +57,7 @@
 			preview(files);
 		});
 	};
-	
+
 	function drop(e) {//log('drop');
 		opts.drop(e);
 		files = e.dataTransfer.files;
@@ -67,19 +67,19 @@
 		e.preventDefault();
 		return false;
 	}
-	
+
 	function preview (files) {
 		if (files === null || files === undefined) {
 			opts.error(errors[0]);
 			return false;
 		}
-		
+
 		stop_loop = false;
 		if (!files) {
 			opts.error(errors[3]);
 			return false;
 		}
-		
+
 		files_count = files.length;
 		for (var i=0; i<files_count; i++) {
 			if (stop_loop) return false;
@@ -114,13 +114,13 @@
 		};
 		reader.readAsDataURL(file);
 	}
-	
+
 	function dragEnter(e) {//log('dragEnter');
 		clearTimeout(doc_leave_timer);
 		e.preventDefault();
 		opts.dragEnter(e);
 	}
-	
+
 	function dragOver(e) {//log('dragOver');
 		clearTimeout(doc_leave_timer);
 		e.preventDefault();
@@ -185,7 +185,7 @@
 	function progress(e) { // xhr.upload event: progress
 		if (e.lengthComputable) {
 			var percentage = Math.round((e.loaded * 100) / e.total);
-			
+
 			if (this.currentProgress != percentage) {
 
 				this.currentProgress = percentage;
@@ -352,6 +352,14 @@
 			if (typeof file.label === "string") {
 				formData.append(name + '_label', file.label)
 			}
+			if (typeof file.tags === "string") {
+				formData.append(name + '_tags', file.tags)
+			}
+
+			if (typeof file.lastModifiedDate === "object") {
+				formData.append(name + '_ts', file.lastModifiedDate - 0)
+			}
+
 			formData.append(name, file)
 
 			if (this.ctrl) upload.ctrl = this.ctrl;
@@ -409,7 +417,7 @@
 		process();
 
 	}
-	
+
 
 	function createThrobber(img) {
 		var offset = $(img).offset(), x = offset.left, y = offset.top;
@@ -461,8 +469,8 @@
 		ctrl.update(0);
 		return ctrl;
 	}
-	
-	
+
+
 	// image upload
 	$.extend({
 		prettySize: prettySize,

@@ -77,14 +77,17 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		sort[sort_name] = o
 	}
 
+	filter := storage.MetaFilter{Tags: r.FormValue("tags")}
+
 	mw := storage.NewMetaWrapper(roof)
-	t, err := mw.Count()
+	t, err := mw.Count(filter)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
 	}
-	a, err := mw.Browse(int(limit), int(offset), sort)
+
+	a, err := mw.Browse(int(limit), int(offset), sort, filter)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)

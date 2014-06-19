@@ -189,7 +189,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
 	a_id text, a_path text, a_meta hstore, a_sev hstore
 	, a_hashes text[], a_ids text[]
-	, a_appid int, a_author int)
+	, a_appid int, a_author int, a_tags text[])
 
 RETURNS int AS
 $$
@@ -232,11 +232,11 @@ BEGIN
 	END IF;
 
 	-- save entry meta
-	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, size, meta, hashes, ids, sev, app_id, author, roof)
+	EXECUTE 'INSERT INTO ' || tb_meta || '(id, path, name, size, meta, hashes, ids, sev, app_id, author, roof, tags)
 	 VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 	)'
-	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof;
+	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof, a_tags;
 
 RETURN 1;
 END;
@@ -248,15 +248,15 @@ LANGUAGE 'plpgsql' VOLATILE;
 CREATE OR REPLACE FUNCTION imsto.entry_ready (a_roof text,
 	a_id text, a_path text, a_meta hstore
 	, a_hashes text[], a_ids text[]
-	, a_appid smallint, a_author int)
+	, a_appid smallint, a_author int, a_tags text[])
 
 RETURNS int AS
 $$
 BEGIN
 
 IF NOT EXISTS(SELECT created FROM meta__prepared WHERE id = a_id) THEN
-	INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author)
-	VALUES (a_id, a_roof, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_appid, a_author);
+	INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author, tags)
+	VALUES (a_id, a_roof, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_appid, a_author, a_tags);
 	IF FOUND THEN
 		RETURN 1;
 	ELSE
@@ -284,7 +284,7 @@ IF NOT FOUND THEN
 END IF;
 
 SELECT entry_save(m_rec.roof, m_rec.id, m_rec.path, m_rec.meta, a_sev,
- m_rec.hashes, m_rec.ids, m_rec.app_id, m_rec.author) INTO t_ret;
+ m_rec.hashes, m_rec.ids, m_rec.app_id, m_rec.author, m_rec.tags) INTO t_ret;
 
 DELETE FROM meta__prepared WHERE id = a_id;
 
@@ -317,9 +317,9 @@ BEGIN
 
 	IF NOT EXISTS (SELECT status FROM meta__deleted WHERE id = a_id) THEN
 		INSERT INTO meta__deleted (id, path, name, roof, meta, hashes, ids, size
-			, sev, exif, app_id, author, status, created)
+			, sev, exif, app_id, author, status, created, tags)
 		 VALUES(rec.id, rec.path, rec.name, rec.roof, rec.meta, rec.hashes, rec.ids, rec.size
-		 , rec.sev, COALESCE(rec.exif, ''), rec.app_id, rec.author, rec.status, rec.created);
+		 , rec.sev, COALESCE(rec.exif, ''), rec.app_id, rec.author, rec.status, rec.created, rec.tags);
 	END IF;
 
 	-- delete hashes
@@ -346,6 +346,99 @@ BEGIN
 END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
+
+
+CREATE OR REPLACE FUNCTION imsto.tag_add(a_roof text, a_id text, VARIADIC a_tags text[])
+RETURNS int AS
+$$
+DECLARE
+	tb_meta text;
+	rec RECORD;
+	n_tags text[];
+	s text;
+	t_ret int;
+
+BEGIN
+	tb_meta := 'meta_' || a_roof;
+
+	EXECUTE 'SELECT * FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	INTO rec
+	USING a_id;
+
+	IF rec.status IS NULL THEN
+		RETURN -1;
+	END IF;
+
+	t_ret := 0;
+
+	n_tags := rec.tags;
+
+	FOR s IN SELECT UNNEST(a_tags) LOOP
+		IF NOT n_tags @> ARRAY[s] THEN
+			n_tags := n_tags || s;
+			t_ret := t_ret + 1;
+		END IF;
+
+	END LOOP;
+
+	IF array_length(n_tags) > array_length(rec.tags) THEN
+		EXECUTE 'UPDATE '||tb_meta||' SET tags = $1 WHERE id = $2'
+		USING n_tags, a_id;
+	END IF;
+
+	RETURN t_ret;
+
+
+END;
+$$
+LANGUAGE 'plpgsql' VOLATILE;
+
+
+CREATE OR REPLACE FUNCTION imsto.tag_remove(a_roof text, a_id text, VARIADIC a_tags text[])
+RETURNS int AS
+$$
+DECLARE
+	tb_meta text;
+	rec RECORD;
+	n_tags text[];
+	s text;
+	t_ret int;
+
+BEGIN
+	tb_meta := 'meta_' || a_roof;
+
+	EXECUTE 'SELECT * FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	INTO rec
+	USING a_id;
+
+	IF rec.status IS NULL THEN
+		RETURN -1;
+	END IF;
+
+	t_ret := 0;
+
+	n_tags := ARRAY[];
+
+	FOR s IN SELECT UNNEST(rec.tags) LOOP
+		IF NOT a_tags @> ARRAY[s] THEN
+			n_tags := n_tags || s;
+			t_ret := t_ret + 1;
+		END IF;
+
+	END LOOP;
+
+	IF array_length(n_tags) <> array_length(rec.tags) THEN
+		EXECUTE 'UPDATE '||tb_meta||' SET tags = $1 WHERE id = $2'
+		USING n_tags, a_id;
+	END IF;
+
+	RETURN t_ret;
+
+
+END;
+$$
+LANGUAGE 'plpgsql' VOLATILE;
+
 
 
 

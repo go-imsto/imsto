@@ -36,6 +36,7 @@
 #image-pic-list li{
 	min-width: 120px; max-width: 240px; height: 220px; margin: .8em; margin-right: 1.8em; margin-bottom: 1.8em; padding: .5em;
 	display: block; float: left; text-align: center;
+    box-shadow: 0 0 6px 4px rgba(80, 80, 80, 0.2);
 	-moz-box-shadow: 0 0 6px 4px rgba(80, 80, 80, 0.2);
 }
 #image-pic-list li.new{-moz-box-shadow: 0 0 6px 4px rgba(200, 80, 80, 0.4);}
@@ -43,7 +44,9 @@
 #image-pic-list li img { display: block;
 	max-width: 200px; max-height: 180px; margin: auto; border: 1px solid Gray;
 }
-#image-pic-list li .lbl {float: left; margin-top:5px; max-width: 150px;}
+#image-pic-list li .left {float: left; margin-top:5px;}
+#image-pic-list li label {text-align: left;}
+#image-pic-list li input {max-width: 110px; display: block;}
 #image-pic-list li .btn {float: right; margin-top: 6px;cursor: pointer;}
 .throbber {
 	position: absolute;
@@ -76,7 +79,7 @@ legend {
     background:#fff;
     border:#b6b6b6 solid 1px;
     padding:5px 12px;
-} 
+}
 
 .nav{
 	float: left;

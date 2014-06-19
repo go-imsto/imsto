@@ -60,7 +60,10 @@ func runExport(args []string) bool {
 		}
 		return _save_export(entry, edir)
 	}
-	total, err := mw.Count()
+
+	filter := storage.MetaFilter{}
+
+	total, err := mw.Count(filter)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -81,7 +84,7 @@ func runExport(args []string) bool {
 
 	for skip < total {
 		fmt.Printf("start %d/%d\n", skip, total)
-		a, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING})
+		a, err := mw.Browse(limit, skip, map[string]int{"created": storage.DESCENDING}, filter)
 		if err != nil {
 			fmt.Println(err)
 			return false

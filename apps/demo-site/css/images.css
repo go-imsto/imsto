@@ -2,7 +2,7 @@
 .info {
 	position:absolute;
 	top:0;
-	left:0;	
+	left:0;
 	max-height: 38px;
 	padding:10px 15px;
 }
@@ -33,15 +33,15 @@
 	z-index: 99999;
 }
 
-input {
+/*input {
 	display: block;
 	margin: auto;
 }
 button {
 	float: right;
-}
-#buttons-panel{min-height: 3em;}
-#buttons-panel .btn{min-height: 1.5em; margin: .4em .2em .2em 2em;float:left;}
+}*/
+.buttons-panel{min-height: 3em;}
+.buttons-panel input[type=text], .buttons-panel .btn{min-height: 1.5em; margin: .4em .2em .2em 2em;}
 #progressbar{width: 50%;float:left;}
 
 pre{display:block;margin:auto;}
