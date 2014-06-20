@@ -381,7 +381,7 @@ BEGIN
 
 	END LOOP;
 
-	IF array_length(n_tags) > array_length(rec.tags) THEN
+	IF array_length(n_tags, 1) > array_length(rec.tags, 1) THEN
 		EXECUTE 'UPDATE '||tb_meta||' SET tags = $1 WHERE id = $2'
 		USING n_tags, a_id;
 	END IF;
@@ -427,7 +427,7 @@ BEGIN
 
 	END LOOP;
 
-	IF array_length(n_tags) <> array_length(rec.tags) THEN
+	IF array_length(n_tags, 1) <> array_length(rec.tags, 1) THEN
 		EXECUTE 'UPDATE '||tb_meta||' SET tags = $1 WHERE id = $2'
 		USING n_tags, a_id;
 	END IF;

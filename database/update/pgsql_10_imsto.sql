@@ -50,6 +50,8 @@ UPDATE meta__prepared SET size = (meta -> 'size')::int WHERE size = 0;
 -- for i in {1..30}; do echo $i && imsto import -ready; done;
 
 ALTER TABLE meta_template ADD tags varCHAR(40)[] NOT NULL DEFAULT '{}';
+CREATE INDEX idx_meta_tags ON meta_template (tags) ;
+
 ALTER TABLE meta__prepared ADD tags varCHAR(40)[] NOT NULL DEFAULT '{}';
 ALTER TABLE meta__deleted ADD tags varCHAR(40)[] NOT NULL DEFAULT '{}';
 
