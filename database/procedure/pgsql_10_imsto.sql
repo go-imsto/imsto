@@ -361,17 +361,21 @@ DECLARE
 BEGIN
 	tb_meta := 'meta_' || a_roof;
 
-	EXECUTE 'SELECT * FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	EXECUTE 'SELECT status, tags FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
 	INTO rec
 	USING a_id;
 
 	IF rec.status IS NULL THEN
+		RETURN -2;
+	END IF;
+
+	n_tags := rec.tags;
+
+	IF n_tags @> a_tags THEN
 		RETURN -1;
 	END IF;
 
 	t_ret := 0;
-
-	n_tags := rec.tags;
 
 	FOR s IN SELECT UNNEST(a_tags) LOOP
 		IF NOT n_tags @> ARRAY[s] THEN
@@ -381,7 +385,8 @@ BEGIN
 
 	END LOOP;
 
-	IF array_length(n_tags, 1) > array_length(rec.tags, 1) THEN
+	-- RAISE NOTICE 'new tags is % (%)', array_length(n_tags, 1), array_length(rec.tags, 1);
+	IF t_ret > 0 THEN
 		EXECUTE 'UPDATE '||tb_meta||' SET tags = $1 WHERE id = $2'
 		USING n_tags, a_id;
 	END IF;
@@ -407,27 +412,37 @@ DECLARE
 BEGIN
 	tb_meta := 'meta_' || a_roof;
 
-	EXECUTE 'SELECT * FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
+	EXECUTE 'SELECT status, tags FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
 	INTO rec
 	USING a_id;
 
 	IF rec.status IS NULL THEN
+		RETURN -2;
+	END IF;
+
+	-- 有重叠部分才操作
+	IF NOT rec.tags::text[] && a_tags THEN
 		RETURN -1;
 	END IF;
 
 	t_ret := 0;
 
-	n_tags := ARRAY[];
+	n_tags := ARRAY[]::text[];
 
 	FOR s IN SELECT UNNEST(rec.tags) LOOP
+		-- RAISE NOTICE 'CHECK tag: % %', s, a_tags;
 		IF NOT a_tags @> ARRAY[s] THEN
+			RAISE NOTICE 'will remove tag: %', s;
 			n_tags := n_tags || s;
+		ELSE
 			t_ret := t_ret + 1;
 		END IF;
 
 	END LOOP;
 
-	IF array_length(n_tags, 1) <> array_length(rec.tags, 1) THEN
+	-- RAISE NOTICE 'new tags is %', n_tags;
+	-- RAISE NOTICE 'new tags is % (%)', array_length(n_tags, 1), array_length(rec.tags, 1);
+	IF t_ret > 0 THEN
 		EXECUTE 'UPDATE '||tb_meta||' SET tags = $1 WHERE id = $2'
 		USING n_tags, a_id;
 	END IF;
