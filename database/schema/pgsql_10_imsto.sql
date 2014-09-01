@@ -12,12 +12,12 @@ set search_path = imsto, public;
 
 CREATE DOMAIN entry_id AS TEXT
 CHECK(
-	VALUE ~ '^[a-z0-9]{20,36}$'
+	VALUE ~ '^[a-z0-9]{16,36}$'
 );
 
 CREATE DOMAIN entry_path AS TEXT
 CHECK (
-	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{16,32}\.[a-z0-9]{2,6}$'
+	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{12,32}\.[a-z0-9]{2,6}$'
 );
 
 
@@ -36,7 +36,7 @@ CREATE TABLE hash_template (
 
 -- mapping for id and storage engine item
 CREATE TABLE map_template (
-	id entry_id NOT NULL, -- id = base_convert(hash,16,36)
+	id entry_id NOT NULL, -- id = base_convert(hash,16,36), hash = crc64Sum
 	name name NOT NULL DEFAULT '',
 	path entry_path NOT NULL ,
 	mime varCHAR(64) NOT NULL DEFAULT '' ,
