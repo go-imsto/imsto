@@ -3,10 +3,10 @@ package storage
 
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/crc64"
 	"log"
 	"path"
 	"time"
@@ -362,7 +362,9 @@ func newPath(ei *EntryId, ext string) string {
 }
 
 func HashContent(data []byte) string {
-	return fmt.Sprintf("%x", md5.Sum(data))
+	s := crc64.Checksum(data, crc64.MakeTable(crc64.ISO))
+	return fmt.Sprintf("%x", s)
+	// return fmt.Sprintf("%x", md5.Sum(data))
 }
 
 func PullBlob(e *Entry, roof string) (data []byte, err error) {

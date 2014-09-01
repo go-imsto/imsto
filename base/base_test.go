@@ -12,6 +12,9 @@ type testpair struct {
 var pairs = []testpair{
 	{"", "", 1, 2},
 	{"12", "12", 10, 10},
+	{"297eb4fe7f4993", "37051e7sxw3", 16, 36},
+	{"49262201ced289", "5mqek115cax", 16, 36},
+	{"12cfe6fab9b713e", "n67j3ox4qpq", 16, 36},
 	{"5cc163b92ab9b482b4486999d354f91e", "5hos8aw6atq7kcpvn1gweaf4u", 16, 36},
 	{"5cc163b92ab9b482b4486999d354f91e", "2P1FKmvE5PjCN4PhpocjBs", 16, 62},
 	{"d1fb1bc11d2e992b4be5f770f35e345aa75a1d11", "oj0fiwpthr2v1ecf3p27ktokmh1a51t", 16, 36},

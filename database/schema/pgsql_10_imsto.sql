@@ -12,12 +12,12 @@ set search_path = imsto, public;
 
 CREATE DOMAIN entry_id AS TEXT
 CHECK(
-	VALUE ~ '^[a-z0-9]{16,36}$'
+	VALUE ~ '^[a-z0-9]{12,36}$'
 );
 
 CREATE DOMAIN entry_path AS TEXT
 CHECK (
-	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{12,32}\.[a-z0-9]{2,6}$'
+	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{10,32}\.[a-z0-9]{2,6}$'
 );
 
 
