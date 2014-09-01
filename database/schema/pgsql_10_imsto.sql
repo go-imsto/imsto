@@ -1,6 +1,7 @@
--- pgsql_061_content_storage.sql
+-- pgsql_10_imsto.sql
 
 -- CREATE EXTENSION hstore;
+-- require: >= postgresql-9.3;
 
 BEGIN;
 
@@ -17,7 +18,7 @@ CHECK(
 
 CREATE DOMAIN entry_path AS TEXT
 CHECK (
-	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{10,32}\.[a-z0-9]{2,6}$'
+	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{8,32}\.[a-z0-9]{2,6}$'
 );
 
 
@@ -68,7 +69,6 @@ CREATE TABLE meta_template (
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;
-CREATE INDEX idx_meta_meta ON meta_template (meta) ;
 CREATE INDEX idx_meta_size ON meta_template (size) ;
 CREATE INDEX idx_meta_tags ON meta_template (tags) ;
 
