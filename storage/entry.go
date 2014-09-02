@@ -3,51 +3,16 @@ package storage
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"hash/crc64"
 	"log"
 	"path"
 	"time"
-	"wpst.me/calf/base"
 	"wpst.me/calf/config"
 	cdb "wpst.me/calf/db"
 	iimg "wpst.me/calf/image"
 	"wpst.me/calf/storage/backend"
 )
-
-type EntryId struct {
-	id   string
-	hash string
-}
-
-func NewEntryIdFromHash(hash string) (*EntryId, error) {
-	id, err := base.BaseConvert(hash, 16, 36)
-
-	return &EntryId{id, hash}, err
-}
-
-func NewEntryId(id string) (*EntryId, error) {
-	hash, err := base.BaseConvert(id, 36, 16)
-	return &EntryId{id, hash}, err
-}
-
-func (ei *EntryId) String() string {
-	return ei.id
-}
-
-func (ei *EntryId) MarshalJSON() ([]byte, error) {
-	return json.Marshal(ei.id)
-}
-
-func (ei *EntryId) Hashed() string {
-	return ei.hash
-}
-
-func (ei *EntryId) tip() string {
-	return ei.id[:1]
-}
 
 type AppId uint8
 
@@ -89,9 +54,8 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 		return
 	}
 
-	hash := HashContent(data)
 	var id *EntryId
-	id, err = NewEntryIdFromHash(hash)
+	id, err = NewEntryIdFromData(data)
 
 	if err != nil {
 		log.Println(err)
@@ -104,7 +68,7 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 		Size:    uint32(len(data)),
 		Created: time.Now(),
 		b:       data,
-		h:       hash,
+		h:       id.hash,
 	}
 
 	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
@@ -166,25 +130,23 @@ func (e *Entry) Trek(roof string) (err error) {
 	hashes := cdb.Qarray{e.h}
 	ids := cdb.Qarray{e.Id.String()}
 
-	var hash2 string
 	size := len(data)
 	if max_file_size := config.GetInt(roof, "max_file_size"); size > max_file_size {
 		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size)
 		return
 	}
 
-	hash2 = HashContent(data)
-	if hash2 != e.h {
-		hashes = append(hashes, hash2)
-		var id2 *EntryId
-		id2, err = NewEntryIdFromHash(hash2)
+	var id2 *EntryId
+	id2, err = NewEntryIdFromData(data)
+	if id2.hash != e.h {
+		hashes = append(hashes, id2.hash)
 		if err != nil {
 			// log.Println(err)
 			return
 		}
-		ids = append(ids, id2.String())
+		ids = append(ids, id2.id)
 		e.Id = id2 // 使用新的 Id 作为主键
-		e.h = hash2
+		e.h = id2.hash
 		e.b = data
 		e.Size = uint32(size)
 	}
@@ -205,9 +167,9 @@ func (e *Entry) Trek(roof string) (err error) {
 }
 
 // return hash value string
-func (e *Entry) Hashed() string {
-	return e.h
-}
+// func (e *Entry) Hashed() string {
+// 	return e.h
+// }
 
 // return binary bytes
 func (e *Entry) Blob() []byte {
@@ -328,10 +290,10 @@ func (e *Entry) fill(data []byte) error {
 		return fmt.Errorf("invliad size: %d (%d)", size, e.Size)
 	}
 
-	hash := HashContent(data)
+	_, m := HashContent(data)
 
-	if !e.Hashes.Contains(hash) {
-		return fmt.Errorf("invalid hash: %s (%s)", hash, e.Hashes)
+	if !e.Hashes.Contains(m) {
+		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)
 	}
 
 	e.b = data
@@ -359,12 +321,6 @@ func newPath(ei *EntryId, ext string) string {
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 
 	return p
-}
-
-func HashContent(data []byte) string {
-	s := crc64.Checksum(data, crc64.MakeTable(crc64.ISO))
-	return fmt.Sprintf("%x", s)
-	// return fmt.Sprintf("%x", md5.Sum(data))
 }
 
 func PullBlob(e *Entry, roof string) (data []byte, err error) {
