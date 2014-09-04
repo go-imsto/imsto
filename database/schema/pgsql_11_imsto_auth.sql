@@ -4,6 +4,14 @@ BEGIN;
 
 set search_path = imsto, public;
 
+CREATE TABLE apps (
+	id serial,
+	api_key varCHAR(120) NOT NULL UNIQUE,
+	name name NOT NULL,
+	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (id)
+) WITHOUT OIDS;
+
 CREATE TABLE upload_ticket (
 	id serial,
 	roof varchar(20) NOT NULL,

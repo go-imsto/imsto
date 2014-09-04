@@ -14,7 +14,7 @@ import (
 	"wpst.me/calf/storage/backend"
 )
 
-type AppId uint8
+type AppId uint16
 
 type Author uint32
 
