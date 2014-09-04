@@ -17,7 +17,7 @@ type Quality uint8
 type Attr struct {
 	Width   Dimension `json:"width"`
 	Height  Dimension `json:"height"`
-	Quality Quality   `json:"quality"`
+	Quality Quality   `json:"quality,omitempty"`
 	Size    Size      `json:"size"`
 	Ext     string    `json:"ext,omitempty"`
 	Mime    string    `json:"mime,omitempty"`

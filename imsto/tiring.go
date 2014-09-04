@@ -134,6 +134,8 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// log.Print(entries[0].Path)
 	meta := newApiMeta(true)
+	var roof = r.FormValue("roof")
+	meta["thumb_path"] = config.GetValue(roof, "thumb_path")
 
 	writeJsonQuiet(w, r, newApiRes(meta, entries))
 }

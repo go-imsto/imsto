@@ -196,7 +196,7 @@ func (e *Entry) store(roof string) (err error) {
 					e.Path = _ne.Path
 					e.Size = _ne.Size
 					e.Mime = _ne.Mime
-					// e.Meta = _ne.Meta
+					e.Meta = _ne.Meta
 					// e.sev = _ne.sev
 					e.Created = _ne.Created
 					e.Roofs = _ne.Roofs
