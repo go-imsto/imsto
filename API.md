@@ -10,13 +10,13 @@
 - Section name that in config 'imsto.ini'
 - All apis must include this argument
 
-### app
-- type: uint8
-- Custom app ID
+### api_key
+- type: string
+- Api caller key, for api authorization
 - All apis must include this argument
 
 ### user
-- type: uint8
+- type: uint
 - User ID
 
 ### token
@@ -25,7 +25,7 @@
 
 ### ticket
 - Same as a token, but include a extensional ticket ID
-- For mobile or other third environment upload
+- For upload in mobile or other third environment
 - struct:
   - appid: int
   - author: int
@@ -43,21 +43,21 @@
 
 ### Request a new token
 - method: `POST /imsto/token`
-- args: `roof,app,user`
+- args: `roof,api_key,user`
 
 ### Request a new ticket
 - method: `POST /imsto/ticket`
-- args: `roof,app,user,token`
+- args: `roof,api_key,user,token`
 
 ### Check a ticket
 - method: `GET /imsto/ticket`
-- args: `roof,app,token`
+- args: `roof,api_key,token`
 - note: the token must be a Ticket Token
 
 ### Upload files
 - method: `POST /imsto/`
 - content type: `multipart/form-data`
-- args: `roof,app,user,token,file`
+- args: `roof,api_key,user,token,file`
 - note: 1. input name must use `file`; 2. the token must be a Ticket Token
 
 

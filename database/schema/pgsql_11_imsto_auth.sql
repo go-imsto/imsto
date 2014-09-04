@@ -4,10 +4,13 @@ BEGIN;
 
 set search_path = imsto, public;
 
+
+
 CREATE TABLE apps (
 	id serial,
 	api_key varCHAR(120) NOT NULL UNIQUE,
 	name name NOT NULL,
+	disabled boolean NOT NULL DEFAULT false,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;

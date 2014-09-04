@@ -14,7 +14,7 @@
 	<script type="text/javascript">
 //<![CDATA[
 var dropbox, preview, message, url_stored = '/imsto/';
-var roof = 'demo', appid = 0, userid = 0, token = '', default_roof = 'demo';
+var roof = 'demo', api_key = '2iiLCFDjRS8KLOjwpfuFdM', userid = 0, token = '', default_roof = 'demo';
 if (Dust) {Dust.dev = true;};
 
 $(document).ready(function(){
@@ -122,7 +122,7 @@ $(document).ready(function(){
 			images: imgs,
 			data: [
 					{name: 'roof', value: roof}
-					,{name: 'app', value: appid}
+					,{name: 'api_key', value: api_key}
 					,{name: 'user', value: userid}
 					,{name: 'token', value: token}
 			],
@@ -136,7 +136,7 @@ $(document).ready(function(){
 			uploadFinished: function(i, file, res, time) {
 				// response is the data you got back from server in JSON format.
 				log('finished: ' + i + ': ' + file.name + ', ' + time + ' server responsed', res);
-				if (res.status === 'ok') {
+				if (res.meta.ok === true) {
 					// alertAjaxResult(res);
 					if ($.isArray(res.data)) {
 						$.each(res.data, function(i, item){
@@ -209,11 +209,11 @@ $(document).ready(function(){
 		// console.log(roof)
 		$.post('/imsto/token', {
 			roof: roof,
-			app: appid,
+			api_key: api_key,
 			user: userid
 		}, function(res){
-			if (res.status === "ok") {
-				token = res.token;
+			if (res.meta.ok === true) {
+				token = res.meta.token;
 				// log(token)
 			} else if (typeof res.error == "string") {
 				showMessage(res.error)
@@ -226,7 +226,7 @@ $(document).ready(function(){
 
 	$.getJSON('/imsto/roofs', function(res){
 		// console.log(typeof res.roofs)
-		var roofs = res.roofs;
+		var roofs = res.data;
 		$('#radios1').radioButtons({
 			data: roofs,
 			name: 'roof',

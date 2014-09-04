@@ -569,7 +569,7 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 	)
 	var (
 		str string
-		aid uint64
+		app *App
 		uid uint64
 	)
 	roof = r.FormValue("roof")
@@ -582,17 +582,22 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 		return
 	}
 
-	str = r.FormValue("app")
-	if str != "" {
-		aid, err = strconv.ParseUint(str, 10, 16)
-		if err != nil {
-			// log.Printf("arg app error: %s", err)
-			err = fmt.Errorf("arg 'app=%s' is invalid: %s", str, err.Error())
-			return
-		}
+	str = r.FormValue("api_key")
+	if str == "" {
+		log.Print("Waring: parseRequest api_key is empty")
+	}
+	app, err = LoadApp(str)
+	if err != nil {
+		err = fmt.Errorf("arg 'api_key=%s' is invalid: %s", str, err.Error())
+		return
 	}
 
-	appid = AppId(aid)
+	if app.Disabled {
+		err = fmt.Errorf("the api_key %s is invalid", str)
+		return
+	}
+
+	appid = app.Id
 
 	str = r.FormValue("user")
 	if str != "" {

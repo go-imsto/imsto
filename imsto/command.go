@@ -228,6 +228,22 @@ func exit() {
 	os.Exit(exitStatus)
 }
 
+type apiRes map[string]interface{}
+type apiMeta map[string]interface{}
+
+func newApiRes(meta apiMeta, data interface{}) apiRes {
+	res := make(apiRes)
+	res["meta"] = meta
+	res["data"] = data
+	return res
+}
+
+func newApiMeta(ok bool) apiMeta {
+	meta := make(apiMeta)
+	meta["ok"] = ok
+	return meta
+}
+
 func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
 	w.Header().Set("Content-Type", "application/json")
 	var bytes []byte
@@ -264,10 +280,9 @@ func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 	}
 }
 func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
-	m := make(map[string]interface{})
-	m["status"] = "fail"
+	m := newApiMeta(false)
 	m["error"] = err.Error()
-	writeJsonQuiet(w, r, m)
+	writeJsonQuiet(w, r, newApiRes(m, nil))
 }
 
 func debug(params ...interface{}) {

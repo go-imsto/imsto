@@ -14,10 +14,11 @@ import (
 )
 
 type App struct {
-	Id      AppId     `json:"id,omitempty"`
-	ApiKey  string    `json:"api_key,omitempty"`
-	Name    string    `json:"name,omitempty"`
-	Created time.Time `json:"created,omitempty"`
+	Id       AppId     `json:"id,omitempty"`
+	ApiKey   string    `json:"api_key,omitempty"`
+	Name     string    `json:"name,omitempty"`
+	Created  time.Time `json:"created,omitempty"`
+	Disabled bool      `json:"disabled,omitempty"`
 }
 
 func NewApp(name string) (app *App) {
@@ -34,6 +35,10 @@ func NewApp(name string) (app *App) {
 }
 
 func LoadApp(api_key string) (app *App, err error) {
+	if api_key == "" {
+		err = fmt.Errorf("api_key is empty")
+		return
+	}
 	app = &App{ApiKey: api_key}
 	err = app.load()
 	return
@@ -44,9 +49,9 @@ func (this *App) load() error {
 	db := this.getDb()
 	defer db.Close()
 
-	sql := "SELECT id, name, created FROM apps WHERE api_key = $1 LIMIT 1"
+	sql := "SELECT id, name, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
 	row := db.QueryRow(sql, this.ApiKey)
-	err := row.Scan(&this.Id, &this.Name, &this.Created)
+	err := row.Scan(&this.Id, &this.Name, &this.Disabled, &this.Created)
 
 	return err
 }

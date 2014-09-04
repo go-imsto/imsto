@@ -33,9 +33,9 @@ func init() {
 }
 
 func roofsHandler(w http.ResponseWriter, r *http.Request) {
-	m := make(map[string]interface{})
-	m["roofs"] = config.Sections()
-	writeJsonQuiet(w, r, m)
+	m := newApiMeta(true)
+	// m["roofs"] = config.Sections()
+	writeJsonQuiet(w, r, newApiRes(m, config.Sections()))
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
@@ -93,19 +93,19 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		writeJsonError(w, r, err)
 		return
 	}
-	m := make(map[string]interface{})
-	m["status"] = "ok"
+
+	m := newApiMeta(true)
 	m["rows"] = limit
 	m["page"] = page
 
-	m["data"] = a
+	// m["data"] = a
 	m["total"] = t
 
 	thumb_path := config.GetValue(roof, "thumb_path")
 	m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
 	// log.Printf("total: %d\n", t)
 	m["version"] = VERSION
-	writeJsonQuiet(w, r, m)
+	writeJsonQuiet(w, r, newApiRes(m, a))
 }
 
 func storeHandler(w http.ResponseWriter, r *http.Request) {
@@ -133,18 +133,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// log.Print(entries[0].Path)
-	m := make(map[string]interface{})
+	meta := newApiMeta(true)
 
-	// log.Printf("post new id: %v, size: %d, path: %v\n", entry.Id, entry.Size, entry.Path)
-
-	// m["id"] = entry.Id.String()
-	// m["path"] = entry.Path
-	// m["size"] = entry.Size
-
-	m["status"] = "ok"
-	m["data"] = entries
-
-	writeJsonQuiet(w, r, m)
+	writeJsonQuiet(w, r, newApiRes(meta, entries))
 }
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	err := storage.DeleteRequest(r)
@@ -154,9 +145,8 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := make(map[string]interface{})
-	m["status"] = "ok"
-	writeJsonQuiet(w, r, m)
+	meta := newApiMeta(true)
+	writeJsonQuiet(w, r, newApiRes(meta, nil))
 }
 
 func tokenHandler(w http.ResponseWriter, r *http.Request) {
@@ -167,14 +157,13 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := make(map[string]interface{})
-	m["status"] = "ok"
-	m["token"] = token.String()
-	writeJsonQuiet(w, r, m)
+	meta := newApiMeta(true)
+	meta["token"] = token.String()
+	writeJsonQuiet(w, r, newApiRes(meta, nil))
 }
 
 func ticketHandler(w http.ResponseWriter, r *http.Request) {
-	m := make(map[string]interface{})
+	meta := newApiMeta(false)
 	if r.Method == "POST" {
 		token, err := storage.TicketRequestNew(r)
 		if err != nil {
@@ -182,7 +171,8 @@ func ticketHandler(w http.ResponseWriter, r *http.Request) {
 			writeJsonError(w, r, err)
 			return
 		}
-		m["token"] = token.String()
+		meta["ok"] = true
+		meta["token"] = token.String()
 	} else if r.Method == "GET" {
 		ticket, err := storage.TicketRequestLoad(r)
 		if err != nil {
@@ -190,13 +180,11 @@ func ticketHandler(w http.ResponseWriter, r *http.Request) {
 			writeJsonError(w, r, err)
 			return
 		}
-		m["ticket"] = ticket
+		meta["ok"] = true
+		meta["ticket"] = ticket
 	}
 
-	if len(m) > 0 {
-		m["status"] = "ok"
-	}
-	writeJsonQuiet(w, r, m)
+	writeJsonQuiet(w, r, newApiRes(meta, nil))
 }
 
 func runTiring(args []string) bool {
