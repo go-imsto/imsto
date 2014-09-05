@@ -50,10 +50,17 @@ func (this *App) load() error {
 	defer db.Close()
 
 	sql := "SELECT id, name, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
-	row := db.QueryRow(sql, this.ApiKey)
-	err := row.Scan(&this.Id, &this.Name, &this.Disabled, &this.Created)
+	rows, err := db.Query(sql, this.ApiKey)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if !rows.Next() {
+		return fmt.Errorf("not found or disabled")
+	}
+
+	return rows.Scan(&this.Id, &this.Name, &this.Disabled, &this.Created)
+
 }
 
 func (this *App) save() error {

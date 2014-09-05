@@ -305,6 +305,7 @@ func secure(whiteList []string, f func(w http.ResponseWriter, r *http.Request)) 
 				}
 			}
 		}
+		w.WriteHeader(http.StatusForbidden)
 		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
 	}
 }
