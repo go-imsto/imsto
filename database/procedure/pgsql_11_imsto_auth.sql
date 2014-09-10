@@ -5,7 +5,7 @@ BEGIN;
 
 SET search_path = imsto, public;
 
-CREATE OR REPLACE FUNCTION imsto.app_save(a_name varchar, a_api_key varchar)
+CREATE OR REPLACE FUNCTION imsto.app_save(a_name varchar, a_api_key varchar, a_api_salt varchar, a_api_ver smallint)
 RETURNS int AS
 $$
 DECLARE t_id int;
@@ -17,7 +17,8 @@ BEGIN
 		RETURN t_id;
 	END IF;
 
-	INSERT INTO apps(name, api_key) VALUES (a_name, a_api_key) RETURNING id INTO t_id;
+	INSERT INTO apps(name, api_key, api_salt, api_ver) VALUES (a_name, a_api_key, a_api_salt, a_api_ver)
+	 RETURNING id INTO t_id;
 	IF t_id IS NOT NULL THEN
 		RETURN t_id;
 	END IF;

@@ -6,15 +6,16 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 )
 
-type apiVer uint8
+type ApiVersion uint8
 type valueCate uint8
 
 type apiToken struct {
-	ver   apiVer
+	ver   ApiVersion
 	appid AppId
 	salt  []byte
 	hash  []byte
@@ -41,12 +42,12 @@ const (
 )
 
 func unixStamp() int64 {
-	return time.Now().UnixNano()
+	return time.Now().UTC().UnixNano()
 }
 
-func newToken(ver apiVer, appid AppId, salt []byte) (*apiToken, error) {
+func newToken(ver ApiVersion, appid AppId, salt []byte) (*apiToken, error) {
 	if len(salt) < min_salt_length {
-		return nil, errors.New("salt is too short")
+		return nil, fmt.Errorf("salt '%x' is too short", salt)
 	}
 	return &apiToken{ver: ver, appid: appid, salt: salt, stamp: unixStamp()}, nil
 }

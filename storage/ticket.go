@@ -40,7 +40,7 @@ func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	t, err = getApiToken(cr.roof, cr.appid)
+	t, err = cr.app.genToken()
 	if err != nil {
 		return
 	}
@@ -57,7 +57,7 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	ticket := newTicket(cr.roof, cr.appid)
+	ticket := newTicket(cr.roof, cr.app.Id)
 
 	ticket.Author = cr.author
 	ticket.Prompt = r.FormValue("prompt")
@@ -69,7 +69,7 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	t, err = getApiToken(cr.roof, cr.appid)
+	t, err = cr.app.genToken()
 	if err != nil {
 		return
 	}

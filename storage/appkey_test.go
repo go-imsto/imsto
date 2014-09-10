@@ -7,7 +7,7 @@ import (
 func TestAppNew(t *testing.T) {
 	app := NewApp("demo")
 	t.Logf("new app %s: key %s", app.Name, app.ApiKey)
-	err := app.save()
+	err := app.Save()
 
 	if err != nil {
 		t.Fatal(err)

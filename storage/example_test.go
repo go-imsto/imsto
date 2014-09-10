@@ -41,7 +41,7 @@ const (
 
 func TestApiToken(t *testing.T) {
 	var (
-		ver   = apiVer(0)
+		ver   = ApiVersion(0)
 		appid = AppId(0)
 		vc    = valueCate(0)
 	)

@@ -2,8 +2,10 @@ package storage
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"database/sql"
 	_ "database/sql/driver"
+	"encoding/base64"
 	"fmt"
 	_ "github.com/lib/pq"
 	"io"
@@ -13,12 +15,18 @@ import (
 	"wpst.me/calf/config"
 )
 
+const (
+	salt_size = 32
+)
+
 type App struct {
-	Id       AppId     `json:"id,omitempty"`
-	ApiKey   string    `json:"api_key,omitempty"`
-	Name     string    `json:"name,omitempty"`
-	Created  time.Time `json:"created,omitempty"`
-	Disabled bool      `json:"disabled,omitempty"`
+	Id       AppId      `json:"id,omitempty"`
+	Version  ApiVersion `json:"api_ver,omitempty"`
+	ApiKey   string     `json:"api_key,omitempty"`
+	ApiSalt  string     `json:"api_salt,omitempty"`
+	Name     string     `json:"name,omitempty"`
+	Created  time.Time  `json:"created,omitempty"`
+	Disabled bool       `json:"disabled,omitempty"`
 }
 
 func NewApp(name string) (app *App) {
@@ -31,6 +39,12 @@ func NewApp(name string) (app *App) {
 	api_key, _ := base.BaseConvert(s, 16, 62)
 	log.Printf("new api_key '%s' for %s", api_key, name)
 	app.ApiKey = api_key
+	salt, err := newSalt()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	app.ApiSalt = salt
 	return
 }
 
@@ -49,7 +63,7 @@ func (this *App) load() error {
 	db := this.getDb()
 	defer db.Close()
 
-	sql := "SELECT id, name, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
+	sql := "SELECT id, name, api_ver, api_salt, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
 	rows, err := db.Query(sql, this.ApiKey)
 	if err != nil {
 		return err
@@ -59,11 +73,11 @@ func (this *App) load() error {
 		return fmt.Errorf("not found or disabled")
 	}
 
-	return rows.Scan(&this.Id, &this.Name, &this.Disabled, &this.Created)
+	return rows.Scan(&this.Id, &this.Name, &this.Version, &this.ApiSalt, &this.Disabled, &this.Created)
 
 }
 
-func (this *App) save() error {
+func (this *App) Save() error {
 	db := this.getDb()
 	defer db.Close()
 
@@ -73,10 +87,10 @@ func (this *App) save() error {
 		return err
 	}
 
-	sql := "SELECT app_save($1, $2);"
+	sql := "SELECT app_save($1, $2, $3, $4);"
 
 	var ret int
-	err = tx.QueryRow(sql, this.Name, this.ApiKey).Scan(&ret)
+	err = tx.QueryRow(sql, this.Name, this.ApiKey, this.ApiSalt, this.Version).Scan(&ret)
 
 	if err != nil {
 		tx.Rollback()
@@ -101,4 +115,29 @@ func (this *App) getDb() *sql.DB {
 		log.Fatalf("open db error: %s", err)
 	}
 	return db
+}
+
+func (this *App) genToken() (*apiToken, error) {
+	salt, err := this.saltBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	return newToken(this.Version, this.Id, salt)
+}
+
+func newSalt() (rs string, err error) {
+	rb := make([]byte, salt_size)
+	_, err = rand.Read(rb)
+
+	if err != nil {
+		return
+	}
+
+	rs = base64.URLEncoding.EncodeToString(rb)
+	return
+}
+
+func (this *App) saltBytes() ([]byte, error) {
+	return base64.URLEncoding.DecodeString(this.ApiSalt)
 }

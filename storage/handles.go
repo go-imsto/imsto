@@ -498,7 +498,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 			entries[i].Err = ee.Error()
 			continue
 		}
-		entry.AppId = cr.appid
+		entry.AppId = cr.app.Id
 		entry.Author = cr.author
 		entry.Modified = lastModified
 		entry.Tags = tags
@@ -550,7 +550,7 @@ func DeleteRequest(r *http.Request) error {
 
 type custReq struct {
 	roof   string
-	appid  AppId
+	app    *App
 	author Author
 	token  *apiToken
 }
@@ -562,15 +562,13 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 			return
 		}
 	}
+
 	var (
 		roof   string
-		appid  AppId
 		author Author
-	)
-	var (
-		str string
-		app *App
-		uid uint64
+		str    string
+		app    *App
+		uid    uint64
 	)
 	roof = r.FormValue("roof")
 	if roof == "" {
@@ -597,8 +595,6 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 		return
 	}
 
-	appid = app.Id
-
 	str = r.FormValue("user")
 	if str != "" {
 		uid, err = strconv.ParseUint(str, 10, 16)
@@ -613,7 +609,8 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 
 	var token *apiToken
 	if needToken {
-		if token, err = getApiToken(roof, appid); err != nil {
+		if token, err = app.genToken(); err != nil {
+			err = fmt.Errorf("genToken: %", err.Error())
 			return
 		}
 		token_str := r.FormValue("token")
@@ -627,34 +624,7 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 		}
 	}
 
-	cr = custReq{roof, appid, author, token}
-	return
-}
-
-func getApiSalt(roof string, appid AppId) (salt []byte, err error) {
-	k := fmt.Sprintf("IMSTO_API_%d_SALT", appid)
-	str := config.GetValue(roof, k)
-	if str == "" {
-		str = os.Getenv(k)
-	}
-
-	if str == "" {
-		err = fmt.Errorf("%s not found in environment or config", k)
-		return
-	}
-
-	salt = []byte(str)
-	return
-}
-
-func getApiToken(roof string, appid AppId) (token *apiToken, err error) {
-	var salt []byte
-	salt, err = getApiSalt(roof, appid)
-	if err != nil {
-		return
-	}
-	ver := apiVer(0)
-	token, err = newToken(ver, appid, salt)
+	cr = custReq{roof, app, author, token}
 	return
 }
 
