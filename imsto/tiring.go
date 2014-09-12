@@ -123,7 +123,36 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, isGetMethod bool) {
-	// TODO:
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 3 {
+		err := fmt.Errorf("invalid path: %s", r.URL.Path)
+		log.Print(err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	roof = parts[1]
+	id, err := storage.NewEntryId(parts[2])
+	if err != nil {
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	mw := storage.NewMetaWrapper(roof)
+	entry, err := mw.GetMeta(*id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	if isGetMethod {
+		meta := newApiMeta(true)
+		writeJsonQuiet(w, r, newApiRes(meta, entry))
+	}
+
 }
 func PostHandler(w http.ResponseWriter, r *http.Request) {
 	entries, err := storage.StoredRequest(r)
