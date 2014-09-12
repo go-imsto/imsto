@@ -30,6 +30,8 @@ type MetaWrapper interface {
 	GetHash(hash string) (*ehash, error)
 	GetEntry(id EntryId) (*Entry, error)
 	Delete(id EntryId) error
+	MapTags(id EntryId, tags string) error
+	UnmapTags(id EntryId, tags string) error
 }
 
 type rowScanner interface {
@@ -37,7 +39,6 @@ type rowScanner interface {
 }
 
 type MetaWrap struct {
-	dsn  string
 	roof string
 	// prefix  string
 
@@ -49,15 +50,14 @@ func newMetaWrap(roof string) *MetaWrap {
 		log.Print("arg roof is empty")
 		roof = "common"
 	}
-	dsn := config.GetValue(roof, "meta_dsn")
-	// log.Printf("[%s]dsn: %s", roof, dsn)
+
 	table := config.GetValue(roof, "meta_table_suffix")
 	if table == "" {
 		// log.Print("meta_table_suffix is empty, use roof")
 		table = roof
 	}
 	log.Printf("table suffix: %s", table)
-	mw := &MetaWrap{dsn: dsn, roof: roof, table_suffix: table}
+	mw := &MetaWrap{roof: roof, table_suffix: table}
 
 	return mw
 }
@@ -282,74 +282,55 @@ func (mw *MetaWrap) Ready(entry *Entry) error {
 }
 
 func (mw *MetaWrap) SetDone(id EntryId, sev cdb.Hstore) error {
-	db := mw.getDb()
-	defer db.Close()
-	var ret int
-	err := db.QueryRow("SELECT entry_set_done($1, $2)", id.String(), sev).Scan(&ret)
-	if err != nil {
-		return err
+	qs := func(tx *sql.Tx) (err error) {
+		var ret int
+		err = tx.QueryRow("SELECT entry_set_done($1, $2)", id.String(), sev).Scan(&ret)
+		if err == nil {
+			log.Printf("entry set done ret: %v\n", ret)
+		}
+		return
 	}
-
-	log.Printf("entry set done ret: %v\n", ret)
-
-	return nil
+	return mw.withTxQuery(qs)
 }
 
 func (mw *MetaWrap) Save(entry *Entry) error {
-	db := mw.getDb()
-	defer db.Close()
+	qs := func(tx *sql.Tx) (err error) {
+		sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
 
-	// log.Printf("hashes: %s\n", entry.Hashes)
-	// log.Printf("ids: %s\n", entry.Ids)
-
-	tx, err := db.Begin()
-	if err != nil {
-		tx.Rollback()
-		return err
+		err = tx.QueryRow(sql, mw.table_suffix,
+			entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+			entry.AppId, entry.Author).Scan(&entry.ret)
+		if err == nil {
+			log.Printf("entry save ret: %v\n", entry.ret)
+		}
+		return
 	}
 
-	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-
-	err = tx.QueryRow(sql, mw.table_suffix,
-		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
-		entry.AppId, entry.Author).Scan(&entry.ret)
-
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	log.Printf("entry save ret: %v\n", entry.ret)
-
-	tx.Commit()
-	return nil
+	return mw.withTxQuery(qs)
 }
 
 func (mw *MetaWrap) BatchSave(entries []*Entry) error {
-	db := mw.getDb()
-	defer db.Close()
+	qs := func(tx *sql.Tx) error {
 
-	tx, err := db.Begin()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-	st, err := tx.Prepare(sql)
-	for _, entry := range entries {
-		err := st.QueryRow(mw.table_suffix,
-			entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
-			entry.AppId, entry.Author).Scan(&entry.ret)
+		sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
+		st, err := tx.Prepare(sql)
 		if err != nil {
-			log.Printf("batchSave %s %s error: %s", entry.Id.String(), entry.Path, err)
-			tx.Rollback()
 			return err
 		}
-		log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, entry.ret)
+		for _, entry := range entries {
+			err := st.QueryRow(mw.table_suffix,
+				entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+				entry.AppId, entry.Author).Scan(&entry.ret)
+			if err != nil {
+				log.Printf("batchSave %s %s error: %s", entry.Id.String(), entry.Path, err)
+				return err
+			}
+			log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, entry.ret)
+		}
+		return nil
 	}
-	tx.Commit()
-	return nil
+
+	return mw.withTxQuery(qs)
 }
 
 type ehash struct {
@@ -385,37 +366,60 @@ func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 }
 
 func (mw *MetaWrap) Delete(id EntryId) error {
-	db := mw.getDb()
-	defer db.Close()
+	qs := func(tx *sql.Tx) (err error) {
+		var ret int
+		sql := "SELECT entry_delete($1, $2);"
+		err = tx.QueryRow(sql, mw.table_suffix, id.String()).Scan(&ret)
+		if err == nil {
+			log.Printf("delete entry [%s]%s result %v", mw.table_suffix, id.String(), ret)
+		}
+		return
+	}
+	return mw.withTxQuery(qs)
+}
 
-	tx, err := db.Begin()
+func (mw *MetaWrap) MapTags(id EntryId, tags string) error {
+
+	var qtags, err = cdb.NewQarrayText(tags)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
+	qs := func(tx *sql.Tx) (err error) {
+		var ret int
+		sql := "SELECT tag_add($1, $2, $3);"
+		err = tx.QueryRow(sql, mw.table_suffix, id, qtags).Scan(&ret)
+		if err == nil {
+			log.Printf("entry [%s]%s mapping tags '%s' result %v", mw.table_suffix, id, tags, ret)
+		}
+		return
+	}
+	return mw.withTxQuery(qs)
+}
 
-	sql := "SELECT entry_delete($1, $2);"
-	var ret int
-	err = tx.QueryRow(sql, mw.table_suffix, id.String()).Scan(&ret)
+func (mw *MetaWrap) UnmapTags(id EntryId, tags string) error {
 
+	var qtags, err = cdb.NewQarrayText(tags)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
+	qs := func(tx *sql.Tx) (err error) {
+		var ret int
+		sql := "SELECT tag_remove($1, $2, $3);"
+		err = tx.QueryRow(sql, mw.table_suffix, id, qtags).Scan(&ret)
+		if err == nil {
+			log.Printf("entry [%s]%s unmap tags '%s' result %v", mw.table_suffix, id, tags, ret)
+		}
+		return
+	}
+	return mw.withTxQuery(qs)
+}
 
-	tx.Commit()
-
-	log.Printf("delete entry [%s]%s result %v", mw.table_suffix, id.String(), ret)
-	return nil
+func (mw *MetaWrap) withTxQuery(query func(tx *sql.Tx) error) error {
+	return withTxQuery(mw.roof, query)
 }
 
 func (mw *MetaWrap) getDb() *sql.DB {
-	db, err := sql.Open("postgres", mw.dsn)
-
-	if err != nil {
-		log.Fatalf("open db error: %s", err)
-	}
-	return db
+	return getDb(mw.roof)
 }
 
 func tableHash(s string) string {

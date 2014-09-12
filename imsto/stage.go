@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"runtime"
@@ -111,7 +112,10 @@ func runStage(args []string) bool {
 	var e error
 	http.HandleFunc("/", StageHandler)
 
-	log.Print("Start Stage service ", VERSION, " at port ", strconv.Itoa(*sport))
+	// log.Print("Start Stage service ", VERSION, " at port ", strconv.Itoa(*sport))
+	str := fmt.Sprintf("Start Stage service %s at port %d", VERSION, *sport)
+	fmt.Println(str)
+	log.Print(str)
 	srv := &http.Server{
 		Addr:        ":" + strconv.Itoa(*sport),
 		Handler:     http.DefaultServeMux,

@@ -12,7 +12,6 @@ import (
 
 type Ticket struct {
 	roof    string
-	dsn     string
 	table   string
 	AppId   AppId  `json:"appid,omitempty"`
 	Author  Author `json:"author,omitempty"`
@@ -24,10 +23,9 @@ type Ticket struct {
 }
 
 func newTicket(roof string, appid AppId) *Ticket {
-	dsn := config.GetValue(roof, "meta_dsn")
 	table := getTicketTable(roof)
 	// log.Printf("table: %s", table)
-	t := &Ticket{roof: roof, dsn: dsn, table: table, AppId: appid}
+	t := &Ticket{roof: roof, table: table, AppId: appid}
 
 	return t
 }
@@ -104,12 +102,13 @@ func (t *Ticket) saveNew() error {
 
 	var id int
 	sql := "INSERT INTO " + t.table + "(roof, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
-	log.Printf("sql: %s", sql)
+	log.Printf("save ticket sql: %s", sql)
 	err := db.QueryRow(sql, t.roof, t.AppId, t.Author, t.Prompt).Scan(&id)
 	if err != nil {
 		return err
 	}
 	t.id = id
+	log.Printf("new ticket id: %4d", id)
 	return nil
 }
 
@@ -164,11 +163,7 @@ func (t *Ticket) GetId() int {
 }
 
 func (t *Ticket) getDb() *sql.DB {
-	db, err := sql.Open("postgres", t.dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return db
+	return getDb(t.roof)
 }
 
 func getTicketTable(sn string) (table string) {

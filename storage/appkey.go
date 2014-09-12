@@ -12,7 +12,6 @@ import (
 	"log"
 	"time"
 	"wpst.me/calf/base"
-	"wpst.me/calf/config"
 )
 
 const (
@@ -60,7 +59,7 @@ func LoadApp(api_key string) (app *App, err error) {
 
 func (this *App) load() error {
 
-	db := this.getDb()
+	db := getDb("")
 	defer db.Close()
 
 	sql := "SELECT id, name, api_ver, api_salt, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
@@ -78,43 +77,19 @@ func (this *App) load() error {
 }
 
 func (this *App) Save() error {
-	db := this.getDb()
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		tx.Rollback()
-		return err
+	qs := func(tx *sql.Tx) (err error) {
+		sql := "SELECT app_save($1, $2, $3, $4);"
+		var ret int
+		err = tx.QueryRow(sql, this.Name, this.ApiKey, this.ApiSalt, this.Version).Scan(&ret)
+		if err == nil {
+			log.Printf("app saved: %v\n", ret)
+			if ret > 0 {
+				this.Id = AppId(ret)
+			}
+		}
+		return
 	}
-
-	sql := "SELECT app_save($1, $2, $3, $4);"
-
-	var ret int
-	err = tx.QueryRow(sql, this.Name, this.ApiKey, this.ApiSalt, this.Version).Scan(&ret)
-
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	log.Printf("app saved: %v\n", ret)
-
-	if ret > 0 {
-		this.Id = AppId(ret)
-	}
-
-	tx.Commit()
-	return nil
-}
-
-func (this *App) getDb() *sql.DB {
-	dsn := config.GetValue("", "meta_dsn")
-	db, err := sql.Open("postgres", dsn)
-
-	if err != nil {
-		log.Fatalf("open db error: %s", err)
-	}
-	return db
+	return withTxQuery("", qs)
 }
 
 func (this *App) genToken() (*apiToken, error) {

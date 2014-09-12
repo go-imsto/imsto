@@ -472,7 +472,7 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		return
 	}
 
-	tags, _ := cdb.NewQarrayText(r.FormValue("file_tags"))
+	tags, _ := cdb.NewQarrayText(r.FormValue("tags"))
 
 	n := len(form.File["file"])
 

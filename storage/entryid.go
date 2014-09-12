@@ -2,6 +2,7 @@ package storage
 
 import (
 	"crypto/md5"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"hash/crc64"
@@ -14,16 +15,21 @@ type EntryId struct {
 	hash string
 }
 
+const (
+	BASE_SRC = 16
+	BASE_DST = 36
+)
+
 func NewEntryIdFromData(data []byte) (*EntryId, error) {
 	c, m := HashContent(data)
 	s := fmt.Sprintf("%x", c)
-	id, err := base.BaseConvert(s, 16, 36)
+	id, err := base.BaseConvert(s, BASE_SRC, BASE_DST)
 
 	return &EntryId{id, c, m}, err
 }
 
 func NewEntryId(id string) (*EntryId, error) {
-	hash, err := base.BaseConvert(id, 36, 16)
+	hash, err := base.BaseConvert(id, BASE_DST, BASE_SRC)
 	return &EntryId{id, 0, hash}, err
 }
 
@@ -41,6 +47,22 @@ func (ei *EntryId) Hashed() string {
 
 func (ei *EntryId) tip() string {
 	return ei.id[:1]
+}
+
+func (ei *EntryId) Scan(src interface{}) (err error) {
+	switch s := src.(type) {
+	case string:
+		ei, err = NewEntryId(s)
+		return
+	case []byte:
+		ei, err = NewEntryId(string(s))
+		return
+	}
+	return fmt.Errorf("'%s' is invalid entryId", src)
+}
+
+func (ei EntryId) Value() (driver.Value, error) {
+	return ei.id, nil
 }
 
 func HashContent(data []byte) (uint64, string) {

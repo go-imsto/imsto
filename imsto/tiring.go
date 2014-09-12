@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"runtime"
@@ -207,7 +208,10 @@ func runTiring(args []string) bool {
 	http.HandleFunc("/imsto/token", tokenHandler)
 	http.HandleFunc("/imsto/ticket", ticketHandler)
 
-	log.Print("Start Tiring service ", VERSION, " at port ", strconv.Itoa(*mport))
+	// log.Print("Start Tiring service ", VERSION, " at port ", strconv.Itoa(*mport))
+	str := fmt.Sprintf("Start Tiring service %s at port %d", VERSION, *mport)
+	fmt.Println(str)
+	log.Print(str)
 	srv := &http.Server{
 		Addr:        ":" + strconv.Itoa(*mport),
 		Handler:     http.DefaultServeMux,
