@@ -180,7 +180,7 @@ func (e *Entry) IsDone() bool {
 	return e.ready != 1
 }
 
-func (e *Entry) store(roof string) (err error) {
+func (e *Entry) Store(roof string) (err error) {
 
 	mw := NewMetaWrapper(roof)
 	eh, _err := mw.GetHash(e.h)

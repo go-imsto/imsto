@@ -73,7 +73,7 @@
 			function loadImages(page, post_data) {
 				$("#rsp-status").html('loading...');
 				roof = $('input[type=radio]:checked', '#radios1').val();
-				$.get('/imsto/meta?roof='+roof+'&page='+page+'&rows='+page_size+'&sort_name='+post_data.sort_name+'&sort_order='+post_data.sort_order+'&tags='+post_data.tags, function(res){
+				$.get('/imsto/'+roof+'/metas?page='+page+'&rows='+page_size+'&sort_name='+post_data.sort_name+'&sort_order='+post_data.sort_order+'&tags='+post_data.tags, function(res){
 					// log(res);
 					if (typeof res.meta.error == "string") {
 						console && console.log(res.error)

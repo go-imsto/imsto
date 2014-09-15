@@ -6,9 +6,9 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"io/ioutil"
 	"mime"
-	"net/http"
 	"os"
 	"path"
 	cimg "wpst.me/calf/image"
@@ -59,12 +59,8 @@ func testApp(args []string) bool {
 			fmt.Println("Err: ", err)
 			return false
 		}
-		c := func(file http.File) {
-			fi, err := file.Stat()
-			if err != nil {
-				fmt.Print(err)
-			}
-			fmt.Printf("file size: %d, mod: %s\n", fi.Size(), fi.ModTime())
+		c := func(file io.ReadSeeker) {
+			fmt.Printf("file: %s, size: %d, mod: %s\n", item.Name(), item.Size(), item.Modified())
 		}
 		err = item.Walk(c)
 		if err != nil {

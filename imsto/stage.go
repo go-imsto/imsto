@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"runtime"
@@ -53,12 +54,8 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// log.Print(item)
 
-	c := func(file http.File) {
-		fi, err := file.Stat()
-		if err != nil {
-			log.Print(err)
-		}
-		http.ServeContent(w, r, fi.Name(), fi.ModTime(), file)
+	c := func(file io.ReadSeeker) {
+		http.ServeContent(w, r, item.Name(), item.Modified(), file)
 	}
 	err = item.Walk(c)
 	if err != nil {

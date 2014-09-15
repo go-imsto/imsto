@@ -110,11 +110,43 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func storeHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(parts) < 2 {
+		err = fmt.Errorf("invalid path: %s", r.URL.Path)
+		log.Print(err)
+		http.Error(w, err.Error(), http.StatusNotFound)
+		// writeJsonError(w, r, err)
+		return
+	}
+
+	if err = r.ParseForm(); err != nil {
+		log.Print("form parse error:", err)
+		return
+	}
+	roof = parts[1]
+	r.Form.Set("roof", roof)
+	var id string
+	if len(parts) > 2 {
+		id = parts[2]
+	}
+	if id == "metas" {
+		browseHandler(w, r)
+		return
+	}
+	if id == "token" && r.Method == "POST" {
+		tokenHandler(w, r)
+		return
+	}
+	if id == "ticket" {
+		ticketHandler(w, r)
+		return
+	}
+
 	switch r.Method {
 	case "GET":
-		GetOrHeadHandler(w, r, true)
 	case "HEAD":
-		GetOrHeadHandler(w, r, false)
+		GetOrHeadHandler(w, r, roof, id)
 	case "DELETE":
 		secure(whiteList, DeleteHandler)(w, r)
 	case "POST":
@@ -122,17 +154,8 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, isGetMethod bool) {
-	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(parts) < 3 {
-		err := fmt.Errorf("invalid path: %s", r.URL.Path)
-		log.Print(err)
-		writeJsonError(w, r, err)
-		return
-	}
-
-	roof = parts[1]
-	id, err := storage.NewEntryId(parts[2])
+func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) {
+	id, err := storage.NewEntryId(ids)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
@@ -148,11 +171,11 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, isGetMethod bool) 
 		return
 	}
 
-	if isGetMethod {
-		meta := newApiMeta(true)
-		writeJsonQuiet(w, r, newApiRes(meta, entry))
+	if r.Method == "HEAD" {
+		return
 	}
-
+	meta := newApiMeta(true)
+	writeJsonQuiet(w, r, newApiRes(meta, entry))
 }
 func PostHandler(w http.ResponseWriter, r *http.Request) {
 	entries, err := storage.StoredRequest(r)
@@ -230,7 +253,6 @@ func runTiring(args []string) bool {
 		whiteList = strings.Split(*whiteListOption, ",")
 	}
 
-	var e error
 	http.HandleFunc("/imsto/", storeHandler)
 	http.HandleFunc("/imsto/meta", browseHandler)
 	http.HandleFunc("/imsto/roofs", roofsHandler)
@@ -246,9 +268,10 @@ func runTiring(args []string) bool {
 		Handler:     http.DefaultServeMux,
 		ReadTimeout: time.Duration(*mReadTimeout) * time.Second,
 	}
-	e = srv.ListenAndServe()
-	if e != nil {
-		log.Printf("Fail to start:%s\n", e)
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Printf("Fail to start: %s\n", err)
+		return false
 	}
 
 	return true
