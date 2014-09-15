@@ -176,7 +176,7 @@ func (o *outItem) prepare() (err error) {
 		// log.Printf("got %s", entry.Path)
 		roof := o.roof
 		thumb_path := config.GetValue(roof, "thumb_path")
-		if o.src != entry.Path { // 302 found
+		if o.src != entry.storedPath() { // 302 found
 			new_path := path.Join(thumb_path, o.m["size"], entry.Path)
 			ie := NewHttpError(302, "Found "+new_path)
 			ie.Path = new_path

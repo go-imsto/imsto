@@ -154,7 +154,7 @@ func (e *Entry) Trek(roof string) (err error) {
 	ia.Size = iimg.Size(size) // 更新后的大小
 	ia.Name = e.Name
 
-	path := newPath(e.Id, ia.Ext)
+	path := newUrlPath(e.Id, ia.Ext)
 
 	log.Printf("ext: %s, mime: %s\n", ia.Ext, ia.Mime)
 
@@ -170,6 +170,13 @@ func (e *Entry) Trek(roof string) (err error) {
 // func (e *Entry) Hashed() string {
 // 	return e.h
 // }
+func (e *Entry) storedPath() string {
+	r := e.Id.String()
+	ext := path.Ext(e.Path)
+	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
+
+	return p
+}
 
 // return binary bytes
 func (e *Entry) Blob() []byte {
@@ -316,12 +323,15 @@ func (e *Entry) roof() string {
 	return ""
 }
 
-func newPath(ei *EntryId, ext string) string {
+func newUrlPath(ei *EntryId, ext string) string {
 	return ei.id + ext
-	// r := ei.id
-	// p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
+}
 
-	// return p
+func newStorePath(ei *EntryId, ext string) string {
+	r := ei.id
+	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
+
+	return p
 }
 
 func PullBlob(e *Entry, roof string) (data []byte, err error) {
