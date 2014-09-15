@@ -317,10 +317,11 @@ func (e *Entry) roof() string {
 }
 
 func newPath(ei *EntryId, ext string) string {
-	r := ei.id
-	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
+	return ei.id + ext
+	// r := ei.id
+	// p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 
-	return p
+	// return p
 }
 
 func PullBlob(e *Entry, roof string) (data []byte, err error) {
