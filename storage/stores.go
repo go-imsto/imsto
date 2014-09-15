@@ -452,7 +452,7 @@ func StoredFile(file, name, roof string) (entry *Entry, err error) {
 }
 
 func ParseTags(s string) (cdb.Qarray, error) {
-	return cdb.NewQarrayText(s)
+	return cdb.NewQarrayText(strings.ToLower(s))
 	// qtags, err := cdb.NewQarrayText(s)
 	// if err == nil {
 	// 	return qtags.ToStringSlice(), nil
