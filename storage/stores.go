@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 	"wpst.me/calf/config"
+	cdb "wpst.me/calf/db"
 	iimg "wpst.me/calf/image"
 )
 
@@ -410,11 +411,14 @@ func PrepareReader(r io.Reader, name string, modified uint64) (entry *Entry, err
 
 func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry, err error) {
 	entry, err = PrepareReader(r, name, modified)
+	if err != nil {
+		return
+	}
 	err = entry.Store(roof)
 	return
 }
 
-func StoredFile(file, name, roof string) (*Entry, error) {
+func PrepareFile(file, name string) (entry *Entry, err error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -433,8 +437,27 @@ func StoredFile(file, name, roof string) (*Entry, error) {
 		name = path.Base(file)
 	}
 
-	return StoredReader(f, name, roof, uint64(fi.ModTime().Unix()))
+	modified := uint64(fi.ModTime().Unix())
 
+	return PrepareReader(f, name, modified)
+}
+
+func StoredFile(file, name, roof string) (entry *Entry, err error) {
+	entry, err = PrepareFile(file, name)
+	if err != nil {
+		return
+	}
+	err = entry.Store(roof)
+	return
+}
+
+func ParseTags(s string) (cdb.Qarray, error) {
+	return cdb.NewQarrayText(s)
+	// qtags, err := cdb.NewQarrayText(s)
+	// if err == nil {
+	// 	return qtags.ToStringSlice(), nil
+	// }
+	// return nil, err
 }
 
 type entryStored struct {

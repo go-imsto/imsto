@@ -30,6 +30,7 @@ func newTicket(roof string, appid AppId) *Ticket {
 	return t
 }
 
+// deprecated
 func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
 
 	cr, e := parseRequest(r, false)

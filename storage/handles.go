@@ -8,7 +8,6 @@ import (
 	"path"
 	"strconv"
 	"wpst.me/calf/config"
-	cdb "wpst.me/calf/db"
 )
 
 const (
@@ -41,7 +40,10 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		return
 	}
 
-	tags, _ := cdb.NewQarrayText(r.FormValue("tags"))
+	tags, err := ParseTags(r.FormValue("tags"))
+	if err != nil {
+		log.Print(err)
+	}
 
 	n := len(form.File["file"])
 
