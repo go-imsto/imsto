@@ -32,9 +32,10 @@ func NewQarray(a []string) (Qarray, error) {
 	return q, nil
 }
 
-func (q Qarray) String() string {
+// driver.Valuer for sql value save
+func (q Qarray) Value() (driver.Value, error) {
 	if len(q) == 0 {
-		return "{}"
+		return "{}", nil
 	}
 
 	var s = make([]string, len(q))
@@ -54,12 +55,7 @@ func (q Qarray) String() string {
 			break
 		}
 	}
-	return "{" + strings.Join(s, ",") + "}"
-}
-
-// driver.Valuer for sql value save
-func (q Qarray) Value() (driver.Value, error) {
-	return q.String(), nil
+	return "{" + strings.Join(s, ",") + "}", nil
 }
 
 // driver.Scanner for sql value load

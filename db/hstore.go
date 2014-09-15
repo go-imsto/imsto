@@ -25,8 +25,8 @@ func NewHstore(text string) (Hstore, error) {
 	return h, nil
 }
 
-// hstore map convert to string
-func (h Hstore) String() string {
+// driver.Valuer for sql value save
+func (h Hstore) Value() (driver.Value, error) {
 	var a = make([]string, len(h))
 	r := strings.NewReplacer("\\", "\\\\", "'", "''", "\"", "\\\"")
 	i := 0
@@ -40,12 +40,7 @@ func (h Hstore) String() string {
 		i++
 	}
 
-	return strings.Join(a, ",")
-}
-
-// driver.Valuer for sql value save
-func (h Hstore) Value() (driver.Value, error) {
-	return h.String(), nil
+	return strings.Join(a, ","), nil
 }
 
 // driver.Scanner for sql value load
