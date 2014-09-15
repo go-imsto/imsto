@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultMaxMemory = 32 << 20 // 32 MB
+	defaultMaxMemory = 12 << 20 // 8 MB
 )
 
 func StoredRequest(r *http.Request) (entries []entryStored, err error) {
