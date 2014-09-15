@@ -382,7 +382,7 @@ func PopReadyDone() (entry *Entry, err error) {
 	log.Printf("poped %s", entry.Path)
 
 	var data []byte
-	data, err = ioutil.ReadFile(entry.origName())
+	data, err = ioutil.ReadFile(entry.origFullname())
 	if err != nil {
 		return
 	}

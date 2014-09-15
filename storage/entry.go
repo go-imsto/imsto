@@ -242,7 +242,7 @@ func (e *Entry) Store(roof string) (err error) {
 	// size := len(data)
 	// log.Printf("blob length: %d", size)
 	thumb_root := config.GetValue(roof, "thumb_root")
-	filename := path.Join(thumb_root, "orig", e.Path)
+	filename := path.Join(thumb_root, "orig", e.storedPath())
 	err = SaveFile(filename, data)
 	if err != nil {
 		return
@@ -311,9 +311,9 @@ func (e *Entry) reset() {
 	e.b = []byte{}
 }
 
-func (e *Entry) origName() string {
+func (e *Entry) origFullname() string {
 	thumb_root := config.GetValue(e.roof(), "thumb_root")
-	return path.Join(thumb_root, "orig", e.Path)
+	return path.Join(thumb_root, "orig", e.storedPath())
 }
 
 func (e *Entry) roof() string {
