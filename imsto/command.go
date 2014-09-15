@@ -281,9 +281,9 @@ func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 	}
 }
 func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
-	m := newApiMeta(false)
-	m["error"] = err.Error()
-	writeJsonQuiet(w, r, newApiRes(m, nil))
+	res := newApiRes(newApiMeta(false), nil)
+	res["error"] = err.Error()
+	writeJsonQuiet(w, r, res)
 }
 
 func debug(params ...interface{}) {
