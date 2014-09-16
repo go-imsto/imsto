@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -113,14 +114,15 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(parts) < 2 {
+		w.WriteHeader(http.StatusBadRequest)
 		err = fmt.Errorf("invalid path: %s", r.URL.Path)
 		log.Print(err)
-		http.Error(w, err.Error(), http.StatusNotFound)
-		// writeJsonError(w, r, err)
+		writeJsonError(w, r, err)
 		return
 	}
 
 	if err = r.ParseForm(); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		log.Print("form parse error:", err)
 		return
 	}
@@ -144,19 +146,22 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch r.Method {
-	case "GET":
-	case "HEAD":
+	case "GET", "HEAD":
 		GetOrHeadHandler(w, r, roof, id)
 	case "DELETE":
 		secure(whiteList, DeleteHandler)(w, r)
 	case "POST":
 		secure(whiteList, PostHandler)(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		writeJsonError(w, r, fmt.Errorf(http.StatusText(http.StatusMethodNotAllowed)))
 	}
 }
 
 func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) {
 	id, err := storage.NewEntryId(ids)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -174,13 +179,37 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) 
 	if r.Method == "HEAD" {
 		return
 	}
+	url := getUrl(r.URL.Scheme, roof, "orig", entry.Path)
+	log.Printf("Get entry: ", entry.Id)
 	meta := newApiMeta(true)
-	writeJsonQuiet(w, r, newApiRes(meta, entry))
+	obj := struct {
+		*storage.Entry
+		OrigUrl string `json:"orig_url,omitempty"`
+	}{
+		Entry:   entry,
+		OrigUrl: url,
+	}
+	writeJsonQuiet(w, r, newApiRes(meta, obj))
 }
+
+func getUrl(scheme, roof, size, file string) string {
+	thumbPath := config.GetValue(roof, "thumb_path")
+	spath := path.Join("/", thumbPath, "orig", file)
+	stageHost := config.GetValue(roof, "stage_host")
+	if stageHost == "" {
+		return spath
+	}
+	if scheme == "" {
+		scheme = "http"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
+}
+
 func PostHandler(w http.ResponseWriter, r *http.Request) {
 	entries, err := storage.StoredRequest(r)
 
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -195,6 +224,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	err := storage.DeleteRequest(r)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -207,6 +237,7 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request) {
 func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := storage.TokenRequestNew(r)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -222,6 +253,7 @@ func ticketHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		token, err := storage.TicketRequestNew(r)
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			log.Printf("ERROR: %s", err)
 			writeJsonError(w, r, err)
 			return
@@ -231,6 +263,7 @@ func ticketHandler(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == "GET" {
 		ticket, err := storage.TicketRequestLoad(r)
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			log.Printf("ERROR: %s", err)
 			writeJsonError(w, r, err)
 			return

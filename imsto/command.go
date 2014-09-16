@@ -231,6 +231,11 @@ func exit() {
 
 type apiRes map[string]interface{}
 type apiMeta map[string]interface{}
+type apiError struct {
+	Code int    `json:"code,omitempty"`
+	Msg  string `json:"message,omitempty"`
+	err  error  `json:"-"`
+}
 
 func newApiRes(meta apiMeta, data interface{}) apiRes {
 	res := make(apiRes)
@@ -243,6 +248,12 @@ func newApiMeta(ok bool) apiMeta {
 	meta := make(apiMeta)
 	meta["ok"] = ok
 	return meta
+}
+
+func newApiError(err error) apiError {
+	ae := apiError{err: err}
+	ae.Msg = err.Error()
+	return ae
 }
 
 func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
@@ -282,7 +293,7 @@ func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 }
 func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 	res := newApiRes(newApiMeta(false), nil)
-	res["error"] = err.Error()
+	res["error"] = newApiError(err)
 	writeJsonQuiet(w, r, res)
 }
 
