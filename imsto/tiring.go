@@ -105,7 +105,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	thumb_path := config.GetValue(roof, "thumb_path")
 	m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
-	// log.Printf("total: %d\n", t)
+	m["url_prefix"] = getUrl(r.URL.Scheme, roof, "orig", "") + "/"
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, newApiRes(m, a))
 }

@@ -19,15 +19,15 @@ type AppId uint16
 type Author uint32
 
 type Entry struct {
-	Id       *EntryId   `json:"id,omitempty"`
-	Name     string     `json:"name,omitempty"`
+	Id       *EntryId   `json:"id"`
+	Name     string     `json:"name"`
 	Size     uint32     `json:"size"`
 	Path     string     `json:"path"`
-	Mime     string     `json:"mime,omitempty"`
+	Mime     string     `json:"-"`
 	Status   uint8      `json:"-"`
 	Hashes   cdb.Qarray `json:"-"`
 	Ids      cdb.Qarray `json:"-"`
-	Roofs    cdb.Qarray `json:"roofs"`
+	Roofs    cdb.Qarray `json:"roofs,omitempty"`
 	Tags     cdb.Qarray `json:"tags,omitempty"`
 	Meta     *iimg.Attr `json:"meta,omitempty"`
 	AppId    AppId      `json:"appid,omitempty"`
