@@ -12,6 +12,7 @@ import (
 
 const (
 	defaultMaxMemory = 12 << 20 // 8 MB
+	ApiKeyHeader     = "X-Access-Key"
 )
 
 func StoredRequest(r *http.Request) (entries []entryStored, err error) {
@@ -150,10 +151,14 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 		return
 	}
 
-	str = r.FormValue("api_key")
+	str = r.Header.Get(ApiKeyHeader)
 	if str == "" {
-		log.Print("Waring: parseRequest api_key is empty")
+		str = r.FormValue("api_key")
+		if str == "" {
+			log.Print("Waring: parseRequest api_key is empty")
+		}
 	}
+
 	app, err = LoadApp(str)
 	if err != nil {
 		err = fmt.Errorf("arg 'api_key=%s' is invalid: %s", str, err.Error())
