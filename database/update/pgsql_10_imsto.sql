@@ -71,3 +71,7 @@ ALTER DOMAIN entry_id
 ALTER DOMAIN entry_id
   ADD CHECK (VALUE ~ '^[a-z0-9]{9,36}$');
 END;
+
+ALTER FUNCTION tag_add(text, text, text[]) RENAME TO tag_map;
+ALTER FUNCTION tag_remove(text, text, text[]) RENAME TO tag_unmap;
+

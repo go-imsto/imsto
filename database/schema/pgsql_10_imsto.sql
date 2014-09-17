@@ -89,4 +89,12 @@ CREATE TABLE meta__prepared (
 ) WITHOUT OIDS;
 
 
+CREATE TABLE tag(
+	id serial ,
+	tag varchar(80) NOT NULL UNIQUE,
+	item_count int NOT NULL DEFAULT 0,
+	PRIMARY KEY  (id)
+);
+
+
 END;

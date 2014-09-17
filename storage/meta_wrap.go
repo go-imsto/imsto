@@ -386,7 +386,7 @@ func (mw *MetaWrap) MapTags(id EntryId, tags string) error {
 	}
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
-		sql := "SELECT tag_add($1, $2, $3);"
+		sql := "SELECT tag_map($1, $2, $3);"
 		err = tx.QueryRow(sql, mw.table_suffix, id, qtags).Scan(&ret)
 		if err == nil {
 			log.Printf("entry [%s]%s mapping tags '%s' result %v", mw.table_suffix, id, tags, ret)
@@ -404,7 +404,7 @@ func (mw *MetaWrap) UnmapTags(id EntryId, tags string) error {
 	}
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
-		sql := "SELECT tag_remove($1, $2, $3);"
+		sql := "SELECT tag_unmap($1, $2, $3);"
 		err = tx.QueryRow(sql, mw.table_suffix, id, qtags).Scan(&ret)
 		if err == nil {
 			log.Printf("entry [%s]%s unmap tags '%s' result %v", mw.table_suffix, id, tags, ret)
