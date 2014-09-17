@@ -100,12 +100,11 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m["rows"] = limit
 	m["page"] = page
 
-	// m["data"] = a
 	m["total"] = t
 
-	thumb_path := config.GetValue(roof, "thumb_path")
-	m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
-	m["url_prefix"] = getUrl(r.URL.Scheme, roof, "orig", "") + "/"
+	// thumb_path := config.GetValue(roof, "thumb_path")
+	// m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
+	m["url_prefix"] = getUrl(r.URL.Scheme, roof, "") + "/"
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, newApiRes(m, a))
 }
@@ -179,7 +178,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) 
 	if r.Method == "HEAD" {
 		return
 	}
-	url := getUrl(r.URL.Scheme, roof, "orig", entry.Path)
+	url := getUrl(r.URL.Scheme, roof, "orig/"+entry.Path)
 	log.Printf("Get entry: ", entry.Id)
 	meta := newApiMeta(true)
 	obj := struct {
@@ -192,9 +191,9 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) 
 	writeJsonQuiet(w, r, newApiRes(meta, obj))
 }
 
-func getUrl(scheme, roof, size, file string) string {
+func getUrl(scheme, roof, size string) string {
 	thumbPath := config.GetValue(roof, "thumb_path")
-	spath := path.Join("/", thumbPath, "orig", file)
+	spath := path.Join("/", thumbPath, size)
 	stageHost := config.GetValue(roof, "stage_host")
 	if stageHost == "" {
 		return spath
