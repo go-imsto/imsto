@@ -84,6 +84,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	mw := storage.NewMetaWrapper(roof)
 	t, err := mw.Count(filter)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -91,6 +92,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	a, err := mw.Browse(int(limit), int(offset), sort, filter)
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -107,6 +109,26 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m["url_prefix"] = getUrl(r.URL.Scheme, roof, "") + "/"
 	m["version"] = VERSION
 	writeJsonQuiet(w, r, newApiRes(m, a))
+}
+
+func countHandler(w http.ResponseWriter, r *http.Request) {
+	roof := r.FormValue("roof")
+
+	filter := storage.MetaFilter{Tags: r.FormValue("tags")}
+
+	mw := storage.NewMetaWrapper(roof)
+	t, err := mw.Count(filter)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Printf("ERROR: %s", err)
+		writeJsonError(w, r, err)
+		return
+	}
+
+	m := newApiMeta(true)
+	m["total"] = t
+	m["version"] = VERSION
+	writeJsonQuiet(w, r, newApiRes(m, nil))
 }
 
 func storeHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +154,10 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 		id = parts[2]
 	}
 	if id == "metas" {
+		if len(parts) > 3 && parts[3] == "count" {
+			countHandler(w, r)
+			return
+		}
 		browseHandler(w, r)
 		return
 	}
