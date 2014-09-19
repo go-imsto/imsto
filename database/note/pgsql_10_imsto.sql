@@ -24,3 +24,13 @@ ORDER BY nn DESC LIMIT 20;
   2 | 00e54844bc63b8c2 |    21239 |    21239
   2 | 00d958ef857e24e5 |    70693 |    70693
 
+
+CREATE OR REPLACE VIEW v_xxh AS
+SELECT count(id) as nn, xxh, max(size) as s1, min(size) as s2, max(path) p1, min(path) p2
+FROM meta_xxh
+GROUP BY xxh;
+
+SELECT * FROM v_xxh WHERE s1 != s2;
+SELECT * FROM v_xxh WHERE nn > 1 LIMIT 20;
+
+

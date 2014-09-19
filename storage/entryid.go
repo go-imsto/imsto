@@ -5,7 +5,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"hash/crc64"
+	// "hash/crc64"
+	"github.com/OneOfOne/xxhash"
 	"wpst.me/calf/base"
 )
 
@@ -66,7 +67,8 @@ func (ei EntryId) Value() (driver.Value, error) {
 }
 
 func HashContent(data []byte) (uint64, string) {
-	c := crc64.Checksum(data, crc64.MakeTable(crc64.ISO))
+	// c := crc64.Checksum(data, crc64.MakeTable(crc64.ISO))
+	c := xxhash.Checksum64(data)
 	// return fmt.Sprintf("%x", s)
 	// return fmt.Sprintf("%x", md5.Sum(data))
 	return c, fmt.Sprintf("%x", md5.Sum(data))
