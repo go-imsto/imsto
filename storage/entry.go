@@ -196,7 +196,7 @@ func (e *Entry) Store(roof string) (err error) {
 	} else if eh != nil && eh.id != "" {
 		if _id, _err := NewEntryId(eh.id); _err == nil {
 			e.Id = _id
-			_ne, _err := mw.GetEntry(*_id)
+			_ne, _err := mw.GetMeta(*_id)
 			if _err == nil { // path, mime, size, sev, status, created
 				if _ne.Roofs.Contains(roof) {
 					e.Name = _ne.Name

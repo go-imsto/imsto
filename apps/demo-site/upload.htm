@@ -14,7 +14,7 @@
 	<script type="text/javascript">
 //<![CDATA[
 var dropbox, preview, message, url_stored = '/imsto/';
-var roof = 'demo', api_key = '2iiLCFDjRS8KLOjwpfuFdM', userid = 0, token = '', default_roof = 'demo';
+var roof = 'demo', api_key = '2BGPOctgdVQAGz1UfQIVpw', userid = 0, token = '', default_roof = 'demo';
 if (Dust) {Dust.dev = true;};
 
 $(document).ready(function(){
@@ -30,7 +30,7 @@ $(document).ready(function(){
 		field_name:'file',
 		maxfiles: 9,
 		maxfilesize: 1024,
-		url: url_stored,
+		url: '/imsto/' + roof,
 		// data: [{name: 'oper', value: 'add'}],
 		error: function(err, file) {
 			switch(err) {
@@ -117,7 +117,7 @@ $(document).ready(function(){
 
 		$.imgupload({
 
-			url: url_stored,
+			url: '/imsto/' + roof,
 			files: files,
 			images: imgs,
 			data: [
