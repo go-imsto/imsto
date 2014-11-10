@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"runtime"
@@ -52,12 +54,8 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// log.Print(item)
 
-	c := func(file http.File) {
-		fi, err := file.Stat()
-		if err != nil {
-			log.Print(err)
-		}
-		http.ServeContent(w, r, fi.Name(), fi.ModTime(), file)
+	c := func(file io.ReadSeeker) {
+		http.ServeContent(w, r, item.Name(), item.Modified(), file)
 	}
 	err = item.Walk(c)
 	if err != nil {
@@ -111,7 +109,10 @@ func runStage(args []string) bool {
 	var e error
 	http.HandleFunc("/", StageHandler)
 
-	log.Print("Start Stage service ", VERSION, " at port ", strconv.Itoa(*sport))
+	// log.Print("Start Stage service ", VERSION, " at port ", strconv.Itoa(*sport))
+	str := fmt.Sprintf("Start Stage service %s at port %d", VERSION, *sport)
+	fmt.Println(str)
+	log.Print(str)
 	srv := &http.Server{
 		Addr:        ":" + strconv.Itoa(*sport),
 		Handler:     http.DefaultServeMux,

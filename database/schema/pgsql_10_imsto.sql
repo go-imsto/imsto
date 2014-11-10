@@ -1,6 +1,7 @@
--- pgsql_061_content_storage.sql
+-- pgsql_10_imsto.sql
 
 -- CREATE EXTENSION hstore;
+-- require: >= postgresql-9.3;
 
 BEGIN;
 
@@ -12,12 +13,12 @@ set search_path = imsto, public;
 
 CREATE DOMAIN entry_id AS TEXT
 CHECK(
-	VALUE ~ '^[a-z0-9]{16,36}$'
+	VALUE ~ '^[a-z0-9]{9,36}$'
 );
 
 CREATE DOMAIN entry_path AS TEXT
 CHECK (
-	VALUE ~ '^[a-z0-9]{2}/[a-z0-9]{2}/[a-z0-9]{12,32}\.[a-z0-9]{2,6}$'
+	VALUE ~ '^[a-z0-9]{2}/?[a-z0-9]{2}/?[a-z0-9]{5,32}\.[a-z0-9]{2,6}$'
 );
 
 
@@ -68,7 +69,6 @@ CREATE TABLE meta_template (
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;
-CREATE INDEX idx_meta_meta ON meta_template (meta) ;
 CREATE INDEX idx_meta_size ON meta_template (size) ;
 CREATE INDEX idx_meta_tags ON meta_template (tags) ;
 
@@ -87,6 +87,14 @@ CREATE TABLE meta__deleted
 CREATE TABLE meta__prepared (
 	LIKE meta_template INCLUDING ALL
 ) WITHOUT OIDS;
+
+
+CREATE TABLE tag(
+	id serial ,
+	label varchar(80) NOT NULL UNIQUE,
+	item_count int NOT NULL DEFAULT 0,
+	PRIMARY KEY  (id)
+);
 
 
 END;

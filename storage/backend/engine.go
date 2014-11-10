@@ -2,6 +2,7 @@ package backend
 
 import (
 	"errors"
+	"strings"
 	"wpst.me/calf/config"
 	"wpst.me/calf/db"
 )
@@ -13,11 +14,15 @@ type engine struct {
 	farm FarmFunc
 }
 
+const (
+	min_id_length = 8
+)
+
 type Wagoner interface {
-	Get(key string) ([]byte, error)
-	Put(key string, data []byte, meta db.Hstore) (db.Hstore, error)
-	Exists(key string) (bool, error)
-	Del(key string) error
+	Get(id string) ([]byte, error)
+	Put(id string, data []byte, meta db.Hstore) (db.Hstore, error)
+	Exists(id string) (bool, error)
+	Del(id string) error
 }
 
 var engines = make(map[string]engine)
@@ -34,11 +39,18 @@ func RegisterEngine(name string, farm FarmFunc) {
 }
 
 // get a intance of Wagoner by a special config name
-func FarmEngine(sn string) (Wagoner, error) {
-	name := config.GetValue(sn, "engine")
+func FarmEngine(roof string) (Wagoner, error) {
+	name := config.GetValue(roof, "engine")
 	if engine, ok := engines[name]; ok {
-		return engine.farm(sn)
+		return engine.farm(roof)
 	}
 
 	return nil, errors.New("invalid engine name: " + name)
+}
+
+func Id2Path(r string) string {
+	if len(r) < min_id_length || strings.Index(r, "/") > 0 { // > -1 表示有
+		return r
+	}
+	return r[0:2] + "/" + r[2:4] + "/" + r[4:]
 }

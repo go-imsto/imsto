@@ -8,7 +8,7 @@ func TestQarrayNew(t *testing.T) {
 
 	a := Qarray{"k1", "k32", "cd"}
 
-	t.Log(a.String())
+	t.Log(a)
 
 	q := Qarray(a)
 

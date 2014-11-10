@@ -24,21 +24,21 @@ func init() {
 	RegisterEngine("s3", s3Dial)
 }
 
-func s3Dial(sn string) (Wagoner, error) {
+func s3Dial(roof string) (Wagoner, error) {
 
 	var (
 		access, secret, bucket string
 		err                    error
 	)
-	access = config.GetValue(sn, "s3_access_key")
+	access = config.GetValue(roof, "s3_access_key")
 	if access == "" {
 		access = os.Getenv("S3_ACCESS_KEY")
 	}
-	secret = config.GetValue(sn, "s3_secret_key")
+	secret = config.GetValue(roof, "s3_secret_key")
 	if secret == "" {
 		secret = os.Getenv("S3_SECRET_KEY")
 	}
-	bucket = config.GetValue(sn, "bucket_name")
+	bucket = config.GetValue(roof, "bucket_name")
 	if bucket == "" {
 		err = ErrBucketName
 		log.Print(err)
@@ -78,12 +78,13 @@ func (c *s3Conn) list(prefix, delim string, max int) (*s3.ListResp, error) {
 	return ret, nil
 }
 
-func (c *s3Conn) Exists(key string) (exist bool, err error) {
-	exist, err = c.b.Exists(key)
+func (c *s3Conn) Exists(id string) (exist bool, err error) {
+	exist, err = c.b.Exists(Id2Path(id))
 	return
 }
 
-func (c *s3Conn) Get(key string) (data []byte, err error) {
+func (c *s3Conn) Get(id string) (data []byte, err error) {
+	key := Id2Path(id)
 	for i := 0; ; {
 		data, err = c.b.Get(key)
 		if err == nil {
@@ -110,19 +111,19 @@ func hstoreToMaps(h db.Hstore) (m map[string][]string) {
 	return
 }
 
-func (c *s3Conn) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore, err error) {
-	// sev = make(db.Hstore)
+func (c *s3Conn) Put(id string, data []byte, meta db.Hstore) (sev db.Hstore, err error) {
+	key := Id2Path(id)
 	log.Printf("s3 Put %s: %s %s size %d\n", c.b.Name, key, meta, len(data))
 	err = c.b.Put(key, data, fmt.Sprint(meta.Get("mime")), s3.Private, s3.Options{Meta: hstoreToMaps(meta)})
 	if err != nil {
 		log.Print("s3 Put:", err)
 	}
-	sev = db.Hstore{"engine": "s3", "bucket": c.b.Name}
+	sev = db.Hstore{"engine": "s3", "bucket": c.b.Name, "key": key}
 	log.Print("s3 Put done")
 
 	return
 }
 
-func (c *s3Conn) Del(key string) error {
-	return c.b.Del(key) // key = path
+func (c *s3Conn) Del(id string) error {
+	return c.b.Del(Id2Path(id))
 }

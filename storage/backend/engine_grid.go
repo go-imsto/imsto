@@ -22,16 +22,16 @@ func init() {
 	RegisterEngine("mongodb", gridfsDial) // for old imsto config
 }
 
-func gridfsDial(sn string) (Wagoner, error) {
-	mg_url := config.GetValue(sn, "servers")
+func gridfsDial(roof string) (Wagoner, error) {
+	mg_url := config.GetValue(roof, "servers")
 	if mg_url == "" {
 		return nil, errors.New("config servers is empty")
 	}
-	mg_db := config.GetValue(sn, "db_name")
+	mg_db := config.GetValue(roof, "db_name")
 	if mg_db == "" {
 		return nil, errors.New("config db_name is empty")
 	}
-	fs_prefix := config.GetValue(sn, "fs_prefix")
+	fs_prefix := config.GetValue(roof, "fs_prefix")
 	if fs_prefix == "" {
 		return nil, errors.New("config fs_prefix is empty")
 	}

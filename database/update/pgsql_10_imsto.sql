@@ -58,4 +58,20 @@ ALTER TABLE meta__deleted ADD tags varCHAR(40)[] NOT NULL DEFAULT '{}';
 ALTER TABLE meta_demo ADD tags varCHAR(40)[] NOT NULL DEFAULT '{}';
 CREATE INDEX ON meta_demo (tags, status) ;
 
+BEGIN;
+ALTER DOMAIN entry_path
+  DROP CONSTRAINT entry_path_check;
+ALTER DOMAIN entry_path
+  ADD CHECK (VALUE ~ '^[a-z0-9]{2}/?[a-z0-9]{2}/?[a-z0-9]{5,32}\.[a-z0-9]{2,6}$');
+END;
+
+BEGIN;
+ALTER DOMAIN entry_id
+  DROP CONSTRAINT entry_id_check;
+ALTER DOMAIN entry_id
+  ADD CHECK (VALUE ~ '^[a-z0-9]{9,36}$');
+END;
+
+ALTER FUNCTION tag_add(text, text, text[]) RENAME TO tag_map;
+ALTER FUNCTION tag_remove(text, text, text[]) RENAME TO tag_unmap;
 

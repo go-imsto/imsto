@@ -348,7 +348,7 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
-CREATE OR REPLACE FUNCTION imsto.tag_add(a_roof text, a_id text, VARIADIC a_tags text[])
+CREATE OR REPLACE FUNCTION imsto.tag_map(a_roof text, a_id text, VARIADIC a_tags text[])
 RETURNS int AS
 $$
 DECLARE
@@ -399,7 +399,7 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
-CREATE OR REPLACE FUNCTION imsto.tag_remove(a_roof text, a_id text, VARIADIC a_tags text[])
+CREATE OR REPLACE FUNCTION imsto.tag_unmap(a_roof text, a_id text, VARIADIC a_tags text[])
 RETURNS int AS
 $$
 DECLARE

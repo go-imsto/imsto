@@ -11,8 +11,8 @@ import (
 	"wpst.me/calf/storage"
 )
 
-const import_usage = `import -s roof file1 [file2] [file3]
-	import -s roof -dir directory
+const import_usage = `import -s roof [-tag=foo,bar] file1 [file2] [file3]
+	import -s roof -dir directory [-dt]
 	import -s roof -archive archive.zip
 `
 
@@ -31,6 +31,8 @@ var (
 	arch           string
 	include_parent bool
 	readydone      bool
+	dirAsTag       bool
+	tags           string
 )
 
 func init() {
@@ -41,6 +43,8 @@ func init() {
 	cmdImport.Flag.StringVar(&match, "match", "*.jpg", "pattens of files to import, e.g., *.jpg, *.png, works together with -dir")
 	cmdImport.Flag.BoolVar(&include_parent, "iip", false, "is include parent dir name?")
 	cmdImport.Flag.BoolVar(&readydone, "ready", false, "pop prepared entry and set it done")
+	cmdImport.Flag.BoolVar(&dirAsTag, "dt", false, "check file's directory as tag[s]")
+	cmdImport.Flag.StringVar(&tags, "tag", "", "give one or more tags")
 }
 
 func runImport(args []string) bool {
@@ -67,7 +71,7 @@ func runImport(args []string) bool {
 
 	} else {
 		for _, file := range args {
-			_store_file(file, roof)
+			_store_file(file, roof, tags)
 		}
 	}
 
@@ -123,14 +127,19 @@ func _store_dir(dir string) {
 		// fmt.Printf("path: %s\n", path)
 		if err == nil {
 			if !info.IsDir() {
+				parent, name := filepath.Split(path)
 				if match != "" {
-					if ok, _ := filepath.Match(match, filepath.Base(path)); !ok {
+					if ok, _ := filepath.Match(match, name); !ok {
 						log.Printf("file %s not match %s", path, match)
 						return nil
 					}
 				}
+				var tag string
+				if dirAsTag {
+					tag = filepath.Base(parent)
+				}
 
-				_store_file(path, roof)
+				_store_file(path, roof, tag)
 				return nil
 			}
 		} else {
@@ -140,7 +149,7 @@ func _store_dir(dir string) {
 	})
 }
 
-func _store_file(file, roof string) {
+func _store_file(file, roof, tag string) {
 	var name string
 	if include_parent {
 		name = _shrink_name(file)
@@ -149,7 +158,17 @@ func _store_file(file, roof string) {
 	}
 
 	// fmt.Printf("%s\n", name)
-	entry, err := storage.StoredFile(file, name, roof)
+	entry, err := storage.PrepareFile(file, name)
+	if err != nil {
+		log.Printf("prepare file error: %s", err)
+	}
+	qtags, err := storage.ParseTags(tag)
+	if err != nil {
+		log.Printf("parse tag error: %s", err)
+	} else {
+		entry.Tags = qtags
+	}
+	err = entry.Store(roof)
 	if err != nil {
 		log.Printf("store file error: %s", err)
 	}
@@ -177,7 +196,7 @@ func _out_entry(entry *storage.Entry, name string, err error) {
 	if err != nil {
 		fmt.Printf("fail %q %q\n", name, err)
 	} else {
-		fmt.Printf("ok %s %s %q\n", entry.Id, entry.Path, name)
+		fmt.Printf("ok %s %s %q %q\n", entry.Id, entry.Path, name, entry.Tags)
 	}
 
 }

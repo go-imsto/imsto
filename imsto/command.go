@@ -45,7 +45,7 @@ func (cmd *Command) Usage() {
 }
 
 const (
-	VERSION = "0.0.2"
+	VERSION = "0.0.4"
 )
 
 // main
@@ -65,6 +65,7 @@ var commands = []*Command{
 	cmdStage,
 	cmdView,
 	cmdTest,
+	cmdAuth,
 }
 
 func setExitStatus(n int) {
@@ -228,6 +229,33 @@ func exit() {
 	os.Exit(exitStatus)
 }
 
+type apiRes map[string]interface{}
+type apiMeta map[string]interface{}
+type apiError struct {
+	Code int    `json:"code,omitempty"`
+	Msg  string `json:"message,omitempty"`
+	err  error  `json:"-"`
+}
+
+func newApiRes(meta apiMeta, data interface{}) apiRes {
+	res := make(apiRes)
+	res["meta"] = meta
+	res["data"] = data
+	return res
+}
+
+func newApiMeta(ok bool) apiMeta {
+	meta := make(apiMeta)
+	meta["ok"] = ok
+	return meta
+}
+
+func newApiError(err error) apiError {
+	ae := apiError{err: err}
+	ae.Msg = err.Error()
+	return ae
+}
+
 func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err error) {
 	w.Header().Set("Content-Type", "application/json")
 	var bytes []byte
@@ -264,10 +292,9 @@ func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 	}
 }
 func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
-	m := make(map[string]interface{})
-	m["status"] = "fail"
-	m["error"] = err.Error()
-	writeJsonQuiet(w, r, m)
+	res := newApiRes(newApiMeta(false), nil)
+	res["error"] = newApiError(err)
+	writeJsonQuiet(w, r, res)
 }
 
 func debug(params ...interface{}) {
@@ -290,6 +317,7 @@ func secure(whiteList []string, f func(w http.ResponseWriter, r *http.Request)) 
 				}
 			}
 		}
+		w.WriteHeader(http.StatusForbidden)
 		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
 	}
 }
