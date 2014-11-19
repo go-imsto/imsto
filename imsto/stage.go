@@ -121,6 +121,7 @@ func runStage(args []string) bool {
 	e = srv.ListenAndServe()
 	if e != nil {
 		log.Printf("Fail to start:%s\n", e)
+		return false
 	}
 
 	return true
