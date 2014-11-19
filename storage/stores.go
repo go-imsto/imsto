@@ -89,7 +89,7 @@ func newOutItem(url string) (oi *outItem, err error) {
 		roof:   roof,
 		src:    src,
 		isOrig: isOrig,
-		name:   fmt.Sprintf("%s%s", id, m["ext"]),
+		name:   fmt.Sprintf("%s.%s", id, m["ext"]),
 	}
 
 	org_file := oi.srcName()
@@ -282,7 +282,7 @@ func (o *outItem) thumbnail() (err error) {
 	} else if mode == "h" {
 		topt.MaxHeight = height
 	}
-	log.Printf("[%s] thumbnail(%s %s) starting", o.roof, o.name, topt)
+	log.Printf("[%s] thumbnail(%s, %s) starting", o.roof, o.name, topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
 	if err != nil {
 		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
