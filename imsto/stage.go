@@ -30,6 +30,7 @@ func init() {
 }
 
 func StageHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("X-Server", "IMSTO STAGE")
 
 	item, err := storage.LoadPath(r.URL.Path)
 
