@@ -145,7 +145,7 @@ func main() {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
-			log.Printf("command panic %v: %v\n%s", args[0], err, buf)
+			log.Printf("command %v panic: %v\n%s", args[0], err, buf)
 		}
 	}()
 
