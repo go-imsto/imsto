@@ -1,0 +1,3 @@
+#!/bin/sh
+echo starting imsto tiring...
+exec setuidgid nobody /usr/local/bin/imsto tiring
