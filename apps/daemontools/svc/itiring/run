@@ -1,3 +1,4 @@
 #!/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
 echo starting imsto tiring...
 exec setuidgid nobody /usr/local/bin/imsto tiring

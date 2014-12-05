@@ -1,0 +1,5 @@
+#!/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
+mkdir ./main
+chown nobody:nobody ./main
+exec setuidgid nobody multilog t s10485760 n5 '!tai64nlocal' ./main
