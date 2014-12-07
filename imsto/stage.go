@@ -64,41 +64,6 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 		writeJsonError(w, r, err)
 		return
 	}
-	// defer file.Close()
-	// var fi os.FileInfo
-	// fi, err = file.Stat()
-	// if err != nil {
-	// 	// log.Print(err)
-	// 	writeJsonError(w, r, err)
-	// 	return
-	// }
-	// w.Header().Set("Last-Modified", fi.ModTime().UTC().Format(http.TimeFormat))
-	// if r.Header.Get("If-Modified-Since") != "" {
-	// 	if t, parseError := time.Parse(http.TimeFormat, r.Header.Get("If-Modified-Since")); parseError == nil {
-	// 		if t.Unix() >= fi.ModTime().Unix() {
-	// 			w.WriteHeader(http.StatusNotModified)
-	// 			return
-	// 		}
-	// 	}
-	// }
-	// w.Header().Set("Content-Length", fmt.Sprint(fi.Size()))
-	// if ext := path.Ext(item.DestFile); ext != "" {
-	// 	mt := mime.TypeByExtension(ext)
-	// 	w.Header().Set("Content-Type", mt)
-	// }
-	// if r.Method == "GET" {
-	// 	var data []byte
-	// 	data, err = ioutil.ReadAll(file)
-	// 	if err != nil {
-	// 		writeJsonError(w, r, err)
-	// 		return
-	// 	}
-	// 	if _, err = w.Write(data); err != nil {
-	// 		log.Printf("response write error: %s, request: %s", err, r.RequestURI)
-	// 		writeJsonError(w, r, err)
-	// 	}
-	// }
-	// http.ServeContent(w, r, fi.Name(), fi.ModTime(), file)
 }
 
 func runStage(args []string) bool {
