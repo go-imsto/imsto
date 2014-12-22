@@ -2,29 +2,27 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+	"wpst.me/calf/config"
 	"wpst.me/calf/storage"
 )
 
-const import_usage = `import -s roof [-tag=foo,bar] file1 [file2] [file3]
-	import -s roof -dir directory [-dt]
-	import -s roof -archive archive.zip
+const usage_line = `import -s roof [-tag=foo,bar] [-author=aid] file1 [file2] [file3]
+	import -s roof -dir directory [-dt] [-author=aid]
+	import -s roof -archive archive.zip [-author=aid]
+	import -s roof -ready
 `
 
-var cmdImport = &Command{
-	UsageLine: import_usage,
-	Short:     "import data from local file",
-	Long: `
-import from local system
-`,
-}
+const short_desc = "import data from local file"
 
 var (
+	cfgDir         string
 	roof           string
 	idir           string
 	match          string
@@ -33,30 +31,60 @@ var (
 	readydone      bool
 	dirAsTag       bool
 	tags           string
+	author         int
 )
 
-func init() {
-	cmdImport.Run = runImport
-	cmdImport.Flag.StringVar(&roof, "s", "", "config section name")
-	cmdImport.Flag.StringVar(&idir, "dir", "", "Import the whole folder recursively if specified.")
-	cmdImport.Flag.StringVar(&arch, "archive", "", "Import the whole files in archive.zip if specified.")
-	cmdImport.Flag.StringVar(&match, "match", "*.jpg", "pattens of files to import, e.g., *.jpg, *.png, works together with -dir")
-	cmdImport.Flag.BoolVar(&include_parent, "iip", false, "is include parent dir name?")
-	cmdImport.Flag.BoolVar(&readydone, "ready", false, "pop prepared entry and set it done")
-	cmdImport.Flag.BoolVar(&dirAsTag, "dt", false, "check file's directory as tag[s]")
-	cmdImport.Flag.StringVar(&tags, "tag", "", "give one or more tags")
+func usage() {
+	fmt.Printf("Usage: \t%s\nDefault Usage:\n", usage_line)
+	flag.PrintDefaults()
+	fmt.Println("\nDescription:\n   " + short_desc + "\n")
 }
 
-func runImport(args []string) bool {
+func init() {
+	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app conf dir")
+	flag.StringVar(&roof, "s", "", "config section name")
+	flag.StringVar(&idir, "dir", "", "Import the whole folder recursively if specified.")
+	flag.StringVar(&arch, "archive", "", "Import the whole files in archive.zip if specified.")
+	flag.StringVar(&match, "match", "*.jpg", "pattens of files to import, e.g., *.jpg, *.png, works together with -dir")
+	flag.BoolVar(&include_parent, "iip", false, "is include parent dir name?")
+	flag.BoolVar(&readydone, "ready", false, "pop prepared entry and set it done")
+	flag.BoolVar(&dirAsTag, "dt", false, "check file's directory as tag[s]")
+	flag.StringVar(&tags, "tag", "", "give one or more tags")
+	flag.IntVar(&author, "author", 0, "give a author_id")
+
+	flag.Parse()
+	if cfgDir != "" {
+		config.SetRoot(cfgDir)
+	}
+
+	config.AtLoaded(func() error {
+		return config.SetLogFile("import")
+	})
+	err := config.Load()
+	if err != nil {
+		log.Print("config load error: ", err)
+		os.Exit(1)
+	}
+
+}
+
+func main() {
+	if roof == "" || config.Root() == "" {
+		usage()
+		return
+	}
+
+	if !config.HasSection(roof) {
+		fmt.Printf("roof [%s] not found\n", roof)
+		return
+	}
+
 	if readydone {
 		_ready_done()
-		return true
+		return
 	}
 
-	if roof == "" {
-		return false
-	}
-
+	args := flag.Args()
 	if len(args) == 0 {
 		// if idir == "" && arch == "" {
 		// 	return false
@@ -66,7 +94,8 @@ func runImport(args []string) bool {
 		} else if arch != "" {
 			_store_zip(arch)
 		} else {
-			return false
+			usage()
+			return
 		}
 
 	} else {
@@ -75,7 +104,6 @@ func runImport(args []string) bool {
 		}
 	}
 
-	return true
 }
 
 func _store_zip(zipfile string) bool {
@@ -113,7 +141,21 @@ func _store_zip(zipfile string) bool {
 		}
 		name := _shrink_name(f.Name)
 
-		entry, err := storage.StoredReader(rc, name, roof, uint64(f.FileInfo().ModTime().Unix()))
+		entry, err := storage.PrepareReader(rc, name, uint64(f.FileInfo().ModTime().Unix()))
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
+		if author > 0 {
+			entry.Author = storage.Author(author)
+		}
+
+		entry.Store(roof)
+		if err != nil {
+			log.Print(err)
+			continue
+		}
 
 		_out_entry(entry, name, err)
 		rc.Close()
@@ -161,13 +203,20 @@ func _store_file(file, roof, tag string) {
 	entry, err := storage.PrepareFile(file, name)
 	if err != nil {
 		log.Printf("prepare file error: %s", err)
+		return
 	}
+
 	qtags, err := storage.ParseTags(tag)
 	if err != nil {
 		log.Printf("parse tag error: %s", err)
-	} else {
-		entry.Tags = qtags
+		return
 	}
+	entry.Tags = qtags
+
+	if author > 0 {
+		entry.Author = storage.Author(author)
+	}
+
 	err = entry.Store(roof)
 	if err != nil {
 		log.Printf("store file error: %s", err)

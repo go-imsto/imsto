@@ -24,7 +24,7 @@ type MetaWrapper interface {
 	Count(filter MetaFilter) (int, error)
 	Ready(entry *Entry) error
 	SetDone(id EntryId, sev cdb.Hstore) error
-	Save(entry *Entry) error
+	Save(entry *Entry, is_update bool) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id EntryId) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
@@ -102,7 +102,9 @@ func isSortable(k string) bool {
 }
 
 type MetaFilter struct {
-	Tags string
+	Tags   string
+	App    AppId
+	Author Author
 }
 
 func buildWhere(filter MetaFilter) (where string, args []interface{}) {
@@ -117,6 +119,22 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 		log.Printf("qtags len: %d", len(qtags))
 		where = fmt.Sprintf("%s AND tags @> $%d", where, argc+1)
 		args = append(args, qtags)
+		argc++
+	}
+
+	var author = filter.Author
+	if author > 0 {
+		log.Printf("author: %d", author)
+		where = fmt.Sprintf("%s AND author = $%d", where, argc+1)
+		args = append(args, author)
+		argc++
+	}
+
+	var app = filter.App
+	if app > 0 {
+		log.Printf("app: %d", app)
+		where = fmt.Sprintf("%s AND app_id = $%d", where, argc+1)
+		args = append(args, app)
 		argc++
 	}
 
@@ -293,17 +311,31 @@ func (mw *MetaWrap) SetDone(id EntryId, sev cdb.Hstore) error {
 	return mw.withTxQuery(qs)
 }
 
-func (mw *MetaWrap) Save(entry *Entry) error {
-	qs := func(tx *sql.Tx) (err error) {
-		sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-
-		err = tx.QueryRow(sql, mw.table_suffix,
-			entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
-			entry.AppId, entry.Author).Scan(&entry.ret)
-		if err == nil {
-			log.Printf("entry save ret: %v\n", entry.ret)
+func (mw *MetaWrap) Save(entry *Entry, is_update bool) error {
+	var qs func(tx *sql.Tx) (err error)
+	if is_update {
+		qs = func(tx *sql.Tx) (err error) {
+			query := "UPDATE " + mw.table() + " SET app_id = $1, author = $2 WHERE id = $3"
+			var r sql.Result
+			r, err = tx.Exec(query, entry.AppId, entry.Author, entry.Id)
+			if err == nil {
+				a, _ := r.RowsAffected()
+				log.Printf("entry '%s' updated: %v", entry.Id.id, a)
+			}
+			return
 		}
-		return
+	} else {
+		qs = func(tx *sql.Tx) (err error) {
+			query := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
+
+			err = tx.QueryRow(query, mw.table_suffix,
+				entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+				entry.AppId, entry.Author).Scan(&entry.ret)
+			if err == nil {
+				log.Printf("entry save ret: %v\n", entry.ret)
+			}
+			return
+		}
 	}
 
 	return mw.withTxQuery(qs)

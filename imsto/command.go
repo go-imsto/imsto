@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"runtime"
+	// "runtime"
 	"strings"
 	"sync"
 	"text/template"
@@ -59,8 +59,8 @@ var (
 )
 
 var commands = []*Command{
-	cmdImport,
-	cmdExport,
+	// cmdImport,
+	// cmdExport,
 	cmdOptimize,
 	cmdTiring,
 	cmdStage,
@@ -139,15 +139,6 @@ func main() {
 		}
 
 	}
-
-	defer func() {
-		if err := recover(); err != nil {
-			const size = 64 << 10
-			buf := make([]byte, size)
-			buf = buf[:runtime.Stack(buf, false)]
-			log.Printf("command %v panic: %v\n%s", args[0], err, buf)
-		}
-	}()
 
 	for _, cmd := range commands {
 		name := cmd.Name()

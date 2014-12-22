@@ -209,6 +209,7 @@ func (e *Entry) Store(roof string) (err error) {
 					e.Roofs = _ne.Roofs
 					e.reset()
 					e._treked = true
+					mw.Save(e, true)
 
 					log.Printf("exist: %s, %s", e.Id, e.Path)
 					return

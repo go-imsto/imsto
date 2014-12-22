@@ -147,7 +147,7 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 		log.Print("form parse error:", err)
 		return
 	}
-	roof = parts[1]
+	roof := parts[1]
 	r.Form.Set("roof", roof)
 	var id string
 	if len(parts) > 2 {
