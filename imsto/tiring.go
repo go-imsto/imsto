@@ -84,7 +84,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	mw := storage.NewMetaWrapper(roof)
 	t, err := mw.Count(filter)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		// w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -92,7 +92,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	a, err := mw.Browse(int(limit), int(offset), sort, filter)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		// w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
 		writeJsonError(w, r, err)
 		return
@@ -242,7 +242,9 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	// log.Print(entries[0].Path)
 	meta := newApiMeta(true)
 	var roof = r.FormValue("roof")
-	meta["thumb_path"] = config.GetValue(roof, "thumb_path")
+
+	meta["url_prefix"] = getUrl(r.URL.Scheme, roof, "") + "/"
+	meta["version"] = VERSION
 
 	writeJsonQuiet(w, r, newApiRes(meta, entries))
 }

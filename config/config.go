@@ -31,6 +31,7 @@ watermark_opacity = 20
 ;copyright_label = imsto.net
 copyright =
 log_dir = /var/log/imsto
+stage_host = localhost
 `
 
 // var once sync.Once
