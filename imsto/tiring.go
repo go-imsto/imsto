@@ -243,6 +243,7 @@ func PostHandler(w http.ResponseWriter, r *http.Request) {
 	meta := newApiMeta(true)
 	var roof = r.FormValue("roof")
 
+	meta["stage_host"] = config.GetValue(roof, "stage_host")
 	meta["url_prefix"] = getUrl(r.URL.Scheme, roof, "") + "/"
 	meta["version"] = VERSION
 
