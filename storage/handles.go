@@ -36,8 +36,8 @@ func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error
 	}
 	defer form.RemoveAll()
 
-	if _, ok := form.File["file"]; !ok {
-		err = errors.New("browser error: input 'file' not found")
+	if len(form.File) == 0 {
+		err = errors.New("browser error: input file not found or invalid POST")
 		return
 	}
 
