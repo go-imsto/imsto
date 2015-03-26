@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"path"
 	"runtime"
@@ -44,8 +45,8 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	roof := r.FormValue("roof")
 	// log.Printf("browse roof: %s", roof)
 	var (
-		limit uint64
-		page  uint64
+		limit  uint64
+		offset uint64
 	)
 
 	if str := r.FormValue("rows"); str != "" {
@@ -57,14 +58,19 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		limit = 20
 	}
 
-	if str := r.FormValue("page"); str != "" {
-		page, _ = strconv.ParseUint(str, 10, 32)
-	}
-	if page < 1 {
-		page = 1
-	}
+	if str := r.FormValue("skip"); str != "" {
+		offset, _ = strconv.ParseUint(str, 10, 32)
+	} else {
+		var page uint64
+		if str := r.FormValue("page"); str != "" {
+			page, _ = strconv.ParseUint(str, 10, 32)
+		}
+		if page < 1 {
+			page = 1
+		}
 
-	offset := limit * (page - 1)
+		offset = limit * (page - 1)
+	}
 
 	sort := make(map[string]int)
 	sort_name := r.FormValue("sort_name")
@@ -90,7 +96,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := mw.Browse(int(limit), int(offset), sort, filter)
+	a, err := mw.Browse(uint(limit), uint(offset), sort, filter)
 	if err != nil {
 		// w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
@@ -100,7 +106,9 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	m := newApiMeta(true)
 	m["rows"] = limit
-	m["page"] = page
+	m["page"] = (offset + 1)
+	m["skip"] = offset
+	m["page_count"] = uint(math.Ceil(float64(t) / float64(limit)))
 
 	m["total"] = t
 

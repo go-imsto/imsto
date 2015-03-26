@@ -21,8 +21,8 @@ const (
 )
 
 type MetaWrapper interface {
-	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
-	Count(filter MetaFilter) (int, error)
+	Browse(limit, offset uint, sort map[string]int, filter MetaFilter) ([]*Entry, error)
+	Count(filter MetaFilter) (uint, error)
 	Ready(entry *Entry) error
 	SetDone(id EntryId, sev cdb.Hstore) error
 	Save(entry *Entry, is_update bool) error
@@ -142,7 +142,7 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 	return
 }
 
-func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
+func (mw *MetaWrap) Count(filter MetaFilter) (t uint, err error) {
 	db := mw.getDb()
 	defer db.Close()
 	table := mw.table()
@@ -169,7 +169,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	return
 }
 
-func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
+func (mw *MetaWrap) Browse(limit, offset uint, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
 	if limit < 1 {
 		limit = 1
 	}
