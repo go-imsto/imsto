@@ -46,7 +46,7 @@ func (cmd *Command) Usage() {
 }
 
 const (
-	VERSION = "0.0.5"
+	VERSION = "0.0.6"
 )
 
 // main
