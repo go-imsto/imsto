@@ -3,8 +3,8 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/mgo.v2"
 	"io/ioutil"
-	"labix.org/v2/mgo"
 	"log"
 	"strings"
 	"wpst.me/calf/config"
