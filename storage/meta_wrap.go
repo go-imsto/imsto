@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	_ "database/sql/driver"
+	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
 	"log"
@@ -20,11 +21,11 @@ const (
 )
 
 type MetaWrapper interface {
-	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
-	Count(filter MetaFilter) (int, error)
+	Browse(limit, offset uint, sort map[string]int, filter MetaFilter) ([]*Entry, error)
+	Count(filter MetaFilter) (uint, error)
 	Ready(entry *Entry) error
 	SetDone(id EntryId, sev cdb.Hstore) error
-	Save(entry *Entry) error
+	Save(entry *Entry, is_update bool) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id EntryId) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
@@ -62,7 +63,12 @@ func newMetaWrap(roof string) *MetaWrap {
 	return mw
 }
 
-var meta_wrappers = make(map[string]MetaWrapper)
+var (
+	meta_wrappers   = make(map[string]MetaWrapper)
+	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, tags, exif, app_id, author, created, roof"
+	sortable_fields = []string{"id", "created"}
+	ErrDbError      = errors.New("database error")
+)
 
 func NewMetaWrapper(roof string) (mw MetaWrapper) {
 	var ok bool
@@ -87,11 +93,6 @@ const (
 	DESCENDING = -1
 )
 
-var (
-	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, tags, exif, app_id, author, created, roof"
-	sortable_fields = []string{"id", "created"}
-)
-
 func isSortable(k string) bool {
 	for _, sf := range sortable_fields {
 		if k == sf {
@@ -102,7 +103,9 @@ func isSortable(k string) bool {
 }
 
 type MetaFilter struct {
-	Tags string
+	Tags   string
+	App    AppId
+	Author Author
 }
 
 func buildWhere(filter MetaFilter) (where string, args []interface{}) {
@@ -120,10 +123,26 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 		argc++
 	}
 
+	var author = filter.Author
+	if author > 0 {
+		log.Printf("author: %d", author)
+		where = fmt.Sprintf("%s AND author = $%d", where, argc+1)
+		args = append(args, author)
+		argc++
+	}
+
+	var app = filter.App
+	if app > 0 {
+		log.Printf("app: %d", app)
+		where = fmt.Sprintf("%s AND app_id = $%d", where, argc+1)
+		args = append(args, app)
+		argc++
+	}
+
 	return
 }
 
-func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
+func (mw *MetaWrap) Count(filter MetaFilter) (t uint, err error) {
 	db := mw.getDb()
 	defer db.Close()
 	table := mw.table()
@@ -135,6 +154,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	// return &Row{rows: rows, err: err}
 	if err != nil {
 		log.Printf("query count error: %s", err)
+		err = ErrDbError
 		return
 	}
 
@@ -149,7 +169,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	return
 }
 
-func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
+func (mw *MetaWrap) Browse(limit, offset uint, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
 	if limit < 1 {
 		limit = 1
 	}
@@ -186,6 +206,8 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFi
 	argc := len(args)
 	r, err = db.Query(fmt.Sprintf("%s LIMIT $%d OFFSET $%d", str, argc+1, argc+2), append(args, limit, offset)...)
 	if err != nil {
+		log.Printf("browse error: %s", err)
+		err = ErrDbError
 		return
 	}
 
@@ -212,6 +234,8 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
 		&e.sev, &e.Tags, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
+		log.Printf("bind error: %s", err)
+		err = ErrDbError
 		return nil, err
 	}
 	e.Id, err = NewEntryId(id)
@@ -273,6 +297,8 @@ func (mw *MetaWrap) Ready(entry *Entry) error {
 	var ret int
 	err := row.Scan(&ret)
 	if err != nil {
+		log.Printf("ready error: %s", err)
+		err = ErrDbError
 		return err
 	}
 
@@ -287,23 +313,41 @@ func (mw *MetaWrap) SetDone(id EntryId, sev cdb.Hstore) error {
 		err = tx.QueryRow("SELECT entry_set_done($1, $2)", id.String(), sev).Scan(&ret)
 		if err == nil {
 			log.Printf("entry set done ret: %v\n", ret)
+		} else {
+			log.Printf("setDone error: %s", err)
 		}
 		return
 	}
 	return mw.withTxQuery(qs)
 }
 
-func (mw *MetaWrap) Save(entry *Entry) error {
-	qs := func(tx *sql.Tx) (err error) {
-		sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-
-		err = tx.QueryRow(sql, mw.table_suffix,
-			entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
-			entry.AppId, entry.Author).Scan(&entry.ret)
-		if err == nil {
-			log.Printf("entry save ret: %v\n", entry.ret)
+func (mw *MetaWrap) Save(entry *Entry, is_update bool) error {
+	var qs func(tx *sql.Tx) (err error)
+	if is_update {
+		qs = func(tx *sql.Tx) (err error) {
+			query := "UPDATE " + mw.table() + " SET app_id = $1, author = $2 WHERE id = $3"
+			var r sql.Result
+			r, err = tx.Exec(query, entry.AppId, entry.Author, entry.Id)
+			if err == nil {
+				a, _ := r.RowsAffected()
+				log.Printf("entry '%s' updated: %v", entry.Id.id, a)
+			} else {
+				log.Printf("save error: %s", err)
+			}
+			return
 		}
-		return
+	} else {
+		qs = func(tx *sql.Tx) (err error) {
+			query := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
+
+			err = tx.QueryRow(query, mw.table_suffix,
+				entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+				entry.AppId, entry.Author).Scan(&entry.ret)
+			if err == nil {
+				log.Printf("entry save ret: %v\n", entry.ret)
+			}
+			return
+		}
 	}
 
 	return mw.withTxQuery(qs)

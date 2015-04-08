@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	// "runtime"
 	"strings"
 	"sync"
 	"text/template"
@@ -45,7 +46,7 @@ func (cmd *Command) Usage() {
 }
 
 const (
-	VERSION = "0.0.4"
+	VERSION = "0.0.6"
 )
 
 // main
@@ -58,9 +59,9 @@ var (
 )
 
 var commands = []*Command{
-	cmdImport,
-	cmdExport,
-	cmdOptimize,
+	// cmdImport,
+	// cmdExport,
+	// cmdOptimize,
 	cmdTiring,
 	cmdStage,
 	cmdView,
@@ -291,9 +292,16 @@ func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 		log.Printf("error writing JSON %s: %s", obj, err.Error())
 	}
 }
+
 func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
+	if r.Method == "GET" || r.Method == "HEAD" {
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
+		w.Header().Set("Pragma", "no-cache")
+	}
+
 	res := newApiRes(newApiMeta(false), nil)
 	res["error"] = newApiError(err)
+
 	writeJsonQuiet(w, r, res)
 }
 

@@ -17,15 +17,15 @@ view a id for item or browse
 var (
 	vroof       string
 	vid         string
-	limit, skip int
+	limit, skip uint
 )
 
 func init() {
 	cmdView.Run = runView
 	cmdView.Flag.StringVar(&vid, "id", "", "entry id")
 	cmdView.Flag.StringVar(&vroof, "s", "", "config section name")
-	cmdView.Flag.IntVar(&skip, "skip", 0, "skip")
-	cmdView.Flag.IntVar(&limit, "limit", 5, "limit")
+	cmdView.Flag.UintVar(&skip, "skip", 0, "skip")
+	cmdView.Flag.UintVar(&limit, "limit", 5, "limit")
 }
 
 func runView(args []string) bool {

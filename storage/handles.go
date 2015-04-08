@@ -15,7 +15,7 @@ const (
 	ApiKeyHeader     = "X-Access-Key"
 )
 
-func StoredRequest(r *http.Request) (entries []entryStored, err error) {
+func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error) {
 	if err = r.ParseMultipartForm(defaultMaxMemory); err != nil {
 		log.Print("multipart form parse error:", err)
 		return
@@ -36,8 +36,8 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 	}
 	defer form.RemoveAll()
 
-	if _, ok := form.File["file"]; !ok {
-		err = errors.New("browser error: input 'file' not found")
+	if len(form.File) == 0 {
+		err = errors.New("browser error: input file not found or invalid POST")
 		return
 	}
 
@@ -46,56 +46,50 @@ func StoredRequest(r *http.Request) (entries []entryStored, err error) {
 		log.Print(err)
 	}
 
-	n := len(form.File["file"])
-
-	log.Printf("%d files", n)
-
-	entries = make([]entryStored, n)
-	for i, fh := range form.File["file"] {
-		log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
-		mime := fh.Header.Get("Content-Type")
-		file, fe := fh.Open()
-		if fe != nil {
-			entries[i].Err = fe.Error()
-		}
-
-		// data, ee := ioutil.ReadAll(file)
-		// if ee != nil {
-		// 	entries[i].Err = ee.Error()
-		// 	continue
-		// }
-		log.Printf("post %s (%s) size %d\n", fh.Filename, mime, fh.Header)
-		// entry, ee := NewEntry(data, fh.Filename)
-		entry, ee := PrepareReader(file, fh.Filename, lastModified)
-		if ee != nil {
-			entries[i].Err = ee.Error()
-			continue
-		}
-		entry.AppId = cr.app.Id
-		entry.Author = cr.author
-		// entry.Modified = lastModified
-		entry.Tags = tags
-		ee = entry.Store(cr.roof)
-		if ee != nil {
-			log.Printf("%02d stored error: %s", i, ee)
-			entries[i].Err = ee.Error()
-			continue
-		}
-		log.Printf("%02d [%s]stored %s %s", i, cr.roof, entry.Id, entry.Path)
-		if ee == nil && i == 0 && cr.token.vc == VC_TICKET {
-			tid := cr.token.GetValuleInt()
-			log.Printf("token value: %d", tid)
-			var ticket *Ticket
-			ticket, ee = loadTicket(cr.roof, int(tid))
-			if ee != nil {
-				log.Printf("ticket load error: ", ee)
+	entries = make(map[string][]entryStored)
+	for k, fhs := range form.File {
+		entries[k] = make([]entryStored, len(fhs))
+		for i, fh := range fhs {
+			log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
+			mime := fh.Header.Get("Content-Type")
+			file, fe := fh.Open()
+			if fe != nil {
+				entries[k][i].Err = fe.Error()
 			}
-			ee = ticket.bindEntry(entry)
+
+			log.Printf("post %s (%s) size %d\n", fh.Filename, mime, fh.Header)
+			// entry, ee := NewEntry(data, fh.Filename)
+			entry, ee := PrepareReader(file, fh.Filename, lastModified)
 			if ee != nil {
-				log.Printf("ticket bind error: %v", ee)
+				entries[k][i].Err = ee.Error()
+				continue
 			}
+			entry.AppId = cr.app.Id
+			entry.Author = cr.author
+			// entry.Modified = lastModified
+			entry.Tags = tags
+			ee = entry.Store(cr.roof)
+			if ee != nil {
+				log.Printf("%02d stored error: %s", i, ee)
+				entries[k][i].Err = ee.Error()
+				continue
+			}
+			log.Printf("%02d [%s]stored %s %s", i, cr.roof, entry.Id, entry.Path)
+			if ee == nil && i == 0 && cr.token.vc == VC_TICKET {
+				tid := cr.token.GetValuleInt()
+				log.Printf("token value: %d", tid)
+				var ticket *Ticket
+				ticket, ee = loadTicket(cr.roof, int(tid))
+				if ee != nil {
+					log.Printf("ticket load error: ", ee)
+				}
+				ee = ticket.bindEntry(entry)
+				if ee != nil {
+					log.Printf("ticket bind error: %v", ee)
+				}
+			}
+			entries[k][i] = newStoredEntry(entry, ee)
 		}
-		entries[i] = newStoredEntry(entry, ee)
 	}
 
 	return

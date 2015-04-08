@@ -209,6 +209,7 @@ func (e *Entry) Store(roof string) (err error) {
 					e.Roofs = _ne.Roofs
 					e.reset()
 					e._treked = true
+					mw.Save(e, true)
 
 					log.Printf("exist: %s, %s", e.Id, e.Path)
 					return
@@ -270,14 +271,14 @@ func (e *Entry) Store(roof string) (err error) {
 
 func (e *Entry) _save(roof string) (err error) {
 	en := config.GetValue(roof, "engine")
-	log.Printf("start save to engine %s", en)
+	log.Printf("start save %s to engine %s", e.Id, en)
 
 	e.sev, err = PushBlob(e, roof)
 	if err != nil {
 		log.Printf("engine push error: %s", err)
 		return
 	}
-	log.Print("engine push ok")
+	log.Printf("engine push %s ok", e.Id)
 
 	mw := NewMetaWrapper(roof)
 	if err = mw.SetDone(*e.Id, e.sev); err != nil {
@@ -288,7 +289,7 @@ func (e *Entry) _save(roof string) (err error) {
 		return
 	}
 	e.ready = -1
-	log.Print("meta set done ok")
+	log.Printf("%s set done ok", e.Id)
 	return
 }
 

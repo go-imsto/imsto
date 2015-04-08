@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
-	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"path"
 	"time"
@@ -195,7 +195,7 @@ func main() {
 			return
 		}
 		log.Printf("entry %s", entry)
-		err = mw.Save(entry)
+		err = mw.Save(entry, false)
 		if err != nil {
 			log.Printf("save error: %s", err)
 			return
