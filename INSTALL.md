@@ -27,11 +27,13 @@ go get github.com/nfnt/resize
 
 ### prepare C libraries
    - osx:
-     1. get `libjpeg-turbo` from http://sourceforge.net/projects/libjpeg-turbo/
-     2. extract and build:
-     3. `./configure --prefix=/usr --with-jpeg8 --host x86_64-apple-darwin && make && sudo make install`
+     1. get `libjpeg-turbo-1.4.2.dmg` from http://sourceforge.net/projects/libjpeg-turbo/
+     2. mount and install
+     or `sudo port install libjpeg-turbo`
    - gentoo:
      - `emerge libjpeg-turbo`
+   - debian:
+     - `apt-get install libturbojpeg1`
 
 ### get and build
 
