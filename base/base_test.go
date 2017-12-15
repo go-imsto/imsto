@@ -32,18 +32,18 @@ func testEqual(t *testing.T, msg string, args ...interface{}) bool {
 
 func TestEncode(t *testing.T) {
 	for _, p := range pairs {
-		got, err := BaseConvert(p.n, p.f, p.t)
+		got, err := Convert(p.n, p.f, p.t)
 		if err != nil {
 			t.Error(err)
 		} else {
-			testEqual(t, "baseconvert(%q, %d, %d) = %q, want %q", p.n, p.f, p.t, got, p.s)
+			testEqual(t, "convert(%q, %d, %d) = %q, want %q", p.n, p.f, p.t, got, p.s)
 		}
 	}
 }
 
 func TestDecode(t *testing.T) {
 	for _, p := range pairs {
-		got, err := BaseConvert(p.s, p.t, p.f)
+		got, err := Convert(p.s, p.t, p.f)
 		if err != nil {
 			t.Error(err)
 		} else {

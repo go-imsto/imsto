@@ -35,7 +35,7 @@ func NewApp(name string) (app *App) {
 	io.WriteString(h, name)
 	io.WriteString(h, fmt.Sprintf("%x", t.UnixNano()))
 	s := fmt.Sprintf("%x", h.Sum(nil))
-	api_key, _ := base.BaseConvert(s, 16, 62)
+	api_key, _ := base.Convert(s, 16, 62)
 	log.Printf("new api_key '%s' for %s", api_key, name)
 	app.ApiKey = api_key
 	salt, err := newSalt()

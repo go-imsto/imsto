@@ -24,13 +24,13 @@ const (
 func NewEntryIdFromData(data []byte) (*EntryId, error) {
 	c, m := HashContent(data)
 	s := fmt.Sprintf("%x", c)
-	id, err := base.BaseConvert(s, BASE_SRC, BASE_DST)
+	id, err := base.Convert(s, BASE_SRC, BASE_DST)
 
 	return &EntryId{id, c, m}, err
 }
 
 func NewEntryId(id string) (*EntryId, error) {
-	hash, err := base.BaseConvert(id, BASE_DST, BASE_SRC)
+	hash, err := base.Convert(id, BASE_DST, BASE_SRC)
 	return &EntryId{id, 0, hash}, err
 }
 
