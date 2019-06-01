@@ -1,8 +1,10 @@
-package main
+package cmd
 
 import (
 	"bufio"
 	"fmt"
+	cimg "github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -11,8 +13,6 @@ import (
 	"mime"
 	"os"
 	"path"
-	cimg "wpst.me/calf/image"
-	"wpst.me/calf/storage"
 )
 
 var cmdTest = &Command{
@@ -111,7 +111,7 @@ func testApp(args []string) bool {
 			im cimg.Image
 		)
 		im, err = cimg.Open(file)
-		fmt.Printf("attr: %s", im.GetAttr())
+		fmt.Printf("attr: %v", im.GetAttr())
 		return true
 	}
 

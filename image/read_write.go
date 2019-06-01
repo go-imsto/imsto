@@ -2,12 +2,12 @@ package image
 
 import (
 	"bytes"
+	"database/sql/driver"
+	"encoding/json"
 	"io"
 	"log"
 	"mime"
 	"os"
-	"reflect"
-	"wpst.me/calf/db"
 )
 
 type Dimension uint32
@@ -24,10 +24,58 @@ type Attr struct {
 	Name    string    `json:"-"`
 }
 
+func (a Attr) ToMap() map[string]interface{} {
+	m := map[string]interface{}{
+		"width":  a.Width,
+		"height": a.Height,
+		"ext":    a.Ext,
+		"mime":   a.Mime,
+	}
+	if a.Quality > 0 {
+		m["quality"] = a.Quality
+	}
+	return m
+}
+
+func (a *Attr) FromMap(m map[string]interface{}) {
+	if m == nil {
+		return
+	}
+	if a == nil {
+		*a = Attr{}
+	}
+	if v, ok := m["width"]; ok {
+		if vv, ok := v.(uint32); ok {
+			a.Width = Dimension(vv)
+		}
+	}
+	if v, ok := m["height"]; ok {
+		if vv, ok := v.(uint32); ok {
+			a.Height = Dimension(vv)
+		}
+	}
+	if v, ok := m["ext"]; ok {
+		if vv, ok := v.(string); ok {
+			a.Ext = vv
+		}
+	}
+}
+
 // var attr_keys = []string{"width", "height", "quality", "size", "ext"}
 
-func (ia *Attr) Hstore() db.Hstore {
-	return db.StructToHstore(*ia)
+func (a *Attr) Scan(b interface{}) error {
+	if b == nil {
+		return nil
+	}
+	return json.Unmarshal(b.([]byte), a)
+}
+
+func (a Attr) Value() (driver.Value, error) {
+	b, err := json.Marshal(a)
+	if err != nil {
+		return nil, err
+	}
+	return string(b), nil
 }
 
 type WriteOption struct {
@@ -101,7 +149,7 @@ func Open(r io.Reader) (im Image, err error) {
 		// rr := bufio.NewReader(r)
 		// rr.Reset()
 		// err = im.Open(rr)
-		log.Panicln("rw: unsupport reader ", reflect.TypeOf(r))
+		log.Fatalf("rw: unsupport reader %v", r)
 	}
 
 	if err != nil {

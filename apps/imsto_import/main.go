@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"wpst.me/calf/config"
-	"wpst.me/calf/storage"
+
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/storage"
 )
 
 const usage_line = `import -s roof [-tag=foo,bar] [-author=aid] file1 [file2] [file3]

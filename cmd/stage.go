@@ -1,14 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"github.com/go-imsto/imsto/storage"
 	"io"
 	"log"
 	"net/http"
 	"runtime"
 	"strconv"
 	"time"
-	"wpst.me/calf/storage"
 )
 
 var cmdStage = &Command{

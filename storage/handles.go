@@ -7,7 +7,8 @@ import (
 	"net/http"
 	"path"
 	"strconv"
-	"wpst.me/calf/config"
+
+	"github.com/go-imsto/imsto/config"
 )
 
 const (
@@ -27,7 +28,7 @@ func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error
 	}
 
 	lastModified, _ := strconv.ParseUint(r.FormValue("file_ts"), 10, 64)
-	log.Printf("lastModified: %s", lastModified)
+	log.Printf("lastModified: %v", lastModified)
 
 	form := r.MultipartForm
 	if form == nil {
@@ -57,7 +58,7 @@ func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error
 				entries[k][i].Err = fe.Error()
 			}
 
-			log.Printf("post %s (%s) size %d\n", fh.Filename, mime, fh.Header)
+			log.Printf("post %s (%s) size %d\n", fh.Filename, mime, len(fh.Header))
 			// entry, ee := NewEntry(data, fh.Filename)
 			entry, ee := PrepareReader(file, fh.Filename, lastModified)
 			if ee != nil {
@@ -81,7 +82,7 @@ func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error
 				var ticket *Ticket
 				ticket, ee = loadTicket(cr.roof, int(tid))
 				if ee != nil {
-					log.Printf("ticket load error: ", ee)
+					log.Printf("ticket load error: %s", ee)
 				}
 				ee = ticket.bindEntry(entry)
 				if ee != nil {
@@ -179,7 +180,7 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 	var token *apiToken
 	if needToken {
 		if token, err = app.genToken(); err != nil {
-			err = fmt.Errorf("genToken: %", err.Error())
+			err = fmt.Errorf("genToken: %s", err)
 			return
 		}
 		token_str := r.FormValue("token")

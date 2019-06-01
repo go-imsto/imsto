@@ -3,12 +3,11 @@ package backend
 import (
 	"encoding/json"
 	"errors"
+	"github.com/go-imsto/imsto/config"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
-	"wpst.me/calf/config"
-	"wpst.me/calf/db"
 )
 
 // local storage wagon
@@ -51,7 +50,7 @@ func (l *locWagon) Get(id string) (data []byte, err error) {
 	return
 }
 
-func (l *locWagon) Put(id string, data []byte, meta db.Hstore) (sev db.Hstore, err error) {
+func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error) {
 	key := Id2Path(id)
 	name := path.Join(l.root, key)
 	dir := path.Dir(name)
@@ -60,7 +59,7 @@ func (l *locWagon) Put(id string, data []byte, meta db.Hstore) (sev db.Hstore, e
 		return
 	}
 	err = ioutil.WriteFile(name, data, os.FileMode(0644))
-	// sev = db.Hstore{"root": l.root}
+	// sev = JsonKV{"root": l.root}
 	if err != nil {
 		return
 	}
@@ -69,7 +68,7 @@ func (l *locWagon) Put(id string, data []byte, meta db.Hstore) (sev db.Hstore, e
 	if err != nil {
 		log.Print("engine file save meta fail: ", err.Error())
 	}
-	sev = db.Hstore{"engine": "file", "key": key}
+	sev = JsonKV{"engine": "file", "key": key}
 	log.Printf("engine file save %s done", key)
 	return
 }

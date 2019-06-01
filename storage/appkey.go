@@ -11,7 +11,8 @@ import (
 	"io"
 	"log"
 	"time"
-	"wpst.me/calf/base"
+
+	"github.com/go-imsto/imsto/base"
 )
 
 const (

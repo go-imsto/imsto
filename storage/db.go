@@ -5,7 +5,8 @@ import (
 	_ "database/sql/driver"
 	_ "github.com/lib/pq"
 	"log"
-	"wpst.me/calf/config"
+
+	"github.com/go-imsto/imsto/config"
 )
 
 var (

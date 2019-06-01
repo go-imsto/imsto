@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"github.com/crowdmob/goamz/aws"
 	"github.com/crowdmob/goamz/s3"
+	"github.com/go-imsto/imsto/config"
 	"log"
 	"net/url"
 	"os"
-	"wpst.me/calf/config"
-	"wpst.me/calf/db"
 )
 
 type s3Conn struct {
@@ -98,7 +97,7 @@ func (c *s3Conn) Get(id string) (data []byte, err error) {
 	return
 }
 
-func hstoreToMaps(h db.Hstore) (m map[string][]string) {
+func metaToMaps(h JsonKV) (m map[string][]string) {
 	m = make(map[string][]string)
 	for k, v := range h {
 		if k == "name" {
@@ -111,14 +110,14 @@ func hstoreToMaps(h db.Hstore) (m map[string][]string) {
 	return
 }
 
-func (c *s3Conn) Put(id string, data []byte, meta db.Hstore) (sev db.Hstore, err error) {
+func (c *s3Conn) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error) {
 	key := Id2Path(id)
 	log.Printf("s3 Put %s: %s %s size %d\n", c.b.Name, key, meta, len(data))
-	err = c.b.Put(key, data, fmt.Sprint(meta.Get("mime")), s3.Private, s3.Options{Meta: hstoreToMaps(meta)})
+	err = c.b.Put(key, data, fmt.Sprint(meta.Get("mime")), s3.Private, s3.Options{Meta: metaToMaps(meta)})
 	if err != nil {
 		log.Print("s3 Put:", err)
 	}
-	sev = db.Hstore{"engine": "s3", "bucket": c.b.Name, "key": key}
+	sev = JsonKV{"engine": "s3", "bucket": c.b.Name, "key": key}
 	log.Print("s3 Put done")
 
 	return

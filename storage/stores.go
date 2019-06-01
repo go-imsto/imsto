@@ -13,17 +13,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"wpst.me/calf/config"
-	cdb "wpst.me/calf/db"
-	iimg "wpst.me/calf/image"
+
+	"github.com/go-imsto/imsto/config"
+	iimg "github.com/go-imsto/imsto/image"
+	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
 const (
-	image_url_regex = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	ptImagePath = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png)$`
 )
 
 var (
-	ire            = regexp.MustCompile(image_url_regex)
+	ire            = regexp.MustCompile(ptImagePath)
 	ErrWriteFailed = errors.New("Err: Write file failed")
 )
 
@@ -195,7 +196,7 @@ func (o *outItem) prepare() (err error) {
 
 		err = Dump(entry, roof, org_file)
 		if err != nil {
-			log.Printf("dump fail: ", err)
+			log.Printf("dump fail: %s", err)
 			return NewHttpError(404, err.Error())
 		}
 		if fi, fe := os.Stat(org_file); fe != nil {
@@ -285,7 +286,7 @@ func (o *outItem) thumbnail() (err error) {
 	log.Printf("[%s] thumbnail(%s, %s) starting", o.roof, o.name, topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
 	if err != nil {
-		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.Name, topt, err)
+		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.name, topt, err)
 		return
 	}
 
@@ -451,13 +452,8 @@ func StoredFile(file, name, roof string) (entry *Entry, err error) {
 	return
 }
 
-func ParseTags(s string) (cdb.Qarray, error) {
-	return cdb.NewQarrayText(strings.ToLower(s))
-	// qtags, err := cdb.NewQarrayText(s)
-	// if err == nil {
-	// 	return qtags.ToStringSlice(), nil
-	// }
-	// return nil, err
+func ParseTags(s string) (cdb.StringSlice, error) {
+	return strings.Split(strings.ToLower(s), ","), nil
 }
 
 type entryStored struct {

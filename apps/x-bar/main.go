@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/boombuler/barcode"
-	"github.com/boombuler/barcode/qr"
 	"image/png"
 	"log"
 	"net"
 	"net/http"
 	"net/http/fcgi"
+
+	"github.com/boombuler/barcode"
+	"github.com/boombuler/barcode/qr"
 )
 
 var (

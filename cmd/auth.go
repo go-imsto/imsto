@@ -1,9 +1,9 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"github.com/go-imsto/imsto/storage"
 	"log"
-	"wpst.me/calf/storage"
 )
 
 var cmdAuth = &Command{

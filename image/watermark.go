@@ -184,7 +184,7 @@ func WatermarkFile(src, dest string, wo WaterOption) (err error) {
 
 	out, err = os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0644))
 	if err != nil {
-		log.Print("openfile error: %s", err)
+		log.Printf("openfile error: %s", err)
 		return
 	}
 	defer out.Close()

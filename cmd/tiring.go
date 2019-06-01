@@ -1,7 +1,9 @@
-package main
+package cmd
 
 import (
 	"fmt"
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/storage"
 	"log"
 	"math"
 	"net/http"
@@ -10,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"wpst.me/calf/config"
-	"wpst.me/calf/storage"
 )
 
 var cmdTiring = &Command{
@@ -96,7 +96,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := mw.Browse(uint(limit), uint(offset), sort, filter)
+	a, err := mw.Browse(int(limit), int(offset), sort, filter)
 	if err != nil {
 		// w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
@@ -213,7 +213,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) 
 		return
 	}
 	url := getUrl(r.URL.Scheme, roof, "orig/"+entry.Path)
-	log.Printf("Get entry: ", entry.Id)
+	log.Printf("Get entry: %v", entry.Id)
 	meta := newApiMeta(true)
 	obj := struct {
 		*storage.Entry

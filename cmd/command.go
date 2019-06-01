@@ -1,5 +1,5 @@
 // The command line tool for running Imsto bootstrap.
-package main
+package cmd
 
 import (
 	"encoding/json"
@@ -12,10 +12,10 @@ import (
 	"os"
 	"path"
 	// "runtime"
+	"github.com/go-imsto/imsto/config"
 	"strings"
 	"sync"
 	"text/template"
-	"wpst.me/calf/config"
 )
 
 // Cribbed from the genius organization of the "go" command.
@@ -45,7 +45,7 @@ func (cmd *Command) Usage() {
 	os.Exit(2)
 }
 
-const (
+var (
 	VERSION = "0.0.6"
 )
 
@@ -106,7 +106,7 @@ func init() {
 	}
 }
 
-func main() {
+func Main() {
 	// fmt.Fprintf(os.Stdout, header)
 	flag.Usage = func() { usage(1) }
 	args := flag.Args()
@@ -307,7 +307,7 @@ func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 
 func debug(params ...interface{}) {
 	if *IsDebug {
-		log.Print(params)
+		log.Print(params...)
 	}
 }
 func secure(whiteList []string, f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {

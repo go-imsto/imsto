@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	_ "database/sql/driver"
 	"encoding/binary"
+	"github.com/go-imsto/imsto/config"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
-	"wpst.me/calf/config"
 )
 
 type Ticket struct {
@@ -92,7 +92,7 @@ func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
 
 	ticket, err = loadTicket(cr.roof, int(id))
 	if ticket.Author != cr.author {
-		log.Printf("mismatch author %s : %s", ticket.Author, cr.author)
+		log.Printf("mismatch author %d : %d", ticket.Author, cr.author)
 	}
 	return
 }

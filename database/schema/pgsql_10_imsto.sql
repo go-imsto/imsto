@@ -1,7 +1,6 @@
 -- pgsql_10_imsto.sql
 
--- CREATE EXTENSION hstore;
--- require: >= postgresql-9.3;
+-- require: >= postgresql-9.4;
 
 BEGIN;
 
@@ -42,7 +41,7 @@ CREATE TABLE map_template (
 	path entry_path NOT NULL ,
 	mime varCHAR(64) NOT NULL DEFAULT '' ,
 	size int NOT NULL DEFAULT 0 CHECK (size >= 0),
-	sev hstore NOT NULL DEFAULT '', -- storage info
+	sev jsonb NOT NULL DEFAULT '{}'::jsonb, -- storage info
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
 	roofs varCHAR(12)[] NOT NULL DEFAULT '{}',
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,12 +54,12 @@ CREATE TABLE meta_template (
 	path entry_path NOT NULL ,
 	name name NOT NULL DEFAULT '',
 	roof varCHAR(12) NOT NULL DEFAULT '',
-	meta hstore NOT NULL DEFAULT '',
+	meta jsonb NOT NULL DEFAULT '{}'::jsonb,
 	hashes varCHAR(40)[],
 	ids varCHAR(38)[],
 	size int NOT NULL DEFAULT 0,
-	sev hstore NOT NULL DEFAULT '',
-	exif hstore NOT NULL DEFAULT '', -- exif info
+	sev jsonb NOT NULL DEFAULT '{}'::jsonb,
+	exif jsonb NOT NULL DEFAULT '{}'::jsonb, -- exif info
 	app_id smallint NOT NULL DEFAULT 0,
 	author int NOT NULL DEFAULT 0,
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=hidden

@@ -3,12 +3,11 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"github.com/go-imsto/imsto/config"
 	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"log"
 	"strings"
-	"wpst.me/calf/config"
-	"wpst.me/calf/db"
 )
 
 type gridfsConn struct {
@@ -99,7 +98,7 @@ func (g *gridfsConn) Get(key string) (data []byte, err error) {
 	return
 }
 
-func (g *gridfsConn) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore, err error) {
+func (g *gridfsConn) Put(key string, data []byte, meta JsonKV) (sev JsonKV, err error) {
 	id := pathToId(key)
 	c := func(fs *mgo.GridFS) error {
 		f, err := fs.Create(key)
@@ -119,7 +118,7 @@ func (g *gridfsConn) Put(key string, data []byte, meta db.Hstore) (sev db.Hstore
 		return nil
 	}
 	err = g.withFs(c)
-	sev = db.Hstore{"engine": "grid"}
+	sev = JsonKV{"engine": "grid"}
 	return
 }
 

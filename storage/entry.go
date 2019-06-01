@@ -5,37 +5,40 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/go-imsto/imsto/config"
+	iimg "github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage/backend"
+	cdb "github.com/go-imsto/imsto/storage/types"
 	"log"
 	"path"
 	"time"
-	"wpst.me/calf/config"
-	cdb "wpst.me/calf/db"
-	iimg "wpst.me/calf/image"
-	"wpst.me/calf/storage/backend"
 )
 
 type AppId uint16
 
 type Author uint32
 
+type StringArray = cdb.StringArray
+type StringSlice = cdb.StringSlice
+
 type Entry struct {
-	Id       *EntryId   `json:"id"`
-	Name     string     `json:"name"`
-	Size     uint32     `json:"size"`
-	Path     string     `json:"path"`
-	Mime     string     `json:"-"`
-	Status   uint8      `json:"-"`
-	Hashes   cdb.Qarray `json:"-"`
-	Ids      cdb.Qarray `json:"-"`
-	Roofs    cdb.Qarray `json:"roofs,omitempty"`
-	Tags     cdb.Qarray `json:"tags,omitempty"`
-	Meta     *iimg.Attr `json:"meta,omitempty"`
-	AppId    AppId      `json:"appid,omitempty"`
-	Author   Author     `json:"author,omitempty"`
-	Modified uint64     `json:"modified,omitempty"`
-	Created  time.Time  `json:"created,omitempty"`
-	exif     cdb.Hstore
-	sev      cdb.Hstore
+	Id       *EntryId    `json:"id"`
+	Name     string      `json:"name"`
+	Size     uint32      `json:"size"`
+	Path     string      `json:"path"`
+	Mime     string      `json:"-"`
+	Status   uint8       `json:"-"`
+	Hashes   StringSlice `json:"-"`
+	Ids      StringArray `json:"-"`
+	Roofs    StringSlice `json:"roofs,omitempty"`
+	Tags     StringSlice `json:"tags,omitempty"`
+	Meta     *iimg.Attr  `json:"meta,omitempty"`
+	AppId    AppId       `json:"appid,omitempty"`
+	Author   Author      `json:"author,omitempty"`
+	Modified uint64      `json:"modified,omitempty"`
+	Created  time.Time   `json:"created,omitempty"`
+	exif     cdb.JsonKV
+	sev      cdb.JsonKV
 	b        []byte
 	h        string
 	_treked  bool
@@ -55,7 +58,7 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 	}
 
 	var id *EntryId
-	id, err = NewEntryIdFromData(data)
+	id, err = NewEntryIdFromData(data, name)
 
 	if err != nil {
 		log.Println(err)
@@ -68,7 +71,7 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 		Size:    uint32(len(data)),
 		Created: time.Now(),
 		b:       data,
-		h:       id.hash,
+		h:       id.Hashed(),
 	}
 
 	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
@@ -76,7 +79,7 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 	return
 }
 
-// 处理图片信息并填充
+// Trek 处理图片信息并填充
 func (e *Entry) Trek(roof string) (err error) {
 	if e._treked {
 		return
@@ -127,8 +130,8 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	hashes := cdb.Qarray{e.h}
-	ids := cdb.Qarray{e.Id.String()}
+	hashes := cdb.StringSlice{e.h}
+	ids := cdb.StringArray{e.Id.String()}
 
 	size := len(data)
 	if max_file_size := config.GetInt(roof, "max_file_size"); size > max_file_size {
@@ -137,14 +140,14 @@ func (e *Entry) Trek(roof string) (err error) {
 	}
 
 	var id2 *EntryId
-	id2, err = NewEntryIdFromData(data)
+	id2, err = NewEntryIdFromData(data, e.Name)
 	if id2.hash != e.h {
 		hashes = append(hashes, id2.hash)
 		if err != nil {
 			// log.Println(err)
 			return
 		}
-		ids = append(ids, id2.id)
+		ids = append(ids, id2.ID.String())
 		e.Id = id2 // 使用新的 Id 作为主键
 		e.h = id2.hash
 		e.b = data
@@ -319,17 +322,17 @@ func (e *Entry) origFullname() string {
 
 func (e *Entry) roof() string {
 	if len(e.Roofs) > 0 {
-		return e.Roofs[0].(string)
+		return e.Roofs[0]
 	}
 	return ""
 }
 
 func newUrlPath(ei *EntryId, ext string) string {
-	return ei.id + ext
+	return ei.ID.String() + ext
 }
 
 func newStorePath(ei *EntryId, ext string) string {
-	r := ei.id
+	r := ei.ID.String()
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 
 	return p
@@ -350,13 +353,13 @@ func PullBlob(e *Entry, roof string) (data []byte, err error) {
 	return
 }
 
-func PushBlob(e *Entry, roof string) (sev cdb.Hstore, err error) {
+func PushBlob(e *Entry, roof string) (sev cdb.JsonKV, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
 		log.Printf("farm engine error: %s", err)
 		return
 	}
-	sev, err = em.Put(e.Path, e.Blob(), e.Meta.Hstore())
+	sev, err = em.Put(e.Path, e.Blob(), e.Meta.ToMap())
 	return
 }

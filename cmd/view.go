@@ -1,9 +1,9 @@
-package main
+package cmd
 
 import (
 	"encoding/json"
 	"fmt"
-	"wpst.me/calf/storage"
+	"github.com/go-imsto/imsto/storage"
 )
 
 var cmdView = &Command{
@@ -17,15 +17,15 @@ view a id for item or browse
 var (
 	vroof       string
 	vid         string
-	limit, skip uint
+	limit, skip int
 )
 
 func init() {
 	cmdView.Run = runView
 	cmdView.Flag.StringVar(&vid, "id", "", "entry id")
 	cmdView.Flag.StringVar(&vroof, "s", "", "config section name")
-	cmdView.Flag.UintVar(&skip, "skip", 0, "skip")
-	cmdView.Flag.UintVar(&limit, "limit", 5, "limit")
+	cmdView.Flag.IntVar(&skip, "skip", 0, "skip")
+	cmdView.Flag.IntVar(&limit, "limit", 5, "limit")
 }
 
 func runView(args []string) bool {

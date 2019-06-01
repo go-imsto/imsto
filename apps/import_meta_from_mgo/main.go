@@ -2,16 +2,16 @@ package main
 
 import (
 	"flag"
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage"
+	"github.com/go-imsto/imsto/storage/types"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"log"
 	"path"
 	"time"
-	"wpst.me/calf/config"
-	"wpst.me/calf/db"
-	"wpst.me/calf/image"
-	"wpst.me/calf/storage"
 )
 
 // url: mongodb://db.wp.net,db20.wp.net/storage
@@ -30,26 +30,26 @@ var (
 )
 
 type entryOut struct {
-	Id          string    `bson:"_id" json:"id"`
-	Name        string    `bson:"name"`
-	Path        string    `bson:"path"`
-	Mime        string    `bson:"mime"`
-	ContentType string    `bson:"contentType,omitempty"`
-	Size        uint32    `bson:"size"`
-	Ids         []string  `bson:"ids"`
-	Meta        db.Hstore `bson:"meta"`
-	Sev         db.Hstore `bson:"sev"`
-	Created     time.Time `bson:"created"`
-	AppId       uint8     `bson:"app_id"`
-	Width       uint16    `bson:"width,omitempty"`
-	Height      uint16    `bson:"height,omitempty"`
-	Filename    string    `bson:"filename,omitempty"`
-	Length      uint32    `bson:"length,omitempty"`
-	ImgType     uint8     `bson:"type,omitempty"`
-	Hashes      []string  `bson:"hashes,omitempty"`
-	Hash        string    `bson:"hash,omitempty"`
-	Md5         string    `bson:"md5,omitempty"`
-	UploadDate  time.Time `bson:"uploadDate,omitempty"`
+	Id          string       `bson:"_id" json:"id"`
+	Name        string       `bson:"name"`
+	Path        string       `bson:"path"`
+	Mime        string       `bson:"mime"`
+	ContentType string       `bson:"contentType,omitempty"`
+	Size        uint32       `bson:"size"`
+	Ids         []string     `bson:"ids"`
+	Meta        types.JsonKV `bson:"meta"`
+	Sev         types.JsonKV `bson:"sev"`
+	Created     time.Time    `bson:"created"`
+	AppId       uint8        `bson:"app_id"`
+	Width       uint16       `bson:"width,omitempty"`
+	Height      uint16       `bson:"height,omitempty"`
+	Filename    string       `bson:"filename,omitempty"`
+	Length      uint32       `bson:"length,omitempty"`
+	ImgType     uint8        `bson:"type,omitempty"`
+	Hashes      []string     `bson:"hashes,omitempty"`
+	Hash        string       `bson:"hash,omitempty"`
+	Md5         string       `bson:"md5,omitempty"`
+	UploadDate  time.Time    `bson:"uploadDate,omitempty"`
 }
 
 func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
@@ -116,7 +116,7 @@ func (eo entryOut) toEntry() (entry *storage.Entry, err error) {
 
 	entry, err = storage.NewEntryConvert(eo.Id, eo.Name, eo.Path, eo.Mime, eo.Size, eo.Meta, eo.Sev, eo.Hashes, eo.Ids, eo.Created)
 	if err != nil {
-		log.Printf("pre eo: %s", eo)
+		log.Printf("pre eo: %v", eo)
 		log.Printf("toEntry error: %s", err)
 		return
 	}
@@ -194,7 +194,7 @@ func main() {
 			log.Printf("to entry error: %s", err)
 			return
 		}
-		log.Printf("entry %s", entry)
+		log.Printf("entry %v", entry)
 		err = mw.Save(entry, false)
 		if err != nil {
 			log.Printf("save error: %s", err)

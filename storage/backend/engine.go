@@ -2,10 +2,12 @@ package backend
 
 import (
 	"errors"
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/storage/types"
 	"strings"
-	"wpst.me/calf/config"
-	"wpst.me/calf/db"
 )
+
+type JsonKV = types.JsonKV
 
 type FarmFunc func(string) (Wagoner, error)
 
@@ -20,7 +22,7 @@ const (
 
 type Wagoner interface {
 	Get(id string) ([]byte, error)
-	Put(id string, data []byte, meta db.Hstore) (db.Hstore, error)
+	Put(id string, data []byte, meta JsonKV) (JsonKV, error)
 	Exists(id string) (bool, error)
 	Del(id string) error
 }
