@@ -137,7 +137,7 @@ LANGUAGE plpgsql;
 
 -- 保存 map 记录
 CREATE OR REPLACE FUNCTION imsto.map_save(
-	a_id text, a_path text, a_name text, a_mime text, a_size int, a_sev hstore, a_roof text)
+	a_id text, a_path text, a_name text, a_mime text, a_size int, a_sev jsonb, a_roof text)
 
 RETURNS int AS
 $$
@@ -181,13 +181,13 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
--- FUNCTION: entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer)
+-- FUNCTION: entry_save(text, text, text, jsonb, jsonb, text[], text[], smallint, integer)
 
--- DROP FUNCTION entry_save(text, text, text, hstore, hstore, text[], text[], smallint, integer);
+-- DROP FUNCTION entry_save(text, text, text, jsonb, jsonb, text[], text[], smallint, integer);
 
 -- 保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
-	a_id text, a_path text, a_meta hstore, a_sev hstore
+	a_id text, a_path text, a_meta jsonb, a_sev jsonb
 	, a_hashes text[], a_ids text[]
 	, a_appid int, a_author int, a_tags text[])
 
@@ -197,6 +197,9 @@ DECLARE
 	m_v text;
 	-- tb_hash text;
 	-- tb_map text;
+	t_name text;
+	t_mime text;
+	t_size int;
 	tb_meta text;
 	t_status smallint;
 BEGIN
@@ -222,13 +225,16 @@ BEGIN
 		PERFORM hash_save(m_v, a_id, a_path);
 	END LOOP;
 
+	t_name := a_meta->'name';
+	t_mime := a_meta->'mime';
+	t_size := a_meta->'size';
 	-- save entry map
 	FOR m_v IN SELECT UNNEST(a_ids) AS value LOOP
-		PERFORM map_save(m_v, a_path, a_meta->'name', a_meta->'mime', (a_meta->'size')::int, a_sev, a_roof);
+		PERFORM map_save(m_v, a_path, COALESCE(t_name,''), t_mime, t_size, a_sev, a_roof);
 	END LOOP;
 
 	IF NOT a_ids @> ARRAY[a_id] THEN
-		PERFORM map_save(a_id, a_path, a_meta->'name', a_meta->'mime', (a_meta->'size')::int, a_sev, a_roof);
+		PERFORM map_save(a_id, a_path, COALESCE(t_name,''), t_mime, t_size, a_sev, a_roof);
 	END IF;
 
 	-- save entry meta
@@ -236,7 +242,7 @@ BEGIN
 	 VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 	)'
-	USING a_id, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof, a_tags;
+	USING a_id, a_path, COALESCE(t_name,''), t_size, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof, a_tags;
 
 RETURN 1;
 END;
@@ -246,7 +252,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 -- 预先保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION imsto.entry_ready (a_roof text,
-	a_id text, a_path text, a_meta hstore
+	a_id text, a_path text, a_meta json
 	, a_hashes text[], a_ids text[]
 	, a_appid smallint, a_author int, a_tags text[])
 
@@ -254,9 +260,11 @@ RETURNS int AS
 $$
 BEGIN
 
+RAISE NOTICE 'meta size %', a_meta->'size';
+
 IF NOT EXISTS(SELECT created FROM meta__prepared WHERE id = a_id) THEN
 	INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author, tags)
-	VALUES (a_id, a_roof, a_path, a_meta->'name', (a_meta->'size')::int, a_meta, a_hashes, a_ids, a_appid, a_author, a_tags);
+	VALUES (a_id, a_roof, a_path, a_meta->'name', (a_meta->'size'), a_meta, a_hashes, a_ids, a_appid, a_author, a_tags);
 	IF FOUND THEN
 		RETURN 1;
 	ELSE
@@ -270,7 +278,7 @@ END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
 
-CREATE OR REPLACE FUNCTION imsto.entry_set_done(a_id text, a_sev hstore)
+CREATE OR REPLACE FUNCTION imsto.entry_set_done(a_id text, a_sev jsonb)
 RETURNS int AS
 $$
 DECLARE
@@ -459,10 +467,10 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 END;
 
-/*
+
 SET search_path = imsto;
 SELECT hash_tables_init();
 SELECT mapping_tables_init();
-*/
+
 
 

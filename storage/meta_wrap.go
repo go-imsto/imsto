@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -146,7 +147,6 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 
 func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	db := mw.getDb()
-	defer db.Close()
 	table := mw.table()
 
 	t = 0
@@ -155,7 +155,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	rows, err := db.Query("SELECT COUNT(id) FROM "+table+where, args...)
 	// return &Row{rows: rows, err: err}
 	if err != nil {
-		log.Printf("query count error: %s", err)
+		logger().Warnw("query count fail", "err", err)
 		err = ErrDbError
 		return
 	}
@@ -183,7 +183,6 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFi
 	log.Printf("browse table: %s", table)
 
 	db := mw.getDb()
-	defer db.Close()
 
 	var orders []string
 	for k, v := range sort {
@@ -208,7 +207,7 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFi
 	argc := len(args)
 	r, err = db.Query(fmt.Sprintf("%s LIMIT $%d OFFSET $%d", str, argc+1, argc+2), append(args, limit, offset)...)
 	if err != nil {
-		log.Printf("browse error: %s", err)
+		logger().Warnw("browse fail", "err", err)
 		err = ErrDbError
 		return
 	}
@@ -236,7 +235,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
 		&e.sev, &e.Tags, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
-		log.Printf("bind error: %s", err)
+		logger().Warnw("bind fail", "err", err)
 		err = ErrDbError
 		return nil, err
 	}
@@ -249,7 +248,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 
 	e.Meta = &meta
 	e.Mime = meta.Mime
-	e.Roofs = cdb.StringSlice{roof}
+	e.Roofs = cdb.StringArray{roof}
 
 	// log.Printf("bind name: %s, path: %s, size: %d, mime: %s\n", e.Name, e.Path, e.Size, e.Mime)
 
@@ -258,7 +257,6 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 
 func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
 	db := mw.getDb()
-	defer db.Close()
 
 	sql := "SELECT " + meta_columns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 
@@ -272,7 +270,6 @@ func popPrepared() (*Entry, error) {
 	mw := mwr.(*MetaWrap)
 
 	db := mw.getDb()
-	defer db.Close()
 
 	sql := "SELECT " + meta_columns + " FROM meta__prepared ORDER BY created ASC LIMIT 1"
 
@@ -282,25 +279,25 @@ func popPrepared() (*Entry, error) {
 }
 
 func (mw *MetaWrap) Ready(entry *Entry) error {
-	db := mw.getDb()
-	defer db.Close()
+	return mw.withTxQuery(func(tx *sql.Tx) error {
+		var created time.Time
+		err := tx.QueryRow("SELECT created FROM meta__prepared WHERE id = $1", entry.Id).Scan(&created)
+		if err == nil {
+			return nil
+		}
+		logger().Infow("load prepared fail", "id", entry.Id, "err", err)
 
-	sql := "SELECT entry_ready($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-	row := db.QueryRow(sql, mw.table_suffix,
-		entry.Id.String(), entry.Path, entry.Meta, entry.Hashes, entry.Ids,
-		entry.AppId, entry.Author, entry.Tags)
-
-	var ret int
-	err := row.Scan(&ret)
-	if err != nil {
-		log.Printf("ready error: %s", err)
-		err = ErrDbError
+		_, err = tx.Exec(`INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author, tags)
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, entry.Id, mw.table_suffix, entry.Path,
+			entry.Meta.Name, entry.Meta.Size, entry.Meta, entry.Hashes, entry.Ids,
+			entry.AppId, entry.Author, entry.Tags)
+		if err != nil {
+			logger().Warnw("save prepared fail", "id", entry.Id, "err", err)
+		} else {
+			logger().Infow("save prepared OK", "id", entry.Id)
+		}
 		return err
-	}
-
-	log.Printf("entry ready ret: %v\n", ret)
-
-	return nil
+	})
 }
 
 func (mw *MetaWrap) SetDone(id EntryId, sev cdb.JsonKV) error {
@@ -310,7 +307,7 @@ func (mw *MetaWrap) SetDone(id EntryId, sev cdb.JsonKV) error {
 		if err == nil {
 			log.Printf("entry set done ret: %v\n", ret)
 		} else {
-			log.Printf("setDone error: %s", err)
+			logger().Warnw("setDone fail", "err", err)
 		}
 		return
 	}
@@ -328,7 +325,7 @@ func (mw *MetaWrap) Save(entry *Entry, is_update bool) error {
 				a, _ := r.RowsAffected()
 				log.Printf("entry '%s' updated: %v", entry.Id, a)
 			} else {
-				log.Printf("save error: %s", err)
+				logger().Warnw("save fail", "err", err)
 			}
 			return
 		}
@@ -379,13 +376,12 @@ type ehash struct {
 
 func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	db := mw.getDb()
-	defer db.Close()
 	var e = ehash{hash: hash}
 	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
 	row := db.QueryRow(sql, hash)
 	err := row.Scan(&e.id, &e.path)
 	if err != nil {
-		log.Println(err)
+		logger().Warnw("get hash fail", "hash", hash)
 		return nil, err
 	}
 	return &e, nil
@@ -393,7 +389,6 @@ func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 
 func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
 	db := mw.getDb()
-	defer db.Close()
 	sql := "SELECT name, path, mime, size, sev, status, created, roofs FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id.String())
 	var e = Entry{Id: &id}

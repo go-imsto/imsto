@@ -28,10 +28,10 @@ type Entry struct {
 	Path     string      `json:"path"`
 	Mime     string      `json:"-"`
 	Status   uint8       `json:"-"`
-	Hashes   StringSlice `json:"-"`
+	Hashes   StringArray `json:"-"`
 	Ids      StringArray `json:"-"`
-	Roofs    StringSlice `json:"roofs,omitempty"`
-	Tags     StringSlice `json:"tags,omitempty"`
+	Roofs    StringArray `json:"roofs,omitempty"`
+	Tags     StringArray `json:"tags,omitempty"`
 	Meta     *iimg.Attr  `json:"meta,omitempty"`
 	AppId    AppId       `json:"appid,omitempty"`
 	Author   Author      `json:"author,omitempty"`
@@ -130,7 +130,7 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	hashes := cdb.StringSlice{e.h}
+	hashes := cdb.StringArray{e.h}
 	ids := cdb.StringArray{e.Id.String()}
 
 	size := len(data)
@@ -195,13 +195,13 @@ func (e *Entry) Store(roof string) (err error) {
 	mw := NewMetaWrapper(roof)
 	eh, _err := mw.GetHash(e.h)
 	if _err != nil { // ok, not exsits
-		log.Printf("check hash error: %s", _err)
+		logger().Infow("check hash fail", "h", e.h, "err", _err)
 	} else if eh != nil && eh.id != "" {
 		if _id, _err := NewEntryId(eh.id); _err == nil {
 			e.Id = _id
 			_ne, _err := mw.GetMeta(*_id)
 			if _err == nil { // path, mime, size, sev, status, created
-				if _ne.Roofs.Contains(roof) {
+				if StringSlice(_ne.Roofs).Contains(roof) {
 					e.Name = _ne.Name
 					e.Path = _ne.Path
 					e.Size = _ne.Size
@@ -214,7 +214,7 @@ func (e *Entry) Store(roof string) (err error) {
 					e._treked = true
 					mw.Save(e, true)
 
-					log.Printf("exist: %s, %s", e.Id, e.Path)
+					logger().Infow("exist entry", "id", e.Id, "path", e.Path)
 					return
 				}
 
@@ -303,7 +303,7 @@ func (e *Entry) fill(data []byte) error {
 
 	_, m := HashContent(data)
 
-	if !e.Hashes.Contains(m) {
+	if !StringSlice(e.Hashes).Contains(m) {
 		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)
 	}
 
@@ -342,13 +342,13 @@ func PullBlob(e *Entry, roof string) (data []byte, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
-		log.Printf("FarmEngine(%s) error: %s", roof, err)
+		logger().Warnw("farmEngine fail", "roof", roof, "err", err)
 		return
 	}
 	// var data []byte
 	data, err = em.Get(e.Path)
 	if err != nil {
-		log.Printf("[%s] engine Get(%s) error: %s", roof, e.Path, err)
+		logger().Warnw("get fail", "roof", roof, "key", e.Path, "err", err)
 	}
 	return
 }
@@ -357,7 +357,7 @@ func PushBlob(e *Entry, roof string) (sev cdb.JsonKV, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
-		log.Printf("farm engine error: %s", err)
+		logger().Warnw("farmEngine fail", "roof", roof, "err", err)
 		return
 	}
 	sev, err = em.Put(e.Path, e.Blob(), e.Meta.ToMap())

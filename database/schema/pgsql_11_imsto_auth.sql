@@ -26,7 +26,7 @@ CREATE TABLE upload_ticket (
 	url_prefix varchar(112) NOT NULL DEFAULT '',
 	img_id varchar (44) NOT NULL DEFAULT '',
 	img_path varchar(65) NOT NULL DEFAULT '',
-	img_meta hstore,
+	img_meta jsonb,
 	done boolean NOT NULL DEFAULT false,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

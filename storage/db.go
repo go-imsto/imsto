@@ -2,16 +2,19 @@ package storage
 
 import (
 	"database/sql"
-	_ "database/sql/driver"
 	_ "github.com/lib/pq"
-	"log"
 
 	"github.com/go-imsto/imsto/config"
+	zlog "github.com/go-imsto/imsto/log"
 )
 
 var (
 	dbcpool map[string]*sql.DB
 )
+
+func logger() zlog.Logger {
+	return zlog.Get()
+}
 
 func init() {
 	dbcpool = make(map[string]*sql.DB)
@@ -21,7 +24,7 @@ func openDb(roof string) *sql.DB {
 	dsn := config.GetValue(roof, "meta_dsn")
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatalf("open db error: %s", err)
+		logger().Fatalw("open db fail", "err", err)
 	}
 	return db
 }

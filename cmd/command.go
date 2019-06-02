@@ -10,12 +10,15 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	// "runtime"
-	"github.com/go-imsto/imsto/config"
 	"strings"
 	"sync"
 	"text/template"
+
+	"go.uber.org/zap"
+
+	"github.com/go-imsto/imsto/config"
+	zlog "github.com/go-imsto/imsto/log"
 )
 
 // Cribbed from the genius organization of the "go" command.
@@ -24,7 +27,7 @@ type Command struct {
 	UsageLine, Short, Long string
 	// Flag is a set of flags specific to this command.
 	Flag    flag.FlagSet
-	IsDebug *bool
+	IsDebug bool
 }
 
 func (cmd *Command) Name() string {
@@ -51,11 +54,10 @@ var (
 
 // main
 var (
-	IsDebug    *bool
+	IsDebug    bool
 	exitStatus = 0
 	exitMu     sync.Mutex
 	cfgDir     string
-	logDir     string
 )
 
 var commands = []*Command{
@@ -77,9 +79,12 @@ func setExitStatus(n int) {
 	exitMu.Unlock()
 }
 
+func logger() zlog.Logger {
+	return zlog.Get()
+}
+
 func init() {
 	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app config dir")
-	flag.StringVar(&logDir, "logs", "/var/log/imsto", "app logs dir")
 	flag.Parse()
 	if cfgDir != "" {
 		config.SetRoot(cfgDir)
@@ -87,22 +92,6 @@ func init() {
 	err := config.Load()
 	if err != nil {
 		log.Print("config load error: ", err)
-	}
-	if logDir == "" {
-		dir := config.Root()
-		log.Printf("conf %s", dir)
-		if err != nil {
-			log.Print("getwd error: ", err)
-		}
-		if dir != "" {
-			dir = path.Join(dir, "logs")
-			// log.Printf("log dir: %s", dir)
-			if fi, err := os.Stat(dir); err == nil {
-				if fi.IsDir() {
-					logDir = dir
-				}
-			}
-		}
 	}
 }
 
@@ -126,20 +115,6 @@ func Main() {
 		usage(2)
 	}
 
-	if logDir != "" {
-		_, err := os.Stat(logDir)
-		if os.IsNotExist(err) {
-			if err := os.Mkdir(logDir, os.FileMode(0755)); err != nil {
-				log.Printf("mkdir '%s' error or access denied", logDir)
-				return
-			}
-		} else if os.IsPermission(err) {
-			log.Printf("dir '%s' access denied", logDir)
-			return
-		}
-
-	}
-
 	for _, cmd := range commands {
 		name := cmd.Name()
 		if name == args[0] && cmd.Run != nil {
@@ -147,21 +122,17 @@ func Main() {
 			cmd.Flag.Parse(args[1:])
 			args = cmd.Flag.Args()
 			IsDebug = cmd.IsDebug
-			// if IsDebug != nil && *IsDebug {
-			log.SetFlags(log.LstdFlags | log.Lshortfile)
-			// log.Printf("log dir: %s", logDir)
-			if logDir != "" {
-				logfile := path.Join(logDir, name+"_log")
-				// log.Printf("logfile: %s", logfile)
-				fd, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0664)
-				if err != nil {
-					log.Printf("logfile %s create failed", logfile)
-					return
-				}
-				log.SetOutput(fd)
+
+			var logger *zap.Logger
+			if IsDebug {
+				logger, _ = zap.NewDevelopment()
 			} else {
-				log.Print("log dir is empty")
+				logger, _ = zap.NewProduction()
 			}
+			defer logger.Sync() // flushes buffer, if any
+			sugar := logger.Sugar()
+
+			zlog.Set(sugar)
 
 			// }
 			if !cmd.Run(args) {
@@ -289,7 +260,7 @@ func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err err
 // wrapper for writeJson - just logs errors
 func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 	if err := writeJson(w, r, obj); err != nil {
-		log.Printf("error writing JSON %s: %s", obj, err.Error())
+		logger().Warnw("error writing JSON %s: %s", obj, err.Error())
 	}
 }
 
@@ -305,11 +276,6 @@ func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 	writeJsonQuiet(w, r, res)
 }
 
-func debug(params ...interface{}) {
-	if *IsDebug {
-		log.Print(params...)
-	}
-}
 func secure(whiteList []string, f func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(whiteList) == 0 {

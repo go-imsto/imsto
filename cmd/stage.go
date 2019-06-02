@@ -35,7 +35,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 	item, err := storage.LoadPath(r.URL.Path)
 
 	if err != nil {
-		log.Printf("error: %s, ref: %s", err, r.Referer())
+		logger().Warnw("loadPath fail", "ref", r.Referer(), "err", err)
 		switch err.(type) {
 		case *storage.HttpError:
 			ie := err.(*storage.HttpError)
@@ -60,7 +60,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = item.Walk(c)
 	if err != nil {
-		log.Printf("item walk error: %s", err)
+		logger().Warnw("item walk fail", "item", item, "err", err)
 		writeJsonError(w, r, err)
 		return
 	}

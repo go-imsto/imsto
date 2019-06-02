@@ -37,15 +37,15 @@ func NewEntryId(s string) (*EntryId, error) {
 }
 
 func (ei *EntryId) String() string {
-	return ei.Pin.String()
+	return ei.ID.String()
 }
 
 func (ei *EntryId) MarshalText() ([]byte, error) {
-	return ei.Pin.MarshalText()
+	return []byte(ei.ID.String()), nil
 }
 
 func (ei *EntryId) Hashed() string {
-	return ei.ID.String()
+	return ei.hash
 }
 
 func (ei *EntryId) tip() string {

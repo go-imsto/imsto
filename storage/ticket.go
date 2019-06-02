@@ -35,12 +35,14 @@ func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
 
 	cr, e := parseRequest(r, false)
 	if e != nil {
+		logger().Warnw("parseRequest fail", "err", e)
 		err = e
 		return
 	}
 
 	t, err = cr.app.genToken()
 	if err != nil {
+		logger().Warnw("genToken fail", "err", err)
 		return
 	}
 	var b = make([]byte, 4)
@@ -64,12 +66,13 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 	err = ticket.saveNew()
 
 	if err != nil {
-		log.Printf("save ticket error %s", err)
+		logger().Warnw("ticket save fail", "err", err)
 		return
 	}
 
 	t, err = cr.app.genToken()
 	if err != nil {
+		logger().Warnw("genToken fail", "err", err)
 		return
 	}
 

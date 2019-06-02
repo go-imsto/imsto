@@ -124,7 +124,7 @@ type custReq struct {
 func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 	if r.Form == nil {
 		if err = r.ParseForm(); err != nil {
-			log.Print("form parse error:", err)
+			logger().Warnw("parseForm fail", "err", err)
 			return
 		}
 	}
@@ -132,13 +132,13 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 	var (
 		roof   string
 		author Author
-		str    string
+		apiKey string
 		app    *App
 		uid    uint64
 	)
 	roof = r.FormValue("roof")
 	if roof == "" {
-		log.Print("Waring: parseRequest roof is empty")
+		logger().Warnw("roof is empty")
 	}
 
 	if !config.HasSection(roof) {
@@ -146,26 +146,26 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 		return
 	}
 
-	str = r.Header.Get(ApiKeyHeader)
-	if str == "" {
-		str = r.FormValue("api_key")
-		if str == "" {
+	apiKey = r.Header.Get(ApiKeyHeader)
+	if apiKey == "" {
+		apiKey = r.FormValue("api_key")
+		if apiKey == "" {
 			log.Print("Waring: parseRequest api_key is empty")
 		}
 	}
 
-	app, err = LoadApp(str)
+	app, err = LoadApp(apiKey)
 	if err != nil {
-		err = fmt.Errorf("arg 'api_key=%s' is invalid: %s", str, err.Error())
+		err = fmt.Errorf("arg 'api_key=%s' is invalid: %s", apiKey, err.Error())
 		return
 	}
 
 	if app.Disabled {
-		err = fmt.Errorf("the api_key %s is invalid", str)
+		err = fmt.Errorf("the api_key %s is invalid", apiKey)
 		return
 	}
 
-	str = r.FormValue("user")
+	str := r.FormValue("user")
 	if str != "" {
 		uid, err = strconv.ParseUint(str, 10, 16)
 		if err != nil {

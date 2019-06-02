@@ -283,10 +283,10 @@ func (o *outItem) thumbnail() (err error) {
 	} else if mode == "h" {
 		topt.MaxHeight = height
 	}
-	log.Printf("[%s] thumbnail(%s, %s) starting", o.roof, o.name, topt)
+	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.name, "opt", topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
 	if err != nil {
-		log.Printf("iimg.ThumbnailFile(%s,%s,%s) error: %s", o.src, o.name, topt, err)
+		logger().Infow("iimg.ThumbnailFile fail", "src", o.src, "name", o.name, "opt", topt, "err", err)
 		return
 	}
 
@@ -332,12 +332,12 @@ func LoadPath(url string) (item *outItem, err error) {
 
 	item, err = newOutItem(url)
 	if err != nil {
-		log.Print(err)
+		logger().Infow("bad url", "url", url, "err", err)
 		return
 	}
 	err = item.prepare()
 	if err != nil {
-		log.Printf("prepare error: %s", err)
+		logger().Warnw("prepare fail", "item", item, "err", err)
 		return
 	}
 	return
@@ -353,13 +353,14 @@ func stringInSlice(s string, a []string) bool {
 }
 
 func Dump(e *Entry, roof, file string) error {
-	log.Printf("[%s] pulling: '%s'", roof, e.Path)
+	logger().Debugw("pulling", "roof", roof, "path", e.Path)
 
 	data, err := PullBlob(e, roof)
 	if err != nil {
+		logger().Warnw("pull fail", "roof", roof, "err", err)
 		return err
 	}
-	log.Printf("[%s] pulled: %d bytes", roof, len(data))
+	logger().Infow("pulled", "roof", roof, "bytes", len(data))
 	return SaveFile(file, data)
 }
 
@@ -452,7 +453,7 @@ func StoredFile(file, name, roof string) (entry *Entry, err error) {
 	return
 }
 
-func ParseTags(s string) (cdb.StringSlice, error) {
+func ParseTags(s string) (cdb.StringArray, error) {
 	return strings.Split(strings.ToLower(s), ","), nil
 }
 

@@ -21,7 +21,7 @@ type Attr struct {
 	Size    Size      `json:"size"`
 	Ext     string    `json:"ext,omitempty"`
 	Mime    string    `json:"mime,omitempty"`
-	Name    string    `json:"-"`
+	Name    string    `json:"name,omitempty"`
 }
 
 func (a Attr) ToMap() map[string]interface{} {

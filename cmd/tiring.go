@@ -32,7 +32,7 @@ var (
 
 func init() {
 	cmdTiring.Run = runTiring
-	cmdTiring.IsDebug = cmdTiring.Flag.Bool("debug", false, "enable debug mode")
+	cmdTiring.Flag.BoolVar(&cmdTiring.IsDebug, "debug", false, "enable debug mode")
 }
 
 func roofsHandler(w http.ResponseWriter, r *http.Request) {

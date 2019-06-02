@@ -58,7 +58,7 @@ func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev types.J
 	}
 
 	entry.Meta = &ia
-	entry.Hashes = types.StringSlice(hashes)
+	entry.Hashes = types.StringArray(hashes)
 
 	entry.Ids = types.StringArray(ids)
 	return
