@@ -3,11 +3,12 @@ package backend
 import (
 	"encoding/json"
 	"errors"
-	"github.com/go-imsto/imsto/config"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+
+	"github.com/go-imsto/imsto/config"
 )
 
 // local storage wagon

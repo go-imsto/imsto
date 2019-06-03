@@ -3,12 +3,18 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"github.com/go-imsto/imsto/config"
-	"gopkg.in/mgo.v2"
 	"io/ioutil"
 	"log"
 	"strings"
+
+	"gopkg.in/mgo.v2"
+
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/storage/backend"
 )
+
+type Wagoner = backend.Wagoner
+type JsonKV = backend.JsonKV
 
 type gridfsConn struct {
 	url, db, prefix string
@@ -17,8 +23,8 @@ type gridfsConn struct {
 }
 
 func init() {
-	RegisterEngine("grid", gridfsDial)
-	RegisterEngine("mongodb", gridfsDial) // for old imsto config
+	backend.RegisterEngine("grid", gridfsDial)
+	// backend.RegisterEngine("mongodb", gridfsDial) // for old imsto config
 }
 
 func gridfsDial(roof string) (Wagoner, error) {

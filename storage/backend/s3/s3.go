@@ -3,13 +3,19 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"github.com/crowdmob/goamz/aws"
-	"github.com/crowdmob/goamz/s3"
-	"github.com/go-imsto/imsto/config"
 	"log"
 	"net/url"
 	"os"
+
+	"github.com/crowdmob/goamz/aws"
+	"github.com/crowdmob/goamz/s3"
+
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/storage/backend"
 )
+
+type Wagoner = backend.Wagoner
+type JsonKV = backend.JsonKV
 
 type s3Conn struct {
 	b *s3.Bucket
@@ -20,7 +26,7 @@ var (
 )
 
 func init() {
-	RegisterEngine("s3", s3Dial)
+	backend.RegisterEngine("s3", s3Dial)
 }
 
 func s3Dial(roof string) (Wagoner, error) {
@@ -78,12 +84,12 @@ func (c *s3Conn) list(prefix, delim string, max int) (*s3.ListResp, error) {
 }
 
 func (c *s3Conn) Exists(id string) (exist bool, err error) {
-	exist, err = c.b.Exists(Id2Path(id))
+	exist, err = c.b.Exists(backend.Id2Path(id))
 	return
 }
 
 func (c *s3Conn) Get(id string) (data []byte, err error) {
-	key := Id2Path(id)
+	key := backend.Id2Path(id)
 	for i := 0; ; {
 		data, err = c.b.Get(key)
 		if err == nil {
@@ -111,7 +117,7 @@ func metaToMaps(h JsonKV) (m map[string][]string) {
 }
 
 func (c *s3Conn) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error) {
-	key := Id2Path(id)
+	key := backend.Id2Path(id)
 	log.Printf("s3 Put %s: %s %s size %d\n", c.b.Name, key, meta, len(data))
 	err = c.b.Put(key, data, fmt.Sprint(meta.Get("mime")), s3.Private, s3.Options{Meta: metaToMaps(meta)})
 	if err != nil {
@@ -124,5 +130,5 @@ func (c *s3Conn) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error
 }
 
 func (c *s3Conn) Del(id string) error {
-	return c.b.Del(Id2Path(id))
+	return c.b.Del(backend.Id2Path(id))
 }
