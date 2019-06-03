@@ -16,7 +16,7 @@ ADD . /go/src/$ROOF
 RUN go version \
   && go get github.com/ddollar/forego \
   && go mod download \
-  && export LDFLAGS="-X ${ROOF}/pkg/settings.buildVersion=$(date '+%Y%m%d')" \
+  && export LDFLAGS="-X ${ROOF}/cmd.VERSION=$(date '+%Y%m%d')" \
   && env \
   && GOOS=linux go install -ldflags "${LDFLAGS} -s -w" . \
   && echo "build done"
