@@ -1,14 +1,6 @@
 # Imsto redesigned in Golang
 
 
-## Installation
-
-    go get wpst.me/calf/imsto
-
-
-> see more: INSTALL.md
-
-
 ## Launch with docker
 
 ```sh
@@ -27,3 +19,8 @@ docker run --name imsto --rm -p 8180:80 \
 	-d liut7/imsto
 
 ```
+
+## Installation
+
+> see more: INSTALL.md
+
