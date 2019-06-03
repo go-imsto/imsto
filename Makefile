@@ -4,6 +4,7 @@ DATE := `date '+%Y%m%d'`
 
 WITH_ENV = env `cat .env 2>/dev/null | xargs`
 
+ORIG:=liut7
 NAME:=imsto
 ROOF:=github.com/go-imsto/$(NAME)
 SOURCES=$(shell find base cmd config image storage -type f \( -name "*.go" ! -name "*_test.go" \) -print )
@@ -39,3 +40,17 @@ dist: vet dist/linux_amd64/$(NAME) dist/darwin_amd64/$(NAME)
 package: dist
 	tar -cvJf $(NAME)-linux-amd64-$(TAG).tar.xz -C dist/linux_amd64 $(NAME)
 	tar -cvJf $(NAME)-darwin-amd64-$(TAG).tar.xz -C dist/darwin_amd64 $(NAME)
+
+
+docker-db-build:
+	echo "Building database image"
+	docker build -t $(ORIG)/$(NAME)-db:$(TAG) database/
+	docker tag $(ORIG)/$(NAME)-db:$(TAG) $(ORIG)/$(NAME)-db:latest
+	docker save -o $(ORIG)_$(NAME)_db.tar $(ORIG)/$(NAME)-db:$(TAG) $(ORIG)/$(NAME)-db:latest && gzip -9f $(ORIG)_$(NAME)_db.tar
+.PHONY: $@
+
+docker-build:
+	echo "Building docker image"
+	docker build -t $(ORIG)/$(NAME):$(TAG) .
+	docker tag $(ORIG)/$(NAME):$(TAG) $(ORIG)/$(NAME):latest
+.PHONY: $@

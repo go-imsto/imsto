@@ -25,6 +25,7 @@ func TestPin(t *testing.T) {
 		id := xxhash.Sum64(input)
 		p := NewPin(id, EtGIF)
 		// b := p.ID.Bytes()
+		// t.Logf("id len %d", len(b))
 		t.Logf("%4s id: %20d %14s \t%s", cs.name, p.ID, p.ID, p.Path())
 		s := p.String()
 		p2, err := ParsePin(s)

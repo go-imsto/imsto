@@ -1,0 +1,9 @@
+.git
+vendor/
+dist/
+tests/
+tmp/
+.env*
+*.md
+Dockerfile
+/imsto

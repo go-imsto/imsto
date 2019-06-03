@@ -3,13 +3,15 @@ package storage
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
+	"os"
 
-	"github.com/go-imsto/imsto/config"
 	zlog "github.com/go-imsto/imsto/log"
 )
 
 var (
 	dbcpool map[string]*sql.DB
+
+	dbDSN string
 )
 
 func logger() zlog.Logger {
@@ -17,12 +19,17 @@ func logger() zlog.Logger {
 }
 
 func init() {
+	if s, exists := os.LookupEnv("IMSTO_META_DSN"); exists && s != "" {
+		dbDSN = s
+	} else {
+		dbDSN = "postgres://imsto@localhost/imsto?sslmode=disable"
+	}
+
 	dbcpool = make(map[string]*sql.DB)
 }
 
 func openDb(roof string) *sql.DB {
-	dsn := config.GetValue(roof, "meta_dsn")
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", dbDSN)
 	if err != nil {
 		logger().Fatalw("open db fail", "err", err)
 	}

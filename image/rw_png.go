@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-const png_format = "PNG"
+const pngFormat = "PNG"
 
 type simpPNG struct {
 	m image.Image
@@ -21,7 +21,7 @@ func newSimpPNG() *simpPNG {
 }
 
 func (self *simpPNG) Format() string {
-	return png_format
+	return pngFormat
 }
 
 func (self *simpPNG) Open(r io.Reader) (err error) {

@@ -1,3 +1,5 @@
+// +build cgo
+
 package image
 
 /*
@@ -44,7 +46,7 @@ func debug_print(cs *C.char) {
 	log.Printf(">\t%s\n", C.GoString(cs))
 }
 
-const jpeg_format = "JPEG"
+const jpegFormat = "JPEG"
 
 // jpeg simp_image
 type simpJPEG struct {
@@ -60,7 +62,7 @@ func newSimpJPEG() *simpJPEG {
 }
 
 func (self *simpJPEG) Format() string {
-	return jpeg_format
+	return jpegFormat
 }
 
 func (self *simpJPEG) Open(r io.Reader) error {

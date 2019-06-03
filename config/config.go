@@ -11,7 +11,6 @@ import (
 )
 
 const defaultConfigIni = `[common]
-meta_dsn = postgres://imsto@localhost/imsto?sslmode=disable
 ;meta_table_suffix = demo
 engine = s3
 bucket_name = imsto-demo
@@ -31,7 +30,7 @@ watermark_opacity = 20
 ;copyright_label = imsto.net
 copyright =
 log_dir = /var/log/imsto
-stage_host = localhost
+stage_host =
 `
 
 // var once sync.Once
