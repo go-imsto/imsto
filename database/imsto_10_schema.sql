@@ -21,17 +21,14 @@ CHECK (
 );
 
 
-CREATE SEQUENCE hash_id_seq;
-
 -- all file hash values
 CREATE TABLE hash_template (
-	id bigint DEFAULT nextval('hash_id_seq'),
-	hashed varCHAR(40) NOT NULL UNIQUE ,
+	hashed varCHAR(40) NOT NULL  ,
 	item_id entry_id NOT NULL ,
 	-- prefix varCHAR(10) NOT NULL DEFAULT '' ,
 	path entry_path NOT NULL ,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY (id)
+	PRIMARY KEY (hashed)
 ) WITHOUT OIDS;
 
 -- mapping for id and storage engine item

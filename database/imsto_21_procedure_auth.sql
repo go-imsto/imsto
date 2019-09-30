@@ -5,7 +5,7 @@ BEGIN;
 
 SET search_path = imsto, public;
 
-CREATE OR REPLACE FUNCTION imsto.app_save(a_name varchar, a_api_key varchar, a_api_salt varchar, a_api_ver smallint)
+CREATE OR REPLACE FUNCTION imsto.app_save(a_name text, a_api_key text, a_api_salt text, a_api_ver smallint)
 RETURNS int AS
 $$
 DECLARE t_id int;
@@ -32,7 +32,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 更新 ticket
-CREATE OR REPLACE FUNCTION imsto.ticket_update(a_id int, a_item_id varchar)
+CREATE OR REPLACE FUNCTION imsto.ticket_update(a_id int, a_item_id text)
 RETURNS int AS
 $$
 DECLARE

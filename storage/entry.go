@@ -135,8 +135,8 @@ func (e *Entry) Trek(roof string) (err error) {
 	ids := cdb.StringArray{e.Id.String()}
 
 	size := len(data)
-	if max_file_size := config.GetInt(roof, "max_file_size"); size > max_file_size {
-		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size)
+	if maxFileSize := config.GetInt(roof, "max_file_size"); size > maxFileSize {
+		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, maxFileSize)
 		return
 	}
 

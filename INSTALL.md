@@ -43,6 +43,7 @@ psql -Upostgres
 -- schema and procedures
 cat database/imsto_??_*.sql | psql -Uimsto
 
+forego run ./imsto auth -name demo -save
 ~~~
 
 ### Configuration
