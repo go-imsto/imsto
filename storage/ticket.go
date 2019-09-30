@@ -13,7 +13,7 @@ import (
 type Ticket struct {
 	roof    string
 	table   string
-	AppId   AppId  `json:"appid,omitempty"`
+	AppID   AppID  `json:"appid,omitempty"`
 	Author  Author `json:"author,omitempty"`
 	Prompt  string `json:"prompt,omitempty"`
 	id      int
@@ -22,10 +22,10 @@ type Ticket struct {
 	Done    bool   `json:"done,omitempty"`
 }
 
-func newTicket(roof string, appid AppId) *Ticket {
+func newTicket(roof string, appid AppID) *Ticket {
 	table := getTicketTable(roof)
 	// log.Printf("table: %s", table)
-	t := &Ticket{roof: roof, table: table, AppId: appid}
+	t := &Ticket{roof: roof, table: table, AppID: appid}
 
 	return t
 }
@@ -107,7 +107,7 @@ func (t *Ticket) saveNew() error {
 	var id int
 	sql := "INSERT INTO " + t.table + "(roof, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
 	log.Printf("save ticket sql: %s", sql)
-	err := db.QueryRow(sql, t.roof, t.AppId, t.Author, t.Prompt).Scan(&id)
+	err := db.QueryRow(sql, t.roof, t.AppID, t.Author, t.Prompt).Scan(&id)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (t *Ticket) load(id int) error {
 	defer db.Close()
 	t.id = id
 	sql := "SELECT roof, app_id, author, prompt, img_id, img_path, done FROM " + t.table + " WHERE id = $1 LIMIT 1"
-	err := db.QueryRow(sql, id).Scan(&t.roof, &t.AppId, &t.Author, &t.Prompt, &t.ImgId, &t.ImgPath, &t.Done)
+	err := db.QueryRow(sql, id).Scan(&t.roof, &t.AppID, &t.Author, &t.Prompt, &t.ImgId, &t.ImgPath, &t.Done)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (t *Ticket) load(id int) error {
 }
 
 func loadTicket(sn string, id int) (t *Ticket, err error) {
-	t = newTicket(sn, AppId(0))
+	t = newTicket(sn, AppID(0))
 	err = t.load(id)
 	return
 }

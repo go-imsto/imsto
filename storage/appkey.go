@@ -21,13 +21,13 @@ const (
 )
 
 type App struct {
-	Id       AppId      `json:"id,omitempty"`
-	Version  ApiVersion `json:"api_ver,omitempty"`
-	ApiKey   string     `json:"api_key,omitempty"`
-	ApiSalt  string     `json:"api_salt,omitempty"`
-	Name     string     `json:"name,omitempty"`
-	Created  time.Time  `json:"created,omitempty"`
-	Disabled bool       `json:"disabled,omitempty"`
+	Id       AppID     `json:"id,omitempty"`
+	Version  VerID     `json:"api_ver,omitempty"`
+	ApiKey   string    `json:"api_key,omitempty"`
+	ApiSalt  string    `json:"api_salt,omitempty"`
+	Name     string    `json:"name,omitempty"`
+	Created  time.Time `json:"created,omitempty"`
+	Disabled bool      `json:"disabled,omitempty"`
 }
 
 func NewApp(name string) (app *App) {
@@ -86,7 +86,7 @@ func (this *App) Save() error {
 		if err == nil {
 			log.Printf("app saved: %v\n", ret)
 			if ret > 0 {
-				this.Id = AppId(ret)
+				this.Id = AppID(ret)
 			}
 		}
 		return

@@ -40,7 +40,7 @@ func locDial(roof string) (Wagoner, error) {
 }
 
 func (l *locWagon) Exists(id string) (exist bool, err error) {
-	name := path.Join(l.root, backend.Id2Path(id))
+	name := path.Join(l.root, backend.ID2Path(id))
 	_, err = os.Stat(name)
 	if os.IsNotExist(err) {
 		exist = false
@@ -50,13 +50,13 @@ func (l *locWagon) Exists(id string) (exist bool, err error) {
 }
 
 func (l *locWagon) Get(id string) (data []byte, err error) {
-	name := path.Join(l.root, backend.Id2Path(id))
+	name := path.Join(l.root, backend.ID2Path(id))
 	data, err = ioutil.ReadFile(name)
 	return
 }
 
 func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error) {
-	key := backend.Id2Path(id)
+	key := backend.ID2Path(id)
 	name := path.Join(l.root, key)
 	dir := path.Dir(name)
 	err = os.MkdirAll(dir, os.FileMode(0755))
@@ -79,7 +79,7 @@ func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err err
 }
 
 func (l *locWagon) Del(id string) error {
-	name := path.Join(l.root, backend.Id2Path(id))
+	name := path.Join(l.root, backend.ID2Path(id))
 	return os.Remove(name)
 }
 

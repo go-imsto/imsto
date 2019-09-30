@@ -255,8 +255,8 @@ func (o *outItem) thumbnail() (err error) {
 	mode := o.m["size"][0:1]
 	dimension := o.m["size"][1:]
 	// log.Printf("mode %s, dimension %s", mode, dimension)
-	support_size := strings.Split(config.GetValue(o.roof, "support_size"), ",")
-	if !stringInSlice(dimension, support_size) {
+	supportSize := strings.Split(config.GetValue(o.roof, "support_size"), ",")
+	if !stringInSlice(dimension, supportSize) {
 		err = NewHttpError(400, fmt.Sprintf("Unsupported size: %s", dimension))
 		return
 	}

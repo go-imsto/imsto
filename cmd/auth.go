@@ -27,7 +27,7 @@ func init() {
 func authApp(args []string) bool {
 	if *aname != "" {
 		app := storage.NewApp(*aname)
-		app.Version = storage.ApiVersion(*aver)
+		app.Version = storage.VerID(*aver)
 		fmt.Printf("new app: %s\nkey: %s\nsalt:%s\n", app.Name, app.ApiKey, app.ApiSalt)
 		if *asave {
 			err := app.Save()

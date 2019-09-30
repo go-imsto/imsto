@@ -15,7 +15,7 @@ import (
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
-type AppId uint16
+type AppID uint16
 
 type Author uint32
 
@@ -34,7 +34,7 @@ type Entry struct {
 	Roofs    StringArray `json:"roofs,omitempty"`
 	Tags     StringArray `json:"tags,omitempty"`
 	Meta     *iimg.Attr  `json:"meta,omitempty"`
-	AppId    AppId       `json:"appid,omitempty"`
+	AppId    AppID       `json:"appid,omitempty"`
 	Author   Author      `json:"author,omitempty"`
 	Modified uint64      `json:"modified,omitempty"`
 	Created  time.Time   `json:"created,omitempty"`

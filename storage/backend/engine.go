@@ -29,7 +29,7 @@ type Wagoner interface {
 
 var engines = make(map[string]engine)
 
-// Register a Engine
+// RegisterEngine Register a Engine
 func RegisterEngine(name string, farm FarmFunc) {
 	if farm == nil {
 		panic("imsto: Register engine is nil")
@@ -40,7 +40,7 @@ func RegisterEngine(name string, farm FarmFunc) {
 	engines[name] = engine{name, farm}
 }
 
-// get a intance of Wagoner by a special config name
+// FarmEngine get a intance of Wagoner by a special config name
 func FarmEngine(roof string) (Wagoner, error) {
 	name := config.GetValue(roof, "engine")
 	if engine, ok := engines[name]; ok {
@@ -50,7 +50,8 @@ func FarmEngine(roof string) (Wagoner, error) {
 	return nil, errors.New("invalid engine name: " + name)
 }
 
-func Id2Path(r string) string {
+// ID2Path ...
+func ID2Path(r string) string {
 	if len(r) < minIDLength || strings.Index(r, "/") > 0 { // > -1 表示有
 		return r
 	}
