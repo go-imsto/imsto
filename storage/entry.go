@@ -5,13 +5,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"path"
+	"time"
+
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/backend"
 	cdb "github.com/go-imsto/imsto/storage/types"
-	"log"
-	"path"
-	"time"
 )
 
 type AppId uint16

@@ -17,7 +17,7 @@ type engine struct {
 }
 
 const (
-	min_id_length = 8
+	minIDLength = 8
 )
 
 type Wagoner interface {
@@ -51,7 +51,7 @@ func FarmEngine(roof string) (Wagoner, error) {
 }
 
 func Id2Path(r string) string {
-	if len(r) < min_id_length || strings.Index(r, "/") > 0 { // > -1 表示有
+	if len(r) < minIDLength || strings.Index(r, "/") > 0 { // > -1 表示有
 		return r
 	}
 	return r[0:2] + "/" + r[2:4] + "/" + r[4:]

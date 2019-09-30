@@ -23,7 +23,7 @@ func TestPin(t *testing.T) {
 			input[i] = byte(i)
 		}
 		id := xxhash.Sum64(input)
-		p := NewPin(id, EtGIF)
+		p := NewPin(id, EtPNG)
 		// b := p.ID.Bytes()
 		// t.Logf("id len %d", len(b))
 		t.Logf("%4s id: %20d %14s \t%s", cs.name, p.ID, p.ID, p.Path())

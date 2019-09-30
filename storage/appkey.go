@@ -4,13 +4,14 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"database/sql"
-	_ "database/sql/driver"
 	"encoding/base64"
 	"fmt"
-	_ "github.com/lib/pq"
 	"io"
 	"log"
 	"time"
+
+	_ "database/sql/driver"
+	_ "github.com/lib/pq"
 
 	"github.com/go-imsto/imsto/base"
 )

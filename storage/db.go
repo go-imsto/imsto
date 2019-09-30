@@ -2,8 +2,9 @@ package storage
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq"
 	"os"
+
+	_ "github.com/lib/pq"
 
 	zlog "github.com/go-imsto/imsto/log"
 )
