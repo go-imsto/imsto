@@ -126,6 +126,7 @@ func Main() {
 			var logger *zap.Logger
 			if IsDebug {
 				logger, _ = zap.NewDevelopment()
+				logger.Debug("logger start")
 			} else {
 				logger, _ = zap.NewProduction()
 			}

@@ -277,7 +277,7 @@ func (e *Entry) _save(roof string) (err error) {
 	en := config.GetValue(roof, "engine")
 	log.Printf("start save %s to engine %s", e.Id, en)
 
-	e.sev, err = PushBlob(e, roof)
+	e.sev, err = PushBlob(roof, e.Path, e.Blob(), e.Meta)
 	if err != nil {
 		log.Printf("engine push error: %s", err)
 		return
@@ -339,7 +339,8 @@ func newStorePath(ei *EntryId, ext string) string {
 	return p
 }
 
-func PullBlob(e *Entry, roof string) (data []byte, err error) {
+// PullBlob pull blob from engine with key path
+func PullBlob(key string, roof string) (data []byte, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
@@ -347,20 +348,20 @@ func PullBlob(e *Entry, roof string) (data []byte, err error) {
 		return
 	}
 	// var data []byte
-	data, err = em.Get(e.Path)
+	data, err = em.Get(key)
 	if err != nil {
-		logger().Warnw("get fail", "roof", roof, "key", e.Path, "err", err)
+		logger().Warnw("get fail", "roof", roof, "key", key, "err", err)
 	}
 	return
 }
 
-func PushBlob(e *Entry, roof string) (sev cdb.JsonKV, err error) {
+func PushBlob(roof, key string, blob []byte, meta *iimg.Attr) (sev cdb.JsonKV, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
-		logger().Warnw("farmEngine fail", "roof", roof, "err", err)
+		logger().Warnw("farmEngine fail", "roof", roof, "key", key, "err", err)
 		return
 	}
-	sev, err = em.Put(e.Path, e.Blob(), e.Meta.ToMap())
+	sev, err = em.Put(key, blob, meta.ToMap())
 	return
 }

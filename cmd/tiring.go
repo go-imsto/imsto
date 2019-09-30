@@ -226,8 +226,8 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) 
 }
 
 func getUrl(scheme, roof, size string) string {
-	thumbPath := config.GetValue(roof, "thumb_path")
-	spath := path.Join("/", thumbPath, size)
+	// thumbPath := config.GetValue(roof, "thumb_path")
+	spath := path.Join("/", storage.ViewName, size)
 	stageHost := config.GetValue(roof, "stage_host")
 	if stageHost == "" {
 		return spath

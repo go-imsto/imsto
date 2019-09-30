@@ -380,11 +380,16 @@ type ehash struct {
 func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	db := mw.getDb()
 	var e = ehash{hash: hash}
-	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
-	row := db.QueryRow(sql, hash)
+	q := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
+	row := db.QueryRow(q, hash)
 	err := row.Scan(&e.id, &e.path)
 	if err != nil {
-		logger().Warnw("get hash fail", "hash", hash)
+		if err == sql.ErrNoRows {
+			logger().Infow("row not found", "hash", hash)
+		} else {
+			logger().Warnw("get hash fail", "hash", hash)
+		}
+
 		return nil, err
 	}
 	return &e, nil

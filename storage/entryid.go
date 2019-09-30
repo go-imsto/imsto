@@ -1,11 +1,11 @@
 package storage
 
 import (
-	"crypto/sha1"
 	"database/sql/driver"
 	"fmt"
 
 	"github.com/cespare/xxhash"
+	"github.com/spaolacci/murmur3"
 
 	"github.com/go-imsto/imsto/base"
 )
@@ -70,5 +70,6 @@ func (ei EntryId) Value() (driver.Value, error) {
 
 func HashContent(data []byte) (uint64, string) {
 	c := xxhash.Sum64(data)
-	return c, fmt.Sprintf("%x", sha1.Sum(data))
+	h1, h2 := murmur3.Sum128(data)
+	return c, fmt.Sprintf("%16x%16x", h1, h2)
 }
