@@ -51,11 +51,12 @@ type Entry struct {
 }
 
 const (
-	min_size = 43
+	minSize = 43
 )
 
+// NewEntry
 func NewEntry(data []byte, name string) (e *Entry, err error) {
-	if len(data) < min_size {
+	if len(data) < minSize {
 		err = errors.New("data is too small, maybe not a valid image")
 		return
 	}

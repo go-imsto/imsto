@@ -29,6 +29,8 @@ const (
 var (
 	ire            = regexp.MustCompile(ptImagePath)
 	ErrWriteFailed = errors.New("Err: Write file failed")
+	ErrEmptyRoof   = errors.New("empty roof")
+	ErrEmptyID     = errors.New("empty id")
 )
 
 type HttpError struct {

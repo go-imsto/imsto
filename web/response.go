@@ -82,8 +82,8 @@ func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 	writeJsonQuiet(w, r, res)
 }
 
-func secure(whiteList []string, f http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func secure(whiteList []string, f http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if len(whiteList) == 0 {
 			f(w, r)
 			return
@@ -99,5 +99,5 @@ func secure(whiteList []string, f http.HandlerFunc) http.HandlerFunc {
 		}
 		w.WriteHeader(http.StatusForbidden)
 		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
-	}
+	})
 }

@@ -1,11 +1,11 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"path"
 	"strconv"
 
 	"github.com/go-imsto/imsto/base"
@@ -97,32 +97,39 @@ func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error
 	return
 }
 
-func DeleteRequest(r *http.Request) error {
-	dir, id := path.Split(r.URL.Path)
-	roof := path.Base(dir)
-	if id != "" && roof != "" {
-		mw := NewMetaWrapper(roof)
-		eid, err := base.ParseID(id)
-		if err != nil {
-			return err
-		}
-		err = mw.Delete(eid.String())
-		if err != nil {
-			return err
-		}
-		return nil
+// Delete ...
+func Delete(roof, id string) error {
+	if roof == "" {
+		return ErrEmptyRoof
 	}
-	return errors.New("invalid url")
+	if id == "" {
+		return ErrEmptyID
+	}
+
+	mw := NewMetaWrapper(roof)
+	eid, err := base.ParseID(id)
+	if err != nil {
+		return err
+	}
+	err = mw.Delete(eid.String())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-type custReq struct {
+type ctxKey struct{}
+
+var ctxArgKey ctxKey = struct{}{}
+
+type argument struct {
 	roof   string
 	app    *App
 	author Author
 	token  *apiToken
 }
 
-func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
+func parseRequest(r *http.Request, needToken bool) (cr argument, err error) {
 	if r.Form == nil {
 		if err = r.ParseForm(); err != nil {
 			logger().Warnw("parseForm fail", "err", err)
@@ -195,6 +202,61 @@ func parseRequest(r *http.Request, needToken bool) (cr custReq, err error) {
 		}
 	}
 
-	cr = custReq{roof, app, author, token}
+	cr = argument{roof, app, author, token}
+	return
+}
+
+// CheckAppToken ...
+func CheckAppToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		roof := r.URL.Query().Get(":roof")
+		if roof == "" {
+			roof = r.FormValue("roof")
+			if roof == "" {
+				logger().Warnw("roof is empty")
+			}
+		}
+
+		apiKey := r.Header.Get(ApiKeyHeader)
+		if apiKey == "" {
+			apiKey = r.FormValue("api_key")
+			if apiKey == "" {
+				log.Print("Waring: parseRequest api_key is empty")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+
+		app, err := LoadApp(apiKey)
+		if err != nil {
+			err = fmt.Errorf("arg 'api_key=%s' is invalid: %s", apiKey, err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		var uid uint64
+		str := r.FormValue("user")
+		if str != "" {
+			uid, err = strconv.ParseUint(str, 10, 16)
+			if err != nil {
+				// log.Printf("arg user error: %s", err)
+				err = fmt.Errorf("arg 'user=%s' is invalid: %s", str, err.Error())
+				return
+			}
+		}
+		author := Author(uid)
+
+		var token *apiToken
+
+		cr := &argument{roof, app, author, token}
+		ctx := context.WithValue(r.Context(), ctxArgKey, cr)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func arguemntFromContext(ctx context.Context) (a *argument, ok bool) {
+	if v := ctx.Value(ctxArgKey); v != nil {
+		a, ok = v.(*argument)
+	}
 	return
 }
