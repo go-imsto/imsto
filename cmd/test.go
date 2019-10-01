@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -110,10 +109,10 @@ func testApp(args []string) bool {
 		}
 		defer file.Close()
 		var (
-			im cimg.Image
+			im *cimg.Image
 		)
-		im, err = cimg.Open(file)
-		fmt.Printf("attr: %v", im.GetAttr())
+		im, err = cimg.Open(file, file.Name())
+		fmt.Printf("attr: %v", im.Attr)
 		return true
 	}
 
@@ -175,7 +174,7 @@ func readImage(filename string) (image.Image, string, error) {
 		return nil, "", err
 	}
 	defer f.Close()
-	return image.Decode(bufio.NewReader(f))
+	return image.Decode(f)
 }
 
 func readImageConfig(filename string) (image.Config, string, error) {
@@ -184,5 +183,5 @@ func readImageConfig(filename string) (image.Config, string, error) {
 		return image.Config{}, "", err
 	}
 	defer f.Close()
-	return image.DecodeConfig(bufio.NewReader(f))
+	return image.DecodeConfig(f)
 }

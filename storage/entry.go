@@ -84,18 +84,16 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 	e._treked = true
-	var im iimg.Image
+	var im *iimg.Image
 	rd := bytes.NewReader(e.b)
-	im, err = iimg.Open(rd)
+	im, err = iimg.Open(rd, e.Name)
 
 	if err != nil {
 		log.Printf("image open error: %s", err)
 		return
 	}
 
-	defer im.Close()
-
-	ia := im.GetAttr()
+	ia := im.Attr
 
 	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
 	if ia.Quality > max_quality {
@@ -104,7 +102,7 @@ func (e *Entry) Trek(roof string) (err error) {
 		max_quality = ia.Quality
 		log.Printf("jpeg quality %d is too low", ia.Quality)
 	}
-	im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
+	// im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 
 	max_width := iimg.Dimension(config.GetInt(roof, "max_width"))
 	max_height := iimg.Dimension(config.GetInt(roof, "max_height"))
@@ -120,8 +118,12 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	var data []byte
-	data, err = im.GetBlob() // tack new data
+	var buf bytes.Buffer
+	err = im.WriteTo(&buf, &iimg.WriteOption{Quality: max_quality, StripAll: true})
+	if err != nil {
+		return
+	}
+	data := buf.Bytes()
 
 	if err != nil {
 		log.Printf("GetBlob error: %s", err)

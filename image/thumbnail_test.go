@@ -18,7 +18,7 @@ var (
 )
 
 func TestThumbnails(t *testing.T) {
-	rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpeg_data))
+	rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpegData))
 	im, _, err := image.Decode(rd)
 	if err != nil {
 		t.Fatalf("image decode error: %s", err)

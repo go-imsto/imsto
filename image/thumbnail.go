@@ -1,12 +1,10 @@
 package image
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
-	_ "image/png"
 	"io"
 	"log"
 	"os"
@@ -17,10 +15,6 @@ import (
 
 const (
 	MIN_JPEG_QUALITY = jpeg.DefaultQuality // 75
-)
-
-var (
-	ErrOrigTooSmall = errors.New("Original Image Too Small")
 )
 
 type ThumbOption struct {
