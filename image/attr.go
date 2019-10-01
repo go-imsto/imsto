@@ -6,7 +6,6 @@ import (
 )
 
 type Dimension uint32
-type Size uint32
 type Quality uint8
 
 // Attr ...
@@ -14,9 +13,7 @@ type Attr struct {
 	Width   Dimension `json:"width"`
 	Height  Dimension `json:"height"`
 	Quality Quality   `json:"quality,omitempty"`
-	Size    Size      `json:"size"`
 	Ext     string    `json:"ext,omitempty"`
-	Mime    string    `json:"mime,omitempty"`
 	Name    string    `json:"name,omitempty"`
 }
 
@@ -25,7 +22,6 @@ func (a Attr) ToMap() map[string]interface{} {
 		"width":  a.Width,
 		"height": a.Height,
 		"ext":    a.Ext,
-		"mime":   a.Mime,
 	}
 	if a.Quality > 0 {
 		m["quality"] = a.Quality
@@ -72,11 +68,18 @@ func (a Attr) Value() (driver.Value, error) {
 	return string(b), nil
 }
 
-// export NewAttr
+// NewAttr ...
 func NewAttr(w, h uint, q uint8) *Attr {
 	return &Attr{
 		Width:   Dimension(w),
 		Height:  Dimension(h),
 		Quality: Quality(q),
 	}
+}
+
+func getExt(f string) string {
+	if f == "jpeg" {
+		return ".jpg"
+	}
+	return "." + f
 }

@@ -31,6 +31,7 @@ var (
 	ErrWriteFailed = errors.New("Err: Write file failed")
 	ErrEmptyRoof   = errors.New("empty roof")
 	ErrEmptyID     = errors.New("empty id")
+	ErrZeroSize    = errors.New("zero size")
 )
 
 type HttpError struct {
@@ -160,8 +161,8 @@ func (o *outItem) prepare() (err error) {
 
 	if fi, fe := os.Stat(orgFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
 		mw := NewMetaWrapper(o.roof)
-		var entry *Entry
-		entry, err = mw.GetEntry(o.id.String())
+		var entry *mapItem
+		entry, err = mw.GetMapping(o.id.String())
 		if err != nil {
 			// log.Print(err)
 			err = NewHttpError(404, err.Error())
@@ -171,7 +172,7 @@ func (o *outItem) prepare() (err error) {
 		// log.Printf("got %s", entry.Path)
 		roof := o.roof
 		// thumb_path := config.GetValue(roof, "thumb_path")
-		if o.src != entry.storedPath() { // 302 found
+		if o.src != storedPath(entry.Path) { // 302 found
 			newPath := path.Join(ViewName, o.m["size"], entry.Path)
 			ie := NewHttpError(302, "Found "+newPath)
 			ie.Path = newPath
@@ -390,13 +391,8 @@ func PopReadyDone() (entry *Entry, err error) {
 }
 
 func PrepareReader(r io.Reader, name string, modified uint64) (entry *Entry, err error) {
-	var data []byte
-	data, err = ioutil.ReadAll(r)
-	if err != nil {
-		return
-	}
-	entry, err = NewEntry(data, name)
 
+	entry, err = NewEntryReader(r, name)
 	if err != nil {
 		return
 	}

@@ -5,7 +5,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"mime"
 )
 
 // Image ...
@@ -16,7 +15,7 @@ type Image struct {
 }
 
 // Open ...
-func Open(r io.Reader, name string) (*Image, error) {
+func Open(r io.Reader) (*Image, error) {
 	m, format, err := image.Decode(r)
 	if err != nil {
 		return nil, err
@@ -24,9 +23,7 @@ func Open(r io.Reader, name string) (*Image, error) {
 
 	pt := m.Bounds().Max
 	attr := NewAttr(uint(pt.X), uint(pt.Y), 0)
-	attr.Ext = format
-	attr.Mime = mime.TypeByExtension(attr.Ext)
-	attr.Name = name
+	attr.Ext = getExt(format)
 	return &Image{
 		m:      m,
 		Attr:   attr,

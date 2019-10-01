@@ -3,8 +3,8 @@ package storage
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"io"
 	"log"
 	"path"
 	"time"
@@ -24,15 +24,33 @@ type Author uint32
 type StringArray = cdb.StringArray
 type StringSlice = cdb.StringSlice
 
+type mapItem struct {
+	ID      PinID       `json:"id"`
+	Hash    string      `json:"hash"`
+	Name    string      `json:"name"`
+	Size    uint32      `json:"size"`
+	Path    string      `json:"path"`
+	Roofs   StringArray `json:"roofs,omitempty"`
+	Status  uint8       `json:"-"`
+	Created *time.Time  `json:"created,omitempty"`
+	sev     cdb.JsonKV
+}
+
+func (e *mapItem) roof() string {
+	if len(e.Roofs) > 0 {
+		return e.Roofs[0]
+	}
+	return ""
+}
+
 type Entry struct {
 	Id       base.PinID  `json:"id"`
 	Name     string      `json:"name"`
 	Size     uint32      `json:"size"`
 	Path     string      `json:"path"`
-	Mime     string      `json:"-"`
 	Status   uint8       `json:"-"`
-	Hashes   StringArray `json:"-"`
-	Ids      StringArray `json:"-"`
+	Hashes   StringArray `json:"hashes,omitempty"`
+	IDs      StringArray `json:"-"`
 	Roofs    StringArray `json:"roofs,omitempty"`
 	Tags     StringArray `json:"tags,omitempty"`
 	Meta     *iimg.Attr  `json:"meta,omitempty"`
@@ -40,41 +58,44 @@ type Entry struct {
 	Author   Author      `json:"author,omitempty"`
 	Modified uint64      `json:"modified,omitempty"`
 	Created  time.Time   `json:"created,omitempty"`
-	exif     cdb.JsonKV
-	sev      cdb.JsonKV
-	b        []byte
-	h        string
-	_treked  bool
-	ret      int       // db saved result
-	Done     chan bool `json:"-"`
-	ready    int
+
+	exif cdb.JsonKV
+	sev  cdb.JsonKV
+
+	b  []byte
+	h  string
+	im *iimg.Image
+
+	_treked bool
+	ret     int       // db saved result
+	Done    chan bool `json:"-"`
+	ready   int
 }
 
 const (
 	minSize = 43
 )
 
-// NewEntry
-func NewEntry(data []byte, name string) (e *Entry, err error) {
-	if len(data) < minSize {
-		err = errors.New("data is too small, maybe not a valid image")
+// NewEntryReader ...
+func NewEntryReader(r io.Reader, name string) (e *Entry, err error) {
+	w := newHasher()
+	tr := io.TeeReader(r, w)
+	e = &Entry{
+		Name:    name,
+		Created: time.Now(),
+	}
+	e.im, err = iimg.Open(tr)
+	if err != nil {
+		logger().Infow("open image fail", "name", name, "len", w.Len())
 		return
 	}
-
-	id, hash := HashContent(data)
-	pinID := base.PinID(id)
-
-	e = &Entry{
-		Id:      pinID,
-		Name:    name,
-		Size:    uint32(len(data)),
-		Created: time.Now(),
-		b:       data,
-		h:       hash,
-	}
-
-	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
-
+	e.Size = w.Len()
+	e.im.Name = name
+	e.Meta = e.im.Attr
+	id, hash := w.Hash()
+	e.Id = base.PinID(id)
+	e.h = hash
+	e.Path = e.Id.String() + e.im.Attr.Ext
 	return
 }
 
@@ -84,88 +105,44 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 	e._treked = true
-	var im *iimg.Image
-	rd := bytes.NewReader(e.b)
-	im, err = iimg.Open(rd, e.Name)
 
+	var wopt *iimg.WriteOption
+	wopt, err = filterImageAttr(roof, e.im.Attr)
 	if err != nil {
-		log.Printf("image open error: %s", err)
-		return
-	}
-
-	ia := im.Attr
-
-	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
-	if ia.Quality > max_quality {
-		log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, max_quality)
-	} else {
-		max_quality = ia.Quality
-		log.Printf("jpeg quality %d is too low", ia.Quality)
-	}
-	// im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
-
-	max_width := iimg.Dimension(config.GetInt(roof, "max_width"))
-	max_height := iimg.Dimension(config.GetInt(roof, "max_height"))
-	if ia.Width > max_width || ia.Height > max_height {
-		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, e.Name)
-		return
-	}
-
-	min_width := iimg.Dimension(config.GetInt(roof, "min_width"))
-	min_height := iimg.Dimension(config.GetInt(roof, "min_height"))
-	if ia.Width < min_width || ia.Height < min_height {
-		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, e.Name)
 		return
 	}
 
 	var buf bytes.Buffer
-	err = im.WriteTo(&buf, &iimg.WriteOption{Quality: max_quality, StripAll: true})
+	err = e.im.WriteTo(&buf, wopt)
 	if err != nil {
+		logger().Infow("im.WriteTo fail", "id", e.Id, "err", err)
 		return
 	}
-	data := buf.Bytes()
+	e.b = buf.Bytes()
 
-	if err != nil {
-		log.Printf("GetBlob error: %s", err)
-		return
-	}
-
-	hashes := cdb.StringArray{e.h}
-	ids := cdb.StringArray{e.Id.String()}
-
-	size := len(data)
+	size := len(e.b)
 	if maxFileSize := config.GetInt(roof, "max_file_size"); size > maxFileSize {
 		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, maxFileSize)
 		return
 	}
 
-	id2, hash2 := HashContent(data)
+	hashes := cdb.StringArray{e.h}
+	ids := cdb.StringArray{e.Id.String()}
+	id2, hash2 := HashContent(e.b)
 	if hash2 != e.h {
+		logger().Infow("hashed", "hash1", e.h, "hash2", hash2)
 		hashes = append(hashes, hash2)
-		if err != nil {
-			// log.Println(err)
-			return
-		}
 
 		ids = append(ids, PinID(id2).String())
 		e.Id = PinID(id2) // 使用新的 Id 作为主键
 		e.h = hash2
-		e.b = data
 		e.Size = uint32(size)
+		e.Meta = e.im.Attr
+		e.Path = e.Id.String() + e.im.Attr.Ext
 	}
-
-	ia.Size = iimg.Size(size) // 更新后的大小
-	ia.Name = e.Name
-
-	path := e.Id.String() + ia.Ext
-
-	log.Printf("ext: %s, mime: %s\n", ia.Ext, ia.Mime)
-
-	e.Meta = ia
-	e.Path = path
-	e.Mime = ia.Mime
 	e.Hashes = hashes
-	e.Ids = ids
+	e.IDs = ids
+
 	return
 }
 
@@ -173,25 +150,24 @@ func (e *Entry) Trek(roof string) (err error) {
 // func (e *Entry) Hashed() string {
 // 	return e.h
 // }
-func (e *Entry) storedPath() string {
-	r := e.Id.String()
-	ext := path.Ext(e.Path)
-	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
+// storedPath ...
+func storedPath(r string) string {
+	if len(r) < 5 {
+		return r
+	}
+	p := r[0:2] + "/" + r[2:4] + "/" + r[4:]
 
 	return p
-}
-
-// return binary bytes
-func (e *Entry) Blob() []byte {
-	return e.b
 }
 
 func (e *Entry) IsDone() bool {
 	return e.ready != 1
 }
 
+// Store ...
 func (e *Entry) Store(roof string) (err error) {
 
+	// TODO:
 	mw := NewMetaWrapper(roof)
 	eh, _err := mw.GetHash(e.h)
 	if _err != nil { // ok, not exsits
@@ -205,7 +181,6 @@ func (e *Entry) Store(roof string) (err error) {
 					e.Name = _ne.Name
 					e.Path = _ne.Path
 					e.Size = _ne.Size
-					e.Mime = _ne.Mime
 					e.Meta = _ne.Meta
 					// e.sev = _ne.sev
 					e.Created = _ne.Created
@@ -220,17 +195,6 @@ func (e *Entry) Store(roof string) (err error) {
 
 				log.Printf("[%s]%s not in %s, so resubmit it", roof, e.Id, _ne.Roofs)
 
-				// for _, _roof := range _ne.Roofs {
-				// 	_mw := NewMetaWrapper(fmt.Sprint(_roof))
-				// 	t, te := _mw.GetMeta(*_ne.Id)
-				// 	if te == nil {
-				// 		e = t
-				// 		err = mw.Save(t)
-				// 		return
-				// 	}
-				// }
-
-				// e.Done <- true
 			} else {
 				log.Printf("get entry error: %s", _err)
 			}
@@ -240,14 +204,12 @@ func (e *Entry) Store(roof string) (err error) {
 	if err = e.Trek(roof); err != nil {
 		return
 	}
-	log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
+	logger().Infow("trek ok", "entry", e)
+	// log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
 
-	data := e.Blob()
-	// size := len(data)
-	// log.Printf("blob length: %d", size)
-	thumb_root := config.GetValue(roof, "thumb_root")
-	filename := path.Join(thumb_root, "orig", e.storedPath())
-	err = SaveFile(filename, data)
+	thumbRoot := config.GetValue(roof, "thumb_root")
+	filename := path.Join(thumbRoot, "orig", storedPath(e.Path))
+	err = SaveFile(filename, e.b)
 	if err != nil {
 		return
 	}
@@ -276,7 +238,7 @@ func (e *Entry) _save(roof string) (err error) {
 	en := config.GetValue(roof, "engine")
 	log.Printf("start save %s to engine %s", e.Id, en)
 
-	e.sev, err = PushBlob(roof, e.Path, e.Blob(), e.Meta)
+	e.sev, err = e.PushTo(roof)
 	if err != nil {
 		log.Printf("engine push error: %s", err)
 		return
@@ -285,7 +247,7 @@ func (e *Entry) _save(roof string) (err error) {
 
 	mw := NewMetaWrapper(roof)
 	if err = mw.SetDone(e.Id.String(), e.sev); err != nil {
-		log.Println(err)
+		logger().Infow("setDone fail", "entry", e)
 		// if err = mw.Save(e); err != nil {
 		// 	return
 		// }
@@ -317,7 +279,7 @@ func (e *Entry) reset() {
 
 func (e *Entry) origFullname() string {
 	thumb_root := config.GetValue(e.roof(), "thumb_root")
-	return path.Join(thumb_root, "orig", e.storedPath())
+	return path.Join(thumb_root, "orig", storedPath(e.Path))
 }
 
 func (e *Entry) roof() string {
@@ -350,7 +312,14 @@ func PullBlob(key string, roof string) (data []byte, err error) {
 	return
 }
 
-func PushBlob(roof, key string, blob []byte, meta *iimg.Attr) (sev cdb.JsonKV, err error) {
+// PushTo ...
+func (e *Entry) PushTo(roof string) (sev cdb.JsonKV, err error) {
+	key := e.Path
+	blob := e.b
+	meta := e.Meta
+	if e.im != nil {
+		meta = e.im.Attr
+	}
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
@@ -358,5 +327,34 @@ func PushBlob(roof, key string, blob []byte, meta *iimg.Attr) (sev cdb.JsonKV, e
 		return
 	}
 	sev, err = em.Put(key, blob, meta.ToMap())
+	return
+}
+
+func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err error) {
+
+	maxQuality := iimg.Quality(config.GetInt(roof, "max_quality"))
+	if ia.Quality > maxQuality {
+		log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, maxQuality)
+	} else {
+		maxQuality = ia.Quality
+		log.Printf("jpeg quality %d is too low", ia.Quality)
+	}
+	// im.SetOption(iimg.WriteOption{Quality: maxQuality, StripAll: true})
+
+	maxWidth := iimg.Dimension(config.GetInt(roof, "max_width"))
+	maxHeight := iimg.Dimension(config.GetInt(roof, "max_height"))
+	if ia.Width > maxWidth || ia.Height > maxHeight {
+		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, ia.Name)
+		return
+	}
+
+	minWidth := iimg.Dimension(config.GetInt(roof, "min_width"))
+	minHeight := iimg.Dimension(config.GetInt(roof, "min_height"))
+	if ia.Width < minWidth || ia.Height < minHeight {
+		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, ia.Name)
+		return
+	}
+
+	wopt = &iimg.WriteOption{Quality: maxQuality, StripAll: true}
 	return
 }
