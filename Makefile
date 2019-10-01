@@ -9,7 +9,7 @@ NAME:=imsto
 ROOF:=github.com/go-imsto/$(NAME)
 SOURCES=$(shell find base cmd config image storage -type f \( -name "*.go" ! -name "*_test.go" \) -print )
 TAG:=`git describe --tags --always`
-LDFLAGS:=-X $(ROOF)/cmd.VERSION=$(TAG)-$(DATE)
+LDFLAGS:=-X $(ROOF)/config.Version=$(TAG)-$(DATE)
 
 main:
 	echo "Building $(NAME)"

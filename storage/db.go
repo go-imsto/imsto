@@ -5,8 +5,6 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-
-	zlog "github.com/go-imsto/imsto/log"
 )
 
 var (
@@ -14,10 +12,6 @@ var (
 
 	dbDSN string
 )
-
-func logger() zlog.Logger {
-	return zlog.Get()
-}
 
 func init() {
 	if s, exists := os.LookupEnv("IMSTO_META_DSN"); exists && s != "" {

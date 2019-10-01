@@ -2,13 +2,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	// "runtime"
 	"strings"
@@ -47,10 +44,6 @@ func (cmd *Command) Usage() {
 	fmt.Fprintf(os.Stderr, "  %s\n", strings.TrimSpace(cmd.Long))
 	os.Exit(2)
 }
-
-var (
-	VERSION = "0.0.6"
-)
 
 // main
 var (
@@ -202,6 +195,7 @@ func exit() {
 	os.Exit(exitStatus)
 }
 
+/*
 type apiRes map[string]interface{}
 type apiMeta map[string]interface{}
 type apiError struct {
@@ -296,3 +290,4 @@ func secure(whiteList []string, f func(w http.ResponseWriter, r *http.Request)) 
 		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
 	}
 }
+*/

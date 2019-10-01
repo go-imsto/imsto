@@ -36,6 +36,8 @@ stage_host =
 // var once sync.Once
 
 var (
+	// Version ...
+	Version       = "dev"
 	cfgDir        string
 	logDir        string
 	defaultConfig ini.File
