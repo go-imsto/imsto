@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-imsto/imsto/base"
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
 	cdb "github.com/go-imsto/imsto/storage/types"
@@ -54,7 +55,7 @@ type outItem struct {
 	roof     string
 	src      string
 	dst      string
-	id       *EntryId
+	id       base.PinID
 	isOrig   bool
 	lock     FLock
 	name     string
@@ -72,8 +73,8 @@ func newOutItem(url string) (oi *outItem, err error) {
 	}
 	logger().Debugw("parsed", "m", m)
 
-	var id *EntryId
-	id, err = NewEntryId(m["t1"] + m["t2"] + m["t3"])
+	var id base.PinID
+	id, err = base.ParseID(m["t1"] + m["t2"] + m["t3"])
 	if err != nil {
 		log.Printf("invalid id: %s", err)
 		return
@@ -158,7 +159,7 @@ func (o *outItem) prepare() (err error) {
 	if fi, fe := os.Stat(orgFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
 		mw := NewMetaWrapper(o.roof)
 		var entry *Entry
-		entry, err = mw.GetEntry(*o.id)
+		entry, err = mw.GetEntry(o.id.String())
 		if err != nil {
 			// log.Print(err)
 			err = NewHttpError(404, err.Error())

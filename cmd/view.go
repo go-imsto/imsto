@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/go-imsto/imsto/base"
 	"github.com/go-imsto/imsto/storage"
 )
 
@@ -33,7 +35,7 @@ func runView(args []string) bool {
 		return false
 	}
 	if vid != "" {
-		id, err := storage.NewEntryId(vid)
+		id, err := base.ParseID(vid)
 		if err != nil {
 			fmt.Printf("error: %s", err)
 			return false
@@ -44,7 +46,7 @@ func runView(args []string) bool {
 		mw = storage.NewMetaWrapper(vroof)
 
 		var entry *storage.Entry
-		entry, err = mw.GetMeta(*id)
+		entry, err = mw.GetMeta(id.String())
 
 		if err != nil {
 			fmt.Println(err)

@@ -3,8 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	cimg "github.com/go-imsto/imsto/image"
-	"github.com/go-imsto/imsto/storage"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -13,6 +11,10 @@ import (
 	"mime"
 	"os"
 	"path"
+
+	"github.com/go-imsto/imsto/base"
+	cimg "github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage"
 )
 
 var cmdTest = &Command{
@@ -36,13 +38,13 @@ func init() {
 
 func testApp(args []string) bool {
 	if *tiid != "" {
-		id, err := storage.NewEntryId(*tiid)
+		id, err := base.ParseID(*tiid)
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false
 		}
 		mw := storage.NewMetaWrapper(*troof)
-		entry, err := mw.GetEntry(*id)
+		entry, err := mw.GetEntry(id.String())
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false

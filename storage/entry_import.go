@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"github.com/go-imsto/imsto/base"
 	"github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/types"
 	"log"
@@ -16,9 +17,8 @@ func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev types.J
 		return
 	}
 
-	var eid *EntryId
-	eid, err = NewEntryId(id)
-
+	var eid base.PinID
+	eid, err = base.ParseID(id)
 	if err != nil {
 		log.Println(err)
 		return

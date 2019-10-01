@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-imsto/imsto/base"
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage"
 )
@@ -223,7 +224,7 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) {
-	id, err := storage.NewEntryId(ids)
+	id, err := base.ParseID(ids)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
@@ -232,7 +233,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request, roof, ids string) 
 	}
 
 	mw := storage.NewMetaWrapper(roof)
-	entry, err := mw.GetMeta(*id)
+	entry, err := mw.GetMeta(id.String())
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		log.Printf("ERROR: %s", err)

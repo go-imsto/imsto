@@ -9,12 +9,14 @@ import (
 	"path"
 	"time"
 
+	"github.com/go-imsto/imsto/base"
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/backend"
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
+type PinID = base.PinID
 type AppID uint16
 
 type Author uint32
@@ -23,7 +25,7 @@ type StringArray = cdb.StringArray
 type StringSlice = cdb.StringSlice
 
 type Entry struct {
-	Id       *EntryId    `json:"id"`
+	Id       base.PinID  `json:"id"`
 	Name     string      `json:"name"`
 	Size     uint32      `json:"size"`
 	Path     string      `json:"path"`
@@ -58,21 +60,16 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 		return
 	}
 
-	var id *EntryId
-	id, err = NewEntryIdFromData(data, name)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	id, hash := HashContent(data)
+	pinID := base.PinID(id)
 
 	e = &Entry{
-		Id:      id,
+		Id:      pinID,
 		Name:    name,
 		Size:    uint32(len(data)),
 		Created: time.Now(),
 		b:       data,
-		h:       id.Hashed(),
+		h:       hash,
 	}
 
 	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
@@ -98,7 +95,6 @@ func (e *Entry) Trek(roof string) (err error) {
 	defer im.Close()
 
 	ia := im.GetAttr()
-	// log.Println(ia)
 
 	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
 	if ia.Quality > max_quality {
@@ -140,17 +136,17 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	var id2 *EntryId
-	id2, err = NewEntryIdFromData(data, e.Name)
-	if id2.hash != e.h {
-		hashes = append(hashes, id2.hash)
+	id2, hash2 := HashContent(data)
+	if hash2 != e.h {
+		hashes = append(hashes, hash2)
 		if err != nil {
 			// log.Println(err)
 			return
 		}
-		ids = append(ids, id2.ID.String())
-		e.Id = id2 // 使用新的 Id 作为主键
-		e.h = id2.hash
+
+		ids = append(ids, PinID(id2).String())
+		e.Id = PinID(id2) // 使用新的 Id 作为主键
+		e.h = hash2
 		e.b = data
 		e.Size = uint32(size)
 	}
@@ -158,7 +154,7 @@ func (e *Entry) Trek(roof string) (err error) {
 	ia.Size = iimg.Size(size) // 更新后的大小
 	ia.Name = e.Name
 
-	path := newUrlPath(e.Id, ia.Ext)
+	path := e.Id.String() + ia.Ext
 
 	log.Printf("ext: %s, mime: %s\n", ia.Ext, ia.Mime)
 
@@ -198,9 +194,9 @@ func (e *Entry) Store(roof string) (err error) {
 	if _err != nil { // ok, not exsits
 		logger().Infow("check hash fail", "h", e.h, "err", _err)
 	} else if eh != nil && eh.id != "" {
-		if _id, _err := NewEntryId(eh.id); _err == nil {
+		if _id, _err := base.ParseID(eh.id); _err == nil {
 			e.Id = _id
-			_ne, _err := mw.GetMeta(*_id)
+			_ne, _err := mw.GetMeta(_id.String())
 			if _err == nil { // path, mime, size, sev, status, created
 				if StringSlice(_ne.Roofs).Contains(roof) {
 					e.Name = _ne.Name
@@ -285,7 +281,7 @@ func (e *Entry) _save(roof string) (err error) {
 	log.Printf("engine push %s ok", e.Id)
 
 	mw := NewMetaWrapper(roof)
-	if err = mw.SetDone(*e.Id, e.sev); err != nil {
+	if err = mw.SetDone(e.Id.String(), e.sev); err != nil {
 		log.Println(err)
 		// if err = mw.Save(e); err != nil {
 		// 	return
@@ -328,12 +324,8 @@ func (e *Entry) roof() string {
 	return ""
 }
 
-func newUrlPath(ei *EntryId, ext string) string {
-	return ei.ID.String() + ext
-}
-
-func newStorePath(ei *EntryId, ext string) string {
-	r := ei.ID.String()
+func newStorePath(id base.PinID, ext string) string {
+	r := id.String()
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 
 	return p

@@ -8,6 +8,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/go-imsto/imsto/base"
 	"github.com/go-imsto/imsto/config"
 )
 
@@ -101,11 +102,11 @@ func DeleteRequest(r *http.Request) error {
 	roof := path.Base(dir)
 	if id != "" && roof != "" {
 		mw := NewMetaWrapper(roof)
-		eid, err := NewEntryId(id)
+		eid, err := base.ParseID(id)
 		if err != nil {
 			return err
 		}
-		err = mw.Delete(*eid)
+		err = mw.Delete(eid.String())
 		if err != nil {
 			return err
 		}

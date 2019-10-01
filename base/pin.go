@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	base32Text         = "0123456789abcdefghjkmnpqrstvwxyz"
+	// base32Text         = "0123456789abcdefghjkmnpqrstvwxyz"
 	binaryVersion byte = 1
 )
 
@@ -28,6 +28,21 @@ func (z PinID) String() string {
 	return bInt.SetUint64(uint64(z)).Text(36)
 }
 
+// MarshalText implements the encoding.TextMarshaler interface.
+func (z PinID) MarshalText() ([]byte, error) {
+	b := []byte(z.String())
+	return b, nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (z *PinID) UnmarshalText(data []byte) (err error) {
+	var id PinID
+	id, err = ParseID(string(data))
+	*z = id
+	return
+}
+
+// ParseID ...
 func ParseID(s string) (PinID, error) {
 	var id uint64
 	var bI big.Int
@@ -37,6 +52,22 @@ func ParseID(s string) (PinID, error) {
 		return 0, fmt.Errorf("invalid id %q", s)
 	}
 	return PinID(id), nil
+}
+
+// Scan implements of database/sql.Scanner
+func (z *PinID) Scan(src interface{}) (err error) {
+	switch s := src.(type) {
+	case string:
+		return z.UnmarshalText([]byte(s))
+	case []byte:
+		return z.UnmarshalText(s)
+	}
+	return fmt.Errorf("'%v' is invalid PinID", src)
+}
+
+// Value implements of database/sql/driver.Valuer
+func (z PinID) Value() (driver.Value, error) {
+	return z.String(), nil
 }
 
 // Pin ...
@@ -129,6 +160,7 @@ func ParsePin(s string) (p *Pin, err error) {
 	return
 }
 
+// Scan implements of database/sql.Scanner
 func (p *Pin) Scan(src interface{}) (err error) {
 	switch s := src.(type) {
 	case string:
@@ -139,6 +171,7 @@ func (p *Pin) Scan(src interface{}) (err error) {
 	return fmt.Errorf("'%v' is invalid Pin", src)
 }
 
+// Value implements of database/sql/driver.Valuer
 func (p Pin) Value() (driver.Value, error) {
 	return p.String(), nil
 }
