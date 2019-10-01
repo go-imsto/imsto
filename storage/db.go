@@ -2,25 +2,31 @@ package storage
 
 import (
 	"database/sql"
-	_ "database/sql/driver"
+	"os"
+
 	_ "github.com/lib/pq"
-	"log"
-	"wpst.me/calf/config"
 )
 
 var (
 	dbcpool map[string]*sql.DB
+
+	dbDSN string
 )
 
 func init() {
+	if s, exists := os.LookupEnv("IMSTO_META_DSN"); exists && s != "" {
+		dbDSN = s
+	} else {
+		dbDSN = "postgres://imsto@localhost/imsto?sslmode=disable"
+	}
+
 	dbcpool = make(map[string]*sql.DB)
 }
 
 func openDb(roof string) *sql.DB {
-	dsn := config.GetValue(roof, "meta_dsn")
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", dbDSN)
 	if err != nil {
-		log.Fatalf("open db error: %s", err)
+		logger().Fatalw("open db fail", "err", err)
 	}
 	return db
 }

@@ -8,34 +8,40 @@ import (
 	"log"
 	"path"
 	"time"
-	"wpst.me/calf/config"
-	cdb "wpst.me/calf/db"
-	iimg "wpst.me/calf/image"
-	"wpst.me/calf/storage/backend"
+
+	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imsto/config"
+	iimg "github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage/backend"
+	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
-type AppId uint16
+type PinID = base.PinID
+type AppID uint16
 
 type Author uint32
 
+type StringArray = cdb.StringArray
+type StringSlice = cdb.StringSlice
+
 type Entry struct {
-	Id       *EntryId   `json:"id"`
-	Name     string     `json:"name"`
-	Size     uint32     `json:"size"`
-	Path     string     `json:"path"`
-	Mime     string     `json:"-"`
-	Status   uint8      `json:"-"`
-	Hashes   cdb.Qarray `json:"-"`
-	Ids      cdb.Qarray `json:"-"`
-	Roofs    cdb.Qarray `json:"roofs,omitempty"`
-	Tags     cdb.Qarray `json:"tags,omitempty"`
-	Meta     *iimg.Attr `json:"meta,omitempty"`
-	AppId    AppId      `json:"appid,omitempty"`
-	Author   Author     `json:"author,omitempty"`
-	Modified uint64     `json:"modified,omitempty"`
-	Created  time.Time  `json:"created,omitempty"`
-	exif     cdb.Hstore
-	sev      cdb.Hstore
+	Id       base.PinID  `json:"id"`
+	Name     string      `json:"name"`
+	Size     uint32      `json:"size"`
+	Path     string      `json:"path"`
+	Mime     string      `json:"-"`
+	Status   uint8       `json:"-"`
+	Hashes   StringArray `json:"-"`
+	Ids      StringArray `json:"-"`
+	Roofs    StringArray `json:"roofs,omitempty"`
+	Tags     StringArray `json:"tags,omitempty"`
+	Meta     *iimg.Attr  `json:"meta,omitempty"`
+	AppId    AppID       `json:"appid,omitempty"`
+	Author   Author      `json:"author,omitempty"`
+	Modified uint64      `json:"modified,omitempty"`
+	Created  time.Time   `json:"created,omitempty"`
+	exif     cdb.JsonKV
+	sev      cdb.JsonKV
 	b        []byte
 	h        string
 	_treked  bool
@@ -45,30 +51,26 @@ type Entry struct {
 }
 
 const (
-	min_size = 43
+	minSize = 43
 )
 
+// NewEntry
 func NewEntry(data []byte, name string) (e *Entry, err error) {
-	if len(data) < min_size {
+	if len(data) < minSize {
 		err = errors.New("data is too small, maybe not a valid image")
 		return
 	}
 
-	var id *EntryId
-	id, err = NewEntryIdFromData(data)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	id, hash := HashContent(data)
+	pinID := base.PinID(id)
 
 	e = &Entry{
-		Id:      id,
+		Id:      pinID,
 		Name:    name,
 		Size:    uint32(len(data)),
 		Created: time.Now(),
 		b:       data,
-		h:       id.hash,
+		h:       hash,
 	}
 
 	// entry = &Entry{Id: id, Name: name, Size: ia.Size, Meta: ia, Path: path, Mime: mimetype, Hashes: hashes, Ids: ids}
@@ -76,25 +78,22 @@ func NewEntry(data []byte, name string) (e *Entry, err error) {
 	return
 }
 
-// 处理图片信息并填充
+// Trek 处理图片信息并填充
 func (e *Entry) Trek(roof string) (err error) {
 	if e._treked {
 		return
 	}
 	e._treked = true
-	var im iimg.Image
+	var im *iimg.Image
 	rd := bytes.NewReader(e.b)
-	im, err = iimg.Open(rd)
+	im, err = iimg.Open(rd, e.Name)
 
 	if err != nil {
 		log.Printf("image open error: %s", err)
 		return
 	}
 
-	defer im.Close()
-
-	ia := im.GetAttr()
-	// log.Println(ia)
+	ia := im.Attr
 
 	max_quality := iimg.Quality(config.GetInt(roof, "max_quality"))
 	if ia.Quality > max_quality {
@@ -103,7 +102,7 @@ func (e *Entry) Trek(roof string) (err error) {
 		max_quality = ia.Quality
 		log.Printf("jpeg quality %d is too low", ia.Quality)
 	}
-	im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
+	// im.SetOption(iimg.WriteOption{Quality: max_quality, StripAll: true})
 
 	max_width := iimg.Dimension(config.GetInt(roof, "max_width"))
 	max_height := iimg.Dimension(config.GetInt(roof, "max_height"))
@@ -119,34 +118,38 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	var data []byte
-	data, err = im.GetBlob() // tack new data
+	var buf bytes.Buffer
+	err = im.WriteTo(&buf, &iimg.WriteOption{Quality: max_quality, StripAll: true})
+	if err != nil {
+		return
+	}
+	data := buf.Bytes()
 
 	if err != nil {
 		log.Printf("GetBlob error: %s", err)
 		return
 	}
 
-	hashes := cdb.Qarray{e.h}
-	ids := cdb.Qarray{e.Id.String()}
+	hashes := cdb.StringArray{e.h}
+	ids := cdb.StringArray{e.Id.String()}
 
 	size := len(data)
-	if max_file_size := config.GetInt(roof, "max_file_size"); size > max_file_size {
-		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, max_file_size)
+	if maxFileSize := config.GetInt(roof, "max_file_size"); size > maxFileSize {
+		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, maxFileSize)
 		return
 	}
 
-	var id2 *EntryId
-	id2, err = NewEntryIdFromData(data)
-	if id2.hash != e.h {
-		hashes = append(hashes, id2.hash)
+	id2, hash2 := HashContent(data)
+	if hash2 != e.h {
+		hashes = append(hashes, hash2)
 		if err != nil {
 			// log.Println(err)
 			return
 		}
-		ids = append(ids, id2.id)
-		e.Id = id2 // 使用新的 Id 作为主键
-		e.h = id2.hash
+
+		ids = append(ids, PinID(id2).String())
+		e.Id = PinID(id2) // 使用新的 Id 作为主键
+		e.h = hash2
 		e.b = data
 		e.Size = uint32(size)
 	}
@@ -154,7 +157,7 @@ func (e *Entry) Trek(roof string) (err error) {
 	ia.Size = iimg.Size(size) // 更新后的大小
 	ia.Name = e.Name
 
-	path := newUrlPath(e.Id, ia.Ext)
+	path := e.Id.String() + ia.Ext
 
 	log.Printf("ext: %s, mime: %s\n", ia.Ext, ia.Mime)
 
@@ -192,13 +195,13 @@ func (e *Entry) Store(roof string) (err error) {
 	mw := NewMetaWrapper(roof)
 	eh, _err := mw.GetHash(e.h)
 	if _err != nil { // ok, not exsits
-		log.Printf("check hash error: %s", _err)
+		logger().Infow("check hash fail", "h", e.h, "err", _err)
 	} else if eh != nil && eh.id != "" {
-		if _id, _err := NewEntryId(eh.id); _err == nil {
+		if _id, _err := base.ParseID(eh.id); _err == nil {
 			e.Id = _id
-			_ne, _err := mw.GetMeta(*_id)
+			_ne, _err := mw.GetMeta(_id.String())
 			if _err == nil { // path, mime, size, sev, status, created
-				if _ne.Roofs.Contains(roof) {
+				if StringSlice(_ne.Roofs).Contains(roof) {
 					e.Name = _ne.Name
 					e.Path = _ne.Path
 					e.Size = _ne.Size
@@ -211,7 +214,7 @@ func (e *Entry) Store(roof string) (err error) {
 					e._treked = true
 					mw.Save(e, true)
 
-					log.Printf("exist: %s, %s", e.Id, e.Path)
+					logger().Infow("exist entry", "id", e.Id, "path", e.Path)
 					return
 				}
 
@@ -273,7 +276,7 @@ func (e *Entry) _save(roof string) (err error) {
 	en := config.GetValue(roof, "engine")
 	log.Printf("start save %s to engine %s", e.Id, en)
 
-	e.sev, err = PushBlob(e, roof)
+	e.sev, err = PushBlob(roof, e.Path, e.Blob(), e.Meta)
 	if err != nil {
 		log.Printf("engine push error: %s", err)
 		return
@@ -281,7 +284,7 @@ func (e *Entry) _save(roof string) (err error) {
 	log.Printf("engine push %s ok", e.Id)
 
 	mw := NewMetaWrapper(roof)
-	if err = mw.SetDone(*e.Id, e.sev); err != nil {
+	if err = mw.SetDone(e.Id.String(), e.sev); err != nil {
 		log.Println(err)
 		// if err = mw.Save(e); err != nil {
 		// 	return
@@ -300,7 +303,7 @@ func (e *Entry) fill(data []byte) error {
 
 	_, m := HashContent(data)
 
-	if !e.Hashes.Contains(m) {
+	if !StringSlice(e.Hashes).Contains(m) {
 		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)
 	}
 
@@ -319,44 +322,41 @@ func (e *Entry) origFullname() string {
 
 func (e *Entry) roof() string {
 	if len(e.Roofs) > 0 {
-		return e.Roofs[0].(string)
+		return e.Roofs[0]
 	}
 	return ""
 }
 
-func newUrlPath(ei *EntryId, ext string) string {
-	return ei.id + ext
-}
-
-func newStorePath(ei *EntryId, ext string) string {
-	r := ei.id
+func newStorePath(id base.PinID, ext string) string {
+	r := id.String()
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 
 	return p
 }
 
-func PullBlob(e *Entry, roof string) (data []byte, err error) {
+// PullBlob pull blob from engine with key path
+func PullBlob(key string, roof string) (data []byte, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
-		log.Printf("FarmEngine(%s) error: %s", roof, err)
+		logger().Warnw("farmEngine fail", "roof", roof, "err", err)
 		return
 	}
 	// var data []byte
-	data, err = em.Get(e.Path)
+	data, err = em.Get(key)
 	if err != nil {
-		log.Printf("[%s] engine Get(%s) error: %s", roof, e.Path, err)
+		logger().Warnw("get fail", "roof", roof, "key", key, "err", err)
 	}
 	return
 }
 
-func PushBlob(e *Entry, roof string) (sev cdb.Hstore, err error) {
+func PushBlob(roof, key string, blob []byte, meta *iimg.Attr) (sev cdb.JsonKV, err error) {
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
-		log.Printf("farm engine error: %s", err)
+		logger().Warnw("farmEngine fail", "roof", roof, "key", key, "err", err)
 		return
 	}
-	sev, err = em.Put(e.Path, e.Blob(), e.Meta.Hstore())
+	sev, err = em.Put(key, blob, meta.ToMap())
 	return
 }

@@ -4,7 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"wpst.me/calf/image"
+
+	"github.com/go-imsto/imsto/image"
 )
 
 const usage_line = `optimize [filename] [destname]

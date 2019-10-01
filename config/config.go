@@ -11,7 +11,6 @@ import (
 )
 
 const defaultConfigIni = `[common]
-meta_dsn = postgres://imsto@localhost/imsto?sslmode=disable
 ;meta_table_suffix = demo
 engine = s3
 bucket_name = imsto-demo
@@ -31,12 +30,14 @@ watermark_opacity = 20
 ;copyright_label = imsto.net
 copyright =
 log_dir = /var/log/imsto
-stage_host = localhost
+stage_host =
 `
 
 // var once sync.Once
 
 var (
+	// Version ...
+	Version       = "dev"
 	cfgDir        string
 	logDir        string
 	defaultConfig ini.File
@@ -59,7 +60,6 @@ func SetRoot(dir string) {
 
 func init() {
 	defaultConfig, _ = ini.Load(strings.NewReader(defaultConfigIni))
-	AtLoaded(checkLogDir)
 }
 
 func GetValue(section, name string) string {
@@ -150,24 +150,6 @@ func Load() (err error) {
 		}
 	}
 
-	return
-}
-
-func checkLogDir() (err error) {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	logDir = GetValue("", "log_dir")
-	if logDir != "" {
-		_, err = os.Stat(logDir)
-		if os.IsNotExist(err) {
-			if err = os.Mkdir(logDir, os.FileMode(0755)); err != nil {
-				log.Printf("mkdir '%s' error or access denied", logDir)
-				return
-			}
-		} else if os.IsPermission(err) {
-			log.Printf("dir '%s' access denied", logDir)
-			return
-		}
-	}
 	return
 }
 

@@ -1,25 +1,20 @@
 package image
 
 import (
-	"errors"
 	"fmt"
-	"github.com/nfnt/resize"
 	"image"
 	"image/draw"
 	"image/jpeg"
-	_ "image/png"
 	"io"
 	"log"
 	"os"
 	"path"
+
+	"github.com/nfnt/resize"
 )
 
 const (
 	MIN_JPEG_QUALITY = jpeg.DefaultQuality // 75
-)
-
-var (
-	ErrOrigTooSmall = errors.New("Original Image Too Small")
 )
 
 type ThumbOption struct {
@@ -181,7 +176,7 @@ func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
 	var out *os.File
 	out, err = os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0644))
 	if err != nil {
-		log.Print("openfile error: %s", err)
+		log.Printf("openfile error: %s", err)
 		return
 	}
 	defer out.Close()

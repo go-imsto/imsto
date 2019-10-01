@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-type ApiVersion uint8
+type VerID uint8
 type valueCate uint8
 
 type apiToken struct {
-	ver   ApiVersion
-	appid AppId
+	ver   VerID
+	appid AppID
 	salt  []byte
 	hash  []byte
 	stamp int64
@@ -45,7 +45,7 @@ func unixStamp() int64 {
 	return time.Now().UTC().UnixNano()
 }
 
-func newToken(ver ApiVersion, appid AppId, salt []byte) (*apiToken, error) {
+func newToken(ver VerID, appid AppID, salt []byte) (*apiToken, error) {
 	if len(salt) < min_salt_length {
 		return nil, fmt.Errorf("salt '%x' is too short", salt)
 	}

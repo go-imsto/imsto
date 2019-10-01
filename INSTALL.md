@@ -1,26 +1,16 @@
 # Installation
 
 ## Dependencies
-* PostgreSQL 9+
-* PostgreSQL extension: `hstore`
+* PostgreSQL 9.4+
 
 ### C lib
 
 1. libjpeg-turbo (recommend) or jpeg
 2. png (option in plan)
-3. ~~ImageMagick~~ (*not need anymore*)
 
 ### Go lib
 
-- go version >= 1.2
-
-~~~
-go get github.com/vaughan0/go-ini
-go get github.com/lib/pq
-go get github.com/mitchellh/mapstructure
-go get github.com/crowdmob/goamz/s3
-go get github.com/nfnt/resize
-~~~
+- go version >= 1.11
 
 
 ## Installation
@@ -34,10 +24,12 @@ go get github.com/nfnt/resize
      - `emerge libjpeg-turbo`
    - debian:
      - `apt-get install libturbojpeg1`
+   - alpine:
+     - `apk add libjpeg-turbo-dev`
 
-### get and build
+### build
 
-    go get wpst.me/calf/imsto
+    make
 
 
 ## Launch
@@ -48,18 +40,10 @@ go get github.com/nfnt/resize
 psql -Upostgres
 -- copy database/schema/pgsql_00_base.sql contents and execute them
 
--- basic schema
-psql -Uimsto -f database/schema/pgsql_10_imsto.sql
+-- schema and procedures
+cat database/imsto_??_*.sql | psql -Uimsto
 
--- mobile upload schema
-psql -Uimsto -f database/schema/pgsql_11_imsto_auth.sql
-
--- demo schema
-psql -Uimsto -f database/schema/pgsql_12_imsto_demo.sql
-
--- procedure
-psql -Uimsto database/procedure/pgsql_10_imsto.sql
-psql -Uimsto database/procedure/pgsql_11_imsto_auth.sql
+forego run ./imsto auth -name demo -save
 ~~~
 
 ### Configuration
@@ -69,13 +53,13 @@ psql -Uimsto database/procedure/pgsql_11_imsto_auth.sql
 
 ### Launch tiring service
 ~~~
-IMSTO_API_0_SALT=mysalt $GOPATH/bin/imsto tiring
+./imsto tiring
 ~~~
 
 
 ### Launch stage service
 ~~~
-$GOPATH/bin/imsto stage
+./imsto stage
 ~~~
 
 ## Change nginx config

@@ -5,45 +5,51 @@ import (
 	_ "database/sql/driver"
 	"errors"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"strings"
-	"wpst.me/calf/config"
-	cdb "wpst.me/calf/db"
-	"wpst.me/calf/image"
+	"time"
+
+	_ "github.com/lib/pq"
+
+	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imsto/config"
+	"github.com/go-imsto/imsto/image"
+	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
 const (
-	hash_table_prefix = "hash_"
-	map_table_prefix  = "mapping_"
-	meta_table_prefix = "meta_"
-	max_args          = 10
+	prefixHashTable = "hash_"
+	prefixMapTable  = "mapping_"
+	prefixMetaTable = "meta_"
+	maxArgs         = 10
 )
 
+// MetaWrapper ...
 type MetaWrapper interface {
-	Browse(limit, offset uint, sort map[string]int, filter MetaFilter) ([]*Entry, error)
-	Count(filter MetaFilter) (uint, error)
+	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
+	Count(filter MetaFilter) (int, error)
 	Ready(entry *Entry) error
-	SetDone(id EntryId, sev cdb.Hstore) error
-	Save(entry *Entry, is_update bool) error
+	SetDone(id string, sev cdb.JsonKV) error
+	Save(entry *Entry, isUpdate bool) error
 	BatchSave(entries []*Entry) error
-	GetMeta(id EntryId) (*Entry, error)
+	GetMeta(id string) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
-	GetEntry(id EntryId) (*Entry, error)
-	Delete(id EntryId) error
-	MapTags(id EntryId, tags string) error
-	UnmapTags(id EntryId, tags string) error
+	GetEntry(id string) (*Entry, error)
+	Delete(id string) error
+	MapTags(id string, tags string) error
+	UnmapTags(id string, tags string) error
 }
 
 type rowScanner interface {
 	Scan(...interface{}) error
 }
 
+// MetaWrap ...
 type MetaWrap struct {
 	roof string
 	// prefix  string
 
-	table_suffix string
+	tableSuffix string
 }
 
 func newMetaWrap(roof string) *MetaWrap {
@@ -58,7 +64,7 @@ func newMetaWrap(roof string) *MetaWrap {
 		table = roof
 	}
 	log.Printf("table suffix: %s", table)
-	mw := &MetaWrap{roof: roof, table_suffix: table}
+	mw := &MetaWrap{roof: roof, tableSuffix: table}
 
 	return mw
 }
@@ -81,11 +87,11 @@ func NewMetaWrapper(roof string) (mw MetaWrapper) {
 }
 
 func (mw *MetaWrap) TableSuffix() string {
-	return mw.table_suffix
+	return mw.tableSuffix
 }
 
 func (mw *MetaWrap) table() string {
-	return meta_table_prefix + mw.table_suffix
+	return prefixMetaTable + mw.tableSuffix
 }
 
 const (
@@ -102,9 +108,10 @@ func isSortable(k string) bool {
 	return false
 }
 
+// MetaFilter ...
 type MetaFilter struct {
 	Tags   string
-	App    AppId
+	App    AppID
 	Author Author
 }
 
@@ -112,7 +119,7 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 	where = " WHERE status = 0"
 
 	argc := 0
-	args = make([]interface{}, 0, max_args)
+	args = make([]interface{}, 0, maxArgs)
 
 	var qtags, _ = cdb.NewQarrayText(filter.Tags)
 
@@ -142,9 +149,8 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 	return
 }
 
-func (mw *MetaWrap) Count(filter MetaFilter) (t uint, err error) {
+func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	db := mw.getDb()
-	defer db.Close()
 	table := mw.table()
 
 	t = 0
@@ -153,7 +159,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t uint, err error) {
 	rows, err := db.Query("SELECT COUNT(id) FROM "+table+where, args...)
 	// return &Row{rows: rows, err: err}
 	if err != nil {
-		log.Printf("query count error: %s", err)
+		logger().Warnw("query count fail", "err", err)
 		err = ErrDbError
 		return
 	}
@@ -169,7 +175,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t uint, err error) {
 	return
 }
 
-func (mw *MetaWrap) Browse(limit, offset uint, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
+func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFilter) (a []*Entry, err error) {
 	if limit < 1 {
 		limit = 1
 	}
@@ -181,7 +187,6 @@ func (mw *MetaWrap) Browse(limit, offset uint, sort map[string]int, filter MetaF
 	log.Printf("browse table: %s", table)
 
 	db := mw.getDb()
-	defer db.Close()
 
 	var orders []string
 	for k, v := range sort {
@@ -206,7 +211,7 @@ func (mw *MetaWrap) Browse(limit, offset uint, sort map[string]int, filter MetaF
 	argc := len(args)
 	r, err = db.Query(fmt.Sprintf("%s LIMIT $%d OFFSET $%d", str, argc+1, argc+2), append(args, limit, offset)...)
 	if err != nil {
-		log.Printf("browse error: %s", err)
+		logger().Warnw("browse fail", "err", err)
 		err = ErrDbError
 		return
 	}
@@ -229,44 +234,37 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 
 	e := Entry{}
 	var id, roof string
-	var meta cdb.Hstore
+	var meta image.Attr
 	// "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, created, roof"
 	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
 		&e.sev, &e.Tags, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
-		log.Printf("bind error: %s", err)
+		logger().Warnw("bind fail", "err", err)
 		err = ErrDbError
 		return nil, err
 	}
-	e.Id, err = NewEntryId(id)
-	if err != nil {
-		return nil, err
-	}
-
-	var ia image.Attr
-	err = meta.ToStruct(&ia)
+	e.Id, err = base.ParseID(id)
 	if err != nil {
 		return nil, err
 	}
 
 	// log.Printf("bind meta %s: %v", meta, ia)
 
-	e.Meta = &ia
-	e.Mime = fmt.Sprint(meta.Get("mime"))
-	e.Roofs = cdb.Qarray{roof}
+	e.Meta = &meta
+	e.Mime = meta.Mime
+	e.Roofs = cdb.StringArray{roof}
 
 	// log.Printf("bind name: %s, path: %s, size: %d, mime: %s\n", e.Name, e.Path, e.Size, e.Mime)
 
 	return &e, nil
 }
 
-func (mw *MetaWrap) GetMeta(id EntryId) (*Entry, error) {
+func (mw *MetaWrap) GetMeta(id string) (*Entry, error) {
 	db := mw.getDb()
-	defer db.Close()
 
 	sql := "SELECT " + meta_columns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 
-	row := db.QueryRow(sql, id.String())
+	row := db.QueryRow(sql, id)
 
 	return _bindRow(row)
 }
@@ -276,7 +274,6 @@ func popPrepared() (*Entry, error) {
 	mw := mwr.(*MetaWrap)
 
 	db := mw.getDb()
-	defer db.Close()
 
 	sql := "SELECT " + meta_columns + " FROM meta__prepared ORDER BY created ASC LIMIT 1"
 
@@ -286,53 +283,53 @@ func popPrepared() (*Entry, error) {
 }
 
 func (mw *MetaWrap) Ready(entry *Entry) error {
-	db := mw.getDb()
-	defer db.Close()
+	return mw.withTxQuery(func(tx *sql.Tx) error {
+		var created time.Time
+		err := tx.QueryRow("SELECT created FROM meta__prepared WHERE id = $1", entry.Id).Scan(&created)
+		if err == nil {
+			return nil
+		}
+		logger().Infow("load prepared fail", "id", entry.Id, "err", err)
 
-	sql := "SELECT entry_ready($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-	row := db.QueryRow(sql, mw.table_suffix,
-		entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.Hashes, entry.Ids,
-		entry.AppId, entry.Author, entry.Tags)
-
-	var ret int
-	err := row.Scan(&ret)
-	if err != nil {
-		log.Printf("ready error: %s", err)
-		err = ErrDbError
+		_, err = tx.Exec(`INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author, tags)
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, entry.Id, mw.tableSuffix, entry.Path,
+			entry.Meta.Name, entry.Meta.Size, entry.Meta, entry.Hashes, entry.Ids,
+			entry.AppId, entry.Author, entry.Tags)
+		if err != nil {
+			logger().Warnw("save prepared fail", "entry", entry, "err", err)
+		} else {
+			logger().Infow("save prepared OK", "id", entry.Id)
+		}
 		return err
-	}
-
-	log.Printf("entry ready ret: %v\n", ret)
-
-	return nil
+	})
 }
 
-func (mw *MetaWrap) SetDone(id EntryId, sev cdb.Hstore) error {
+func (mw *MetaWrap) SetDone(id string, sev cdb.JsonKV) error {
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
-		err = tx.QueryRow("SELECT entry_set_done($1, $2)", id.String(), sev).Scan(&ret)
+		err = tx.QueryRow("SELECT entry_set_done($1, $2)", id, sev).Scan(&ret)
 		if err == nil {
 			log.Printf("entry set done ret: %v\n", ret)
 		} else {
-			log.Printf("setDone error: %s", err)
+			logger().Warnw("setDone fail", "err", err)
 		}
 		return
 	}
 	return mw.withTxQuery(qs)
 }
 
-func (mw *MetaWrap) Save(entry *Entry, is_update bool) error {
+func (mw *MetaWrap) Save(entry *Entry, isUpdate bool) error {
 	var qs func(tx *sql.Tx) (err error)
-	if is_update {
+	if isUpdate {
 		qs = func(tx *sql.Tx) (err error) {
 			query := "UPDATE " + mw.table() + " SET app_id = $1, author = $2 WHERE id = $3"
 			var r sql.Result
 			r, err = tx.Exec(query, entry.AppId, entry.Author, entry.Id)
 			if err == nil {
 				a, _ := r.RowsAffected()
-				log.Printf("entry '%s' updated: %v", entry.Id.id, a)
+				log.Printf("entry '%s' updated: %v", entry.Id, a)
 			} else {
-				log.Printf("save error: %s", err)
+				logger().Warnw("save fail", "err", err)
 			}
 			return
 		}
@@ -340,8 +337,8 @@ func (mw *MetaWrap) Save(entry *Entry, is_update bool) error {
 		qs = func(tx *sql.Tx) (err error) {
 			query := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
 
-			err = tx.QueryRow(query, mw.table_suffix,
-				entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+			err = tx.QueryRow(query, mw.tableSuffix,
+				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.Ids,
 				entry.AppId, entry.Author).Scan(&entry.ret)
 			if err == nil {
 				log.Printf("entry save ret: %v\n", entry.ret)
@@ -362,11 +359,11 @@ func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 			return err
 		}
 		for _, entry := range entries {
-			err := st.QueryRow(mw.table_suffix,
-				entry.Id.String(), entry.Path, entry.Meta.Hstore(), entry.sev, entry.Hashes, entry.Ids,
+			err := st.QueryRow(mw.tableSuffix,
+				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.Ids,
 				entry.AppId, entry.Author).Scan(&entry.ret)
 			if err != nil {
-				log.Printf("batchSave %s %s error: %s", entry.Id.String(), entry.Path, err)
+				log.Printf("batchSave %s %s error: %s", entry.Id, entry.Path, err)
 				return err
 			}
 			log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, entry.ret)
@@ -383,46 +380,50 @@ type ehash struct {
 
 func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	db := mw.getDb()
-	defer db.Close()
 	var e = ehash{hash: hash}
-	sql := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
-	row := db.QueryRow(sql, hash)
+	q := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
+	row := db.QueryRow(q, hash)
 	err := row.Scan(&e.id, &e.path)
 	if err != nil {
-		log.Println(err)
+		if err == sql.ErrNoRows {
+			logger().Infow("row not found", "hash", hash)
+		} else {
+			logger().Warnw("get hash fail", "hash", hash)
+		}
+
 		return nil, err
 	}
 	return &e, nil
 }
 
-func (mw *MetaWrap) GetEntry(id EntryId) (*Entry, error) {
+func (mw *MetaWrap) GetEntry(id string) (*Entry, error) {
 	db := mw.getDb()
-	defer db.Close()
-	sql := "SELECT name, path, mime, size, sev, status, created, roofs FROM " + tableMap(id.String()) + " WHERE id = $1 LIMIT 1"
-	row := db.QueryRow(sql, id.String())
-	var e = Entry{Id: &id}
+	sql := "SELECT name, path, mime, size, sev, status, created, roofs FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
+	row := db.QueryRow(sql, id)
+	pinID, _ := base.ParseID(id)
+	var e = Entry{Id: pinID}
 	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
 	if err != nil {
-		log.Printf("[%s]getEntry %s error %s", mw.roof, id.String(), err)
+		log.Printf("[%s]getEntry %s error %s", mw.roof, id, err)
 		return nil, err
 	}
 	return &e, nil
 }
 
-func (mw *MetaWrap) Delete(id EntryId) error {
+func (mw *MetaWrap) Delete(id string) error {
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
 		sql := "SELECT entry_delete($1, $2);"
-		err = tx.QueryRow(sql, mw.table_suffix, id.String()).Scan(&ret)
+		err = tx.QueryRow(sql, mw.tableSuffix, id).Scan(&ret)
 		if err == nil {
-			log.Printf("delete entry [%s]%s result %v", mw.table_suffix, id.String(), ret)
+			log.Printf("delete entry [%s]%s result %v", mw.tableSuffix, id, ret)
 		}
 		return
 	}
 	return mw.withTxQuery(qs)
 }
 
-func (mw *MetaWrap) MapTags(id EntryId, tags string) error {
+func (mw *MetaWrap) MapTags(id string, tags string) error {
 
 	var qtags, err = cdb.NewQarrayText(tags)
 	if err != nil {
@@ -431,16 +432,16 @@ func (mw *MetaWrap) MapTags(id EntryId, tags string) error {
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
 		sql := "SELECT tag_map($1, $2, $3);"
-		err = tx.QueryRow(sql, mw.table_suffix, id, qtags).Scan(&ret)
+		err = tx.QueryRow(sql, mw.tableSuffix, id, qtags).Scan(&ret)
 		if err == nil {
-			log.Printf("entry [%s]%s mapping tags '%s' result %v", mw.table_suffix, id, tags, ret)
+			log.Printf("entry [%s]%v mapping tags '%s' result %v", mw.tableSuffix, id, tags, ret)
 		}
 		return
 	}
 	return mw.withTxQuery(qs)
 }
 
-func (mw *MetaWrap) UnmapTags(id EntryId, tags string) error {
+func (mw *MetaWrap) UnmapTags(id string, tags string) error {
 
 	var qtags, err = cdb.NewQarrayText(tags)
 	if err != nil {
@@ -449,9 +450,9 @@ func (mw *MetaWrap) UnmapTags(id EntryId, tags string) error {
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
 		sql := "SELECT tag_unmap($1, $2, $3);"
-		err = tx.QueryRow(sql, mw.table_suffix, id, qtags).Scan(&ret)
+		err = tx.QueryRow(sql, mw.tableSuffix, id, qtags).Scan(&ret)
 		if err == nil {
-			log.Printf("entry [%s]%s unmap tags '%s' result %v", mw.table_suffix, id, tags, ret)
+			log.Printf("entry [%s]%v unmap tags '%s' result %v", mw.tableSuffix, id, tags, ret)
 		}
 		return
 	}
@@ -467,9 +468,9 @@ func (mw *MetaWrap) getDb() *sql.DB {
 }
 
 func tableHash(s string) string {
-	return hash_table_prefix + s[:1]
+	return prefixHashTable + s[:1]
 }
 
 func tableMap(s string) string {
-	return map_table_prefix + s[:1]
+	return prefixMapTable + s[:1]
 }

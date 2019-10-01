@@ -2,22 +2,23 @@ package storage
 
 import (
 	"errors"
+	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage/types"
 	"log"
 	"time"
-	"wpst.me/calf/db"
-	"wpst.me/calf/image"
 )
 
-func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev db.Hstore, hashes, ids []string, created time.Time) (entry *Entry, err error) {
+func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev types.JsonKV, hashes, ids []string,
+	created time.Time) (entry *Entry, err error) {
 
 	if id == "" {
 		err = errors.New("'id' is empty")
 		return
 	}
 
-	var eid *EntryId
-	eid, err = NewEntryId(id)
-
+	var eid base.PinID
+	eid, err = base.ParseID(id)
 	if err != nil {
 		log.Println(err)
 		return
@@ -39,12 +40,7 @@ func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev db.Hsto
 	}
 
 	var ia image.Attr
-	err = meta.ToStruct(&ia)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	// log.Println("ia:", ia)
+	ia.FromMap(meta)
 
 	entry = &Entry{
 		Id:      eid,
@@ -62,16 +58,8 @@ func NewEntryConvert(id, name, path, mime string, size uint32, meta, sev db.Hsto
 	}
 
 	entry.Meta = &ia
-	entry.Hashes, err = db.NewQarray(hashes)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	entry.Hashes = types.StringArray(hashes)
 
-	entry.Ids, err = db.NewQarray(ids)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	entry.Ids = types.StringArray(ids)
 	return
 }

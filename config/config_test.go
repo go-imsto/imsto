@@ -31,9 +31,9 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Logf("sections: %d", len(sections))
 
-	t.Logf("section default", GetSection(defaultSection))
+	t.Logf("section default %v", GetSection(defaultSection))
 
-	t.Logf("has section 'demo': %s", HasSection("demo"))
+	t.Logf("has section 'demo': %v", HasSection("demo"))
 
 	// t.Fail()
 }
