@@ -34,9 +34,8 @@ CREATE TABLE hash_template (
 -- mapping for id and storage engine item
 CREATE TABLE map_template (
 	id entry_id NOT NULL, -- id = base_convert(hash,16,36), hash = crc64Sum
-	name name NOT NULL DEFAULT '',
+	name varCHAR(120) NOT NULL DEFAULT '',
 	path entry_path NOT NULL ,
-	mime varCHAR(64) NOT NULL DEFAULT '' ,
 	size int NOT NULL DEFAULT 0 CHECK (size >= 0),
 	sev jsonb NOT NULL DEFAULT '{}'::jsonb, -- storage info
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=deleted
@@ -49,7 +48,7 @@ CREATE TABLE map_template (
 CREATE TABLE meta_template (
 	id entry_id NOT NULL,
 	path entry_path NOT NULL ,
-	name name NOT NULL DEFAULT '',
+	name varCHAR(120) NOT NULL DEFAULT '',
 	roof varCHAR(12) NOT NULL DEFAULT '',
 	meta jsonb NOT NULL DEFAULT '{}'::jsonb,
 	hashes varCHAR(40)[],

@@ -6,7 +6,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"io/ioutil"
 	"mime"
 	"os"
 	"path"
@@ -43,12 +42,12 @@ func testApp(args []string) bool {
 			return false
 		}
 		mw := storage.NewMetaWrapper(*troof)
-		entry, err := mw.GetEntry(id.String())
+		entry, err := mw.GetMapping(id.String())
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false
 		}
-		fmt.Printf("found: \t%s\n", entry.Id)
+		fmt.Printf("found: \t%s\n", entry.ID)
 		fmt.Printf("size: \t%d\npath: \t%v\nname: \t%q\nroofs: \t%s\n", entry.Size, entry.Path, entry.Name, entry.Roofs)
 		return true
 	}
@@ -72,12 +71,13 @@ func testApp(args []string) bool {
 	}
 
 	if *tfile != "" {
-		data, err := ioutil.ReadFile(*tfile)
+		file, err := os.Open(*tfile)
 		if err != nil {
 			fmt.Println("read file error: ", err)
 			return false
 		}
-		entry, err := storage.NewEntry(data, path.Base(*tfile))
+		defer file.Close()
+		entry, err := storage.NewEntryReader(file, path.Base(*tfile))
 		if err != nil {
 			fmt.Println("new entry error: ", err)
 			return false
@@ -111,7 +111,7 @@ func testApp(args []string) bool {
 		var (
 			im *cimg.Image
 		)
-		im, err = cimg.Open(file, file.Name())
+		im, err = cimg.Open(file)
 		fmt.Printf("attr: %v", im.Attr)
 		return true
 	}

@@ -137,7 +137,7 @@ LANGUAGE plpgsql;
 
 -- 保存 map 记录
 CREATE OR REPLACE FUNCTION imsto.map_save(
-	a_id text, a_path text, a_name text, a_mime text, a_size int, a_sev jsonb, a_roof text)
+	a_id text, a_path text, a_name text, a_size int, a_sev jsonb, a_roof text)
 
 RETURNS int AS
 $$
@@ -170,10 +170,10 @@ BEGIN
 		t_roofs := i_roofs;
 	END IF;
 
-	EXECUTE 'INSERT INTO ' || tbname || '(id, path, name, mime, size, sev, roofs) VALUES (
-		$1, $2, $3, $4, $5, $6, $7
+	EXECUTE 'INSERT INTO ' || tbname || '(id, path, name, size, sev, roofs) VALUES (
+		$1, $2, $3, $4, $5, $6
 	)'
-	USING a_id, a_path, a_name, a_mime, a_size, a_sev, t_roofs;
+	USING a_id, a_path, a_name, a_size, a_sev, t_roofs;
 
 RETURN 1;
 END;
@@ -187,7 +187,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 -- 保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
-	a_id text, a_path text, a_meta jsonb, a_sev jsonb
+	a_id text, a_path text, a_size int, a_meta jsonb, a_sev jsonb
 	, a_hashes text[], a_ids text[]
 	, a_appid int, a_author int, a_tags text[])
 
@@ -198,8 +198,6 @@ DECLARE
 	-- tb_hash text;
 	-- tb_map text;
 	t_name text;
-	t_mime text;
-	t_size int;
 	tb_meta text;
 	t_status smallint;
 BEGIN
@@ -226,15 +224,13 @@ BEGIN
 	END LOOP;
 
 	t_name := a_meta->'name';
-	t_mime := a_meta->'mime';
-	t_size := a_meta->'size';
 	-- save entry map
 	FOR m_v IN SELECT UNNEST(a_ids) AS value LOOP
-		PERFORM map_save(m_v, a_path, COALESCE(t_name,''), t_mime, t_size, a_sev, a_roof);
+		PERFORM map_save(m_v, a_path, COALESCE(t_name,''), a_size, a_sev, a_roof);
 	END LOOP;
 
 	IF NOT a_ids @> ARRAY[a_id] THEN
-		PERFORM map_save(a_id, a_path, COALESCE(t_name,''), t_mime, t_size, a_sev, a_roof);
+		PERFORM map_save(a_id, a_path, COALESCE(t_name,''), a_size, a_sev, a_roof);
 	END IF;
 
 	-- save entry meta
@@ -242,7 +238,7 @@ BEGIN
 	 VALUES (
 		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 	)'
-	USING a_id, a_path, COALESCE(t_name,''), t_size, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof, a_tags;
+	USING a_id, a_path, COALESCE(t_name,''), a_size, a_meta, a_hashes, a_ids, a_sev, a_appid, a_author, a_roof, a_tags;
 
 RETURN 1;
 END;
@@ -291,7 +287,7 @@ IF NOT FOUND THEN
 	RETURN -2;
 END IF;
 
-SELECT entry_save(m_rec.roof, m_rec.id, m_rec.path, m_rec.meta, a_sev,
+SELECT entry_save(m_rec.roof, m_rec.id, m_rec.path, m_rec.size, m_rec.meta, a_sev,
  m_rec.hashes, m_rec.ids, m_rec.app_id, m_rec.author, m_rec.tags) INTO t_ret;
 
 DELETE FROM meta__prepared WHERE id = a_id;

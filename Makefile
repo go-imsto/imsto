@@ -10,6 +10,7 @@ ROOF:=github.com/go-imsto/$(NAME)
 SOURCES=$(shell find base cmd config image storage -type f \( -name "*.go" ! -name "*_test.go" \) -print )
 TAG:=`git describe --tags --always`
 LDFLAGS:=-X $(ROOF)/config.Version=$(TAG)-$(DATE)
+VET=go vet -vettool=$(which shadow) -atomic -bool -copylocks -nilfunc -printf -rangeloops -unreachable -unsafeptr -unusedresult
 
 main:
 	echo "Building $(NAME)"
@@ -20,7 +21,7 @@ dep:
 
 vet:
 	echo "Checking ./..."
-	go vet -vettool=$(which shadow) -atomic -bool -copylocks -nilfunc -printf -rangeloops -unreachable -unsafeptr -unusedresult ./...
+	$(VET) ./base/... ./cmd/... ./config ./image/... ./storage/... ./web/...
 
 clean:
 	echo "Cleaning dist"
@@ -40,6 +41,18 @@ dist: vet dist/linux_amd64/$(NAME) dist/darwin_amd64/$(NAME)
 package: dist
 	tar -cvJf $(NAME)-linux-amd64-$(TAG).tar.xz -C dist/linux_amd64 $(NAME)
 	tar -cvJf $(NAME)-darwin-amd64-$(TAG).tar.xz -C dist/darwin_amd64 $(NAME)
+
+test-image:
+	$(VET) ./image
+	mkdir -p tests
+	@$(WITH_ENV) go test -v -cover -coverprofile tests/cover_image.out ./image
+	@$(WITH_ENV) go tool cover -html=tests/cover_image.out -o tests/cover_image.out.html
+
+test-storage:
+	$(VET) ./storage
+	mkdir -p tests
+	@$(WITH_ENV) go test -v -cover -coverprofile tests/cover_storage.out ./storage
+	@$(WITH_ENV) go tool cover -html=tests/cover_storage.out -o tests/cover_storage.out.html
 
 
 docker-db-build:

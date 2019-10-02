@@ -5,7 +5,13 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"mime"
+
+	"github.com/liut/jpegquality"
+)
+
+const (
+	formatJPEG = "jpeg"
+	formatPNG  = "png"
 )
 
 // Image ...
@@ -16,17 +22,22 @@ type Image struct {
 }
 
 // Open ...
-func Open(r io.Reader, name string) (*Image, error) {
-	m, format, err := image.Decode(r)
+func Open(rs io.ReadSeeker) (*Image, error) {
+	m, format, err := image.Decode(rs)
 	if err != nil {
 		return nil, err
 	}
 
 	pt := m.Bounds().Max
 	attr := NewAttr(uint(pt.X), uint(pt.Y), 0)
-	attr.Ext = format
-	attr.Mime = mime.TypeByExtension(attr.Ext)
-	attr.Name = name
+	attr.Ext = getExt(format)
+	if format == formatJPEG {
+		jr, err := jpegquality.New(rs)
+		if err != nil {
+			return nil, err
+		}
+		attr.Quality = Quality(jr.Quality())
+	}
 	return &Image{
 		m:      m,
 		Attr:   attr,
@@ -52,9 +63,9 @@ func (im *Image) WriteTo(w io.Writer, opt *WriteOption) error {
 // WriteTo ...
 func WriteTo(w io.Writer, m image.Image, opt *WriteOption) error {
 	switch opt.Format {
-	case "jpeg":
+	case formatJPEG:
 		return jpeg.Encode(w, m, &jpeg.Options{Quality: int(opt.Quality)})
-	case "png":
+	case formatPNG:
 		return png.Encode(w, m)
 	}
 	return ErrorFormat

@@ -34,7 +34,7 @@ type MetaWrapper interface {
 	BatchSave(entries []*Entry) error
 	GetMeta(id string) (*Entry, error)
 	GetHash(hash string) (*ehash, error)
-	GetEntry(id string) (*Entry, error)
+	GetMapping(id string) (*mapItem, error)
 	Delete(id string) error
 	MapTags(id string, tags string) error
 	UnmapTags(id string, tags string) error
@@ -236,7 +236,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	var id, roof string
 	var meta image.Attr
 	// "id, path, name, meta, hashes, ids, size, sev, exif, app_id, author, created, roof"
-	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.Ids, &e.Size,
+	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.IDs, &e.Size,
 		&e.sev, &e.Tags, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
 		logger().Warnw("bind fail", "err", err)
@@ -248,13 +248,8 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 		return nil, err
 	}
 
-	// log.Printf("bind meta %s: %v", meta, ia)
-
 	e.Meta = &meta
-	e.Mime = meta.Mime
 	e.Roofs = cdb.StringArray{roof}
-
-	// log.Printf("bind name: %s, path: %s, size: %d, mime: %s\n", e.Name, e.Path, e.Size, e.Mime)
 
 	return &e, nil
 }
@@ -293,12 +288,12 @@ func (mw *MetaWrap) Ready(entry *Entry) error {
 
 		_, err = tx.Exec(`INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author, tags)
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, entry.Id, mw.tableSuffix, entry.Path,
-			entry.Meta.Name, entry.Meta.Size, entry.Meta, entry.Hashes, entry.Ids,
+			entry.Name, entry.Size, entry.Meta, entry.Hashes, entry.IDs,
 			entry.AppId, entry.Author, entry.Tags)
 		if err != nil {
 			logger().Warnw("save prepared fail", "entry", entry, "err", err)
 		} else {
-			logger().Infow("save prepared OK", "id", entry.Id)
+			logger().Infow("save prepared OK", "id", entry.Id, "hashs", entry.Hashes)
 		}
 		return err
 	})
@@ -309,9 +304,9 @@ func (mw *MetaWrap) SetDone(id string, sev cdb.JsonKV) error {
 		var ret int
 		err = tx.QueryRow("SELECT entry_set_done($1, $2)", id, sev).Scan(&ret)
 		if err == nil {
-			log.Printf("entry set done ret: %v\n", ret)
+			logger().Infow("setDone", "id", id)
 		} else {
-			logger().Warnw("setDone fail", "err", err)
+			logger().Warnw("setDone fail", "id", id, "err", err)
 		}
 		return
 	}
@@ -338,7 +333,7 @@ func (mw *MetaWrap) Save(entry *Entry, isUpdate bool) error {
 			query := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
 
 			err = tx.QueryRow(query, mw.tableSuffix,
-				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.Ids,
+				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.IDs,
 				entry.AppId, entry.Author).Scan(&entry.ret)
 			if err == nil {
 				log.Printf("entry save ret: %v\n", entry.ret)
@@ -360,13 +355,13 @@ func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 		}
 		for _, entry := range entries {
 			err := st.QueryRow(mw.tableSuffix,
-				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.Ids,
+				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.IDs,
 				entry.AppId, entry.Author).Scan(&entry.ret)
 			if err != nil {
 				log.Printf("batchSave %s %s error: %s", entry.Id, entry.Path, err)
 				return err
 			}
-			log.Printf("batchSave %s %s %d: %d", entry.Path, entry.Mime, entry.Size, entry.ret)
+			log.Printf("batchSave %s %d: %d", entry.Path, entry.Size, entry.ret)
 		}
 		return nil
 	}
@@ -396,15 +391,15 @@ func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 	return &e, nil
 }
 
-func (mw *MetaWrap) GetEntry(id string) (*Entry, error) {
+func (mw *MetaWrap) GetMapping(id string) (*mapItem, error) {
 	db := mw.getDb()
-	sql := "SELECT name, path, mime, size, sev, status, created, roofs FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT name, path, size, sev, status, created, roofs FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id)
 	pinID, _ := base.ParseID(id)
-	var e = Entry{Id: pinID}
-	err := row.Scan(&e.Name, &e.Path, &e.Mime, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
+	var e = mapItem{ID: pinID}
+	err := row.Scan(&e.Name, &e.Path, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
 	if err != nil {
-		log.Printf("[%s]getEntry %s error %s", mw.roof, id, err)
+		log.Printf("[%s]GetMapping %s error %s", mw.roof, id, err)
 		return nil, err
 	}
 	return &e, nil
