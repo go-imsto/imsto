@@ -3,22 +3,33 @@ package image
 import (
 	"bytes"
 	"encoding/base64"
-	"strings"
+	"log"
+	"os"
 	"testing"
 
+	"github.com/liut/jpegquality"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestImage(t *testing.T) {
-	rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpegData))
+func init() {
+	jpegquality.SetLogger(log.New(os.Stderr, "test ", log.Ltime|log.Lshortfile))
+}
 
-	im, err := Open(rd)
+func TestImage(t *testing.T) {
+	data, err := base64.StdEncoding.DecodeString(jpegData)
+	if err != nil {
+		t.Errorf("decode err %s", err)
+		return
+	}
+
+	im, err := Open(bytes.NewReader(data))
 	assert.NoError(t, err)
 	assert.NotNil(t, im)
 	assert.NotNil(t, im.Attr)
 	assert.Equal(t, jpegWidth, im.Attr.Width)
 	assert.Equal(t, jpegHeight, im.Attr.Height)
 	assert.Equal(t, ".jpg", im.Attr.Ext)
+	assert.Equal(t, int(jpegQuality), int(im.Attr.Quality))
 
 	var buf bytes.Buffer
 	err = im.WriteTo(&buf, &WriteOption{Format: "jpeg", Quality: 84})

@@ -333,13 +333,14 @@ func (e *Entry) PushTo(roof string) (sev cdb.JsonKV, err error) {
 func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err error) {
 
 	maxQuality := iimg.Quality(config.GetInt(roof, "max_quality"))
-	if ia.Quality > maxQuality {
-		log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, maxQuality)
-	} else {
-		maxQuality = ia.Quality
-		log.Printf("jpeg quality %d is too low", ia.Quality)
+	if ia.Quality > 0 {
+		if ia.Quality > maxQuality {
+			log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, maxQuality)
+		} else {
+			maxQuality = ia.Quality
+			log.Printf("jpeg quality %d is too low", ia.Quality)
+		}
 	}
-	// im.SetOption(iimg.WriteOption{Quality: maxQuality, StripAll: true})
 
 	maxWidth := iimg.Dimension(config.GetInt(roof, "max_width"))
 	maxHeight := iimg.Dimension(config.GetInt(roof, "max_height"))
