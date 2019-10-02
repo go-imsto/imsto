@@ -1,8 +1,8 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/base64"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,15 +21,19 @@ const jpegData = `/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAQDAwMDAgQDAwMEBAQFBgoGBgUFBg
 // TestEntry ...
 func TestEntry(t *testing.T) {
 
-	rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpegData))
+	// rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpegData))
+	buf, err := base64.StdEncoding.DecodeString(jpegData)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, buf)
 
-	entry, err := NewEntryReader(rd, "test.jpg")
+	entry, err := NewEntryReader(bytes.NewReader(buf), "test.jpg")
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.NotNil(t, entry)
 	assert.Equal(t, jpegWidth, entry.im.Width)
 	assert.Equal(t, jpegHeight, entry.im.Height)
+	assert.Equal(t, int(jpegQuality), int(entry.im.Quality))
 
 	var (
 		_hash = "709e291268aea5f67a3397679b6fd9cd"
