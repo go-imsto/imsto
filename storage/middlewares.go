@@ -60,7 +60,7 @@ func StoredRequest(r *http.Request) (entries map[string][]entryStored, err error
 			}
 
 			log.Printf("post %s (%s) size %d\n", fh.Filename, mime, len(fh.Header))
-			// entry, ee := NewEntry(data, fh.Filename)
+
 			entry, ee := PrepareReader(file, fh.Filename, lastModified)
 			if ee != nil {
 				entries[k][i].Err = ee.Error()

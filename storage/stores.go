@@ -390,7 +390,7 @@ func PopReadyDone() (entry *Entry, err error) {
 	return
 }
 
-func PrepareReader(r io.Reader, name string, modified uint64) (entry *Entry, err error) {
+func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry, err error) {
 
 	entry, err = NewEntryReader(r, name)
 	if err != nil {
@@ -400,7 +400,7 @@ func PrepareReader(r io.Reader, name string, modified uint64) (entry *Entry, err
 	return
 }
 
-func StoredReader(r io.Reader, name, roof string, modified uint64) (entry *Entry, err error) {
+func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
 	entry, err = PrepareReader(r, name, modified)
 	if err != nil {
 		return

@@ -77,14 +77,15 @@ const (
 )
 
 // NewEntryReader ...
-func NewEntryReader(r io.Reader, name string) (e *Entry, err error) {
+func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 	w := newHasher()
-	tr := io.TeeReader(r, w)
+	io.Copy(w, rs)
 	e = &Entry{
 		Name:    name,
 		Created: time.Now(),
 	}
-	e.im, err = iimg.Open(tr)
+	rs.Seek(0, 0)
+	e.im, err = iimg.Open(rs)
 	if err != nil {
 		logger().Infow("open image fail", "name", name, "len", w.Len())
 		return
