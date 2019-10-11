@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"time"
 
@@ -21,12 +20,10 @@ import (
 
 const (
 	// ViewName ...
-	ViewName    = "show"
-	ptImagePath = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	ViewName = "show"
 )
 
 var (
-	ire            = regexp.MustCompile(ptImagePath)
 	ErrWriteFailed = errors.New("Err: Write file failed")
 	ErrEmptyRoof   = errors.New("empty roof")
 	ErrEmptyID     = errors.New("empty id")

@@ -31,7 +31,6 @@ var (
 
 func init() {
 	cmdTiring.Run = runTiring
-	cmdTiring.Flag.BoolVar(&cmdTiring.IsDebug, "debug", false, "enable debug mode")
 }
 
 func runTiring(args []string) bool {
