@@ -12,7 +12,7 @@ type apiMeta map[string]interface{}
 type apiError struct {
 	Code int    `json:"code,omitempty"`
 	Msg  string `json:"message,omitempty"`
-	err  error  `json:"-"`
+	err  error
 }
 
 func newApiRes(meta apiMeta, data interface{}) apiRes {

@@ -144,11 +144,11 @@ func _store_zip(zipfile string) bool {
 		}
 		name := _shrink_name(f.Name)
 
-		var buf []bytes
+		var buf []byte
 		buf, err = ioutil.ReadAll(rc)
 		if err != nil {
 			log.Print(err)
-			return
+			return false
 		}
 		entry, err := storage.PrepareReader(bytes.NewReader(buf), name, uint64(f.FileInfo().ModTime().Unix()))
 		if err != nil {
