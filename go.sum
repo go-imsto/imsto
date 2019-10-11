@@ -8,6 +8,8 @@ github.com/crowdmob/goamz v0.0.0-20150128194925-3a06871fe9fc h1:Gn/roShKxUNtNYEE
 github.com/crowdmob/goamz v0.0.0-20150128194925-3a06871fe9fc/go.mod h1:4zrXGiIhmCfgVUO6nJpSa9QVXylPKBYkLa179m59HzE=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/go-imsto/imagid v0.0.1 h1:CzhjrdRL+Sudl9u85lLVL7XtYtXclvXFIFFmDt4nlaw=
+github.com/go-imsto/imagid v0.0.1/go.mod h1:ZXCYwOMpMBjZTtawAli5qt7Tv4Qtkhu+rQUdU1aXi6g=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

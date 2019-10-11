@@ -2,6 +2,7 @@ package image
 
 import (
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -10,6 +11,7 @@ import (
 )
 
 const (
+	formatGIF  = "gif"
 	formatJPEG = "jpeg"
 	formatPNG  = "png"
 )
@@ -65,6 +67,12 @@ func WriteTo(w io.Writer, m image.Image, opt *WriteOption) error {
 	switch opt.Format {
 	case formatJPEG:
 		return jpeg.Encode(w, m, &jpeg.Options{Quality: int(opt.Quality)})
+	case formatGIF:
+		return gif.Encode(w, m, &gif.Options{
+			NumColors: 256,
+			Quantizer: nil,
+			Drawer:    nil,
+		})
 	case formatPNG:
 		return png.Encode(w, m)
 	}

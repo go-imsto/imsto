@@ -11,7 +11,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/image"
 	cdb "github.com/go-imsto/imsto/storage/types"
@@ -243,7 +243,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 		err = ErrDbError
 		return nil, err
 	}
-	e.Id, err = base.ParseID(id)
+	e.Id, err = imagid.ParseID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +395,8 @@ func (mw *MetaWrap) GetMapping(id string) (*mapItem, error) {
 	db := mw.getDb()
 	sql := "SELECT name, path, size, sev, status, created, roofs FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id)
-	pinID, _ := base.ParseID(id)
-	var e = mapItem{ID: pinID}
+	IID, _ := imagid.ParseID(id)
+	var e = mapItem{ID: IID}
 	err := row.Scan(&e.Name, &e.Path, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
 	if err != nil {
 		log.Printf("[%s]GetMapping %s error %s", mw.roof, id, err)

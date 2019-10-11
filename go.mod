@@ -6,6 +6,7 @@ require (
 	github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40
 	github.com/cespare/xxhash v1.1.0
 	github.com/crowdmob/goamz v0.0.0-20150128194925-3a06871fe9fc
+	github.com/go-imsto/imagid v0.0.1
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.1.1
 	github.com/liut/jpegquality v0.0.0-20191002165442-bae201ebadd1

@@ -1,4 +1,4 @@
-// see also: php.net/base_convert
+// Package base see also: php.net/base_convert
 package base
 
 import (

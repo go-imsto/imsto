@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/types"
 )
@@ -18,8 +18,8 @@ func NewEntryConvert(id, name, path string, size uint32, meta, sev types.JsonKV,
 		return
 	}
 
-	var eid base.PinID
-	eid, err = base.ParseID(id)
+	var eid imagid.IID
+	eid, err = imagid.ParseID(id)
 	if err != nil {
 		log.Println(err)
 		return

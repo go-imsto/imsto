@@ -9,14 +9,14 @@ import (
 	"path"
 	"time"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/backend"
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
-type PinID = base.PinID
+type IID = imagid.IID
 type AppID uint16
 
 type Author uint32
@@ -25,7 +25,7 @@ type StringArray = cdb.StringArray
 type StringSlice = cdb.StringSlice
 
 type mapItem struct {
-	ID      PinID       `json:"id"`
+	ID      IID         `json:"id"`
 	Hash    string      `json:"hash"`
 	Name    string      `json:"name"`
 	Size    uint32      `json:"size"`
@@ -44,7 +44,7 @@ func (e *mapItem) roof() string {
 }
 
 type Entry struct {
-	Id       base.PinID  `json:"id"`
+	Id       imagid.IID  `json:"id"`
 	Name     string      `json:"name"`
 	Size     uint32      `json:"size"`
 	Path     string      `json:"path"`
@@ -94,7 +94,7 @@ func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 	e.im.Name = name
 	e.Meta = e.im.Attr
 	id, hash := w.Hash()
-	e.Id = base.PinID(id)
+	e.Id = imagid.IID(id)
 	e.h = hash
 	e.Path = e.Id.String() + e.im.Attr.Ext
 	return
@@ -134,8 +134,8 @@ func (e *Entry) Trek(roof string) (err error) {
 		logger().Infow("hashed", "hash1", e.h, "hash2", hash2)
 		hashes = append(hashes, hash2)
 
-		ids = append(ids, PinID(id2).String())
-		e.Id = PinID(id2) // 使用新的 Id 作为主键
+		ids = append(ids, IID(id2).String())
+		e.Id = IID(id2) // 使用新的 Id 作为主键
 		e.h = hash2
 		e.Size = uint32(size)
 		e.Meta = e.im.Attr
@@ -174,7 +174,7 @@ func (e *Entry) Store(roof string) (err error) {
 	if _err != nil { // ok, not exsits
 		logger().Infow("check hash fail", "h", e.h, "err", _err)
 	} else if eh != nil && eh.id != "" {
-		if _id, _err := base.ParseID(eh.id); _err == nil {
+		if _id, _err := imagid.ParseID(eh.id); _err == nil {
 			e.Id = _id
 			_ne, _err := mw.GetMeta(_id.String())
 			if _err == nil { // path, mime, size, sev, status, created
@@ -290,7 +290,7 @@ func (e *Entry) roof() string {
 	return ""
 }
 
-func newStorePath(id base.PinID, ext string) string {
+func newStorePath(id imagid.IID, ext string) string {
 	r := id.String()
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 

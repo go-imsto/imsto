@@ -13,10 +13,12 @@ import (
 	"github.com/nfnt/resize"
 )
 
+// consts
 const (
-	MIN_JPEG_QUALITY = jpeg.DefaultQuality // 75
+	MinJPEGQuality = jpeg.DefaultQuality // 75
 )
 
+// ThumbOption ...
 type ThumbOption struct {
 	Width, Height       uint
 	MaxWidth, MaxHeight uint
@@ -32,12 +34,12 @@ func (topt ThumbOption) String() string {
 }
 
 func (t ThumbOption) GetQuality() Quality {
-	// if topt.Quality < MIN_JPEG_QUALITY {
-	// 	topt.Quality = MIN_JPEG_QUALITY
+	// if topt.Quality < MinJPEGQuality {
+	// 	topt.Quality = MinJPEGQuality
 	// }
 	q := t.Quality
-	if q < MIN_JPEG_QUALITY {
-		q = MIN_JPEG_QUALITY
+	if q < MinJPEGQuality {
+		q = MinJPEGQuality
 	}
 	return q
 }
@@ -93,6 +95,7 @@ func (topt *ThumbOption) calc(ow, oh uint) error {
 	return nil
 }
 
+// ThumbnailImage ...
 func ThumbnailImage(img image.Image, topt *ThumbOption) (image.Image, error) {
 
 	ob := img.Bounds()
@@ -122,9 +125,10 @@ func ThumbnailImage(img image.Image, topt *ThumbOption) (image.Image, error) {
 	return m, nil
 }
 
+// Thumbnail ...
 func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	var err error
-	im, _, err := image.Decode(r)
+	im, format, err := image.Decode(r)
 	if err != nil {
 		log.Printf("ThumbnailIo image decode error: %s", err)
 		return err
@@ -141,14 +145,16 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 			if err == nil {
 				log.Printf("written %d", written)
 				return nil
-			} else {
-				log.Printf("copy error %s", err)
 			}
+			log.Printf("copy error %s", err)
 		}
 		return err
 	}
 
-	err = jpeg.Encode(w, m, &jpeg.Options{int(topt.GetQuality())})
+	err = WriteTo(w, m, &WriteOption{
+		Format:  format,
+		Quality: topt.GetQuality(),
+	})
 
 	if err != nil {
 		log.Print(err)

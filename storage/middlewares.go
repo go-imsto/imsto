@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/config"
 )
 
@@ -107,7 +107,7 @@ func Delete(roof, id string) error {
 	}
 
 	mw := NewMetaWrapper(roof)
-	eid, err := base.ParseID(id)
+	eid, err := imagid.ParseID(id)
 	if err != nil {
 		return err
 	}

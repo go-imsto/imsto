@@ -6,17 +6,16 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	// "net/http"
 	"os"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage/imagio"
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
@@ -54,63 +53,16 @@ func NewHttpError(code int, text string) *HttpError {
 
 // temporary item for http read
 type outItem struct {
-	m        harg
+	p        *imagio.Param
 	roof     string
 	src      string
 	dst      string
-	id       base.PinID
+	id       imagid.IID
 	isOrig   bool
 	lock     FLock
 	name     string
 	length   int64
 	modified time.Time
-}
-
-func newOutItem(url string) (oi *outItem, err error) {
-
-	var m harg
-	m, err = parsePath(url)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	logger().Debugw("parsed", "m", m)
-
-	var id base.PinID
-	id, err = base.ParseID(m["t1"] + m["t2"] + m["t3"])
-	if err != nil {
-		log.Printf("invalid id: %s", err)
-		return
-	}
-
-	src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
-
-	oi = &outItem{
-		m:      m,
-		id:     id,
-		src:    src,
-		isOrig: m["size"] == "orig",
-		name:   fmt.Sprintf("%s.%s", id, m["ext"]),
-	}
-
-	orgFile := oi.srcName()
-	if oi.isOrig {
-		oi.dst = orgFile
-	} else {
-		dstPath := fmt.Sprintf("%s/%s", m["size"], oi.src)
-		oi.dst = path.Join(oi.thumbRoot(), dstPath)
-	}
-
-	dir := path.Dir(orgFile)
-	err = os.MkdirAll(dir, os.FileMode(0755))
-
-	oi.lock, err = NewFLock(orgFile + ".lock")
-	if err != nil {
-		log.Printf("create lock error: %s", err)
-		return
-	}
-
-	return
 }
 
 func (o *outItem) cfg(s string) string {
@@ -141,7 +93,7 @@ func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 		return err
 	}
 	if file == nil {
-		return fmt.Errorf("Fatal error: open %s failed", o.name)
+		return fmt.Errorf("Fatal error: open %s failed", o.p.Path)
 	}
 	defer file.Close()
 	c(file)
@@ -153,7 +105,7 @@ func (o *outItem) prepare() (err error) {
 	defer o.Unlock()
 	orgFile := o.srcName()
 
-	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.m["mop"] == "" {
+	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.p.Mop == "" {
 		o.length = fi.Size()
 		o.modified = fi.ModTime()
 		return
@@ -173,7 +125,7 @@ func (o *outItem) prepare() (err error) {
 		roof := o.roof
 		// thumb_path := config.GetValue(roof, "thumb_path")
 		if o.src != storedPath(entry.Path) { // 302 found
-			newPath := path.Join(ViewName, o.m["size"], entry.Path)
+			newPath := path.Join(ViewName, o.p.SizeOp, entry.Path)
 			ie := NewHttpError(302, "Found "+newPath)
 			ie.Path = newPath
 			err = ie
@@ -206,10 +158,10 @@ func (o *outItem) prepare() (err error) {
 		return
 	}
 
-	if o.m["mop"] != "" {
-		if o.m["mop"] == "w" {
-			orgFile := path.Join(o.thumbRoot(), o.m["size"], o.src)
-			dstFile := path.Join(o.thumbRoot(), o.m["size"]+"w", o.src)
+	if o.p.Mop != "" {
+		if o.p.Mop == "w" {
+			orgFile := path.Join(o.thumbRoot(), o.p.SizeOp, o.src)
+			dstFile := path.Join(o.thumbRoot(), o.p.SizeOp+"w", o.src)
 			watermarkFile := path.Join(config.Root(), config.GetValue(o.roof, "watermark"))
 			copyright := config.GetValue(o.roof, "copyright")
 			opacity := config.GetInt(o.roof, "watermark_opacity")
@@ -246,36 +198,22 @@ func (o *outItem) thumbnail() (err error) {
 		// log.Print("thumbnail already done")
 		return
 	}
-	mode := o.m["size"][0:1]
-	dimension := o.m["size"][1:]
+	// mode := o.m["size"][0:1]
+	dimension := o.p.SizeOp[1:]
 	// log.Printf("mode %s, dimension %s", mode, dimension)
 	supportSize := strings.Split(config.GetValue(o.roof, "support_size"), ",")
 	if !stringInSlice(dimension, supportSize) {
 		err = NewHttpError(400, fmt.Sprintf("Unsupported size: %s", dimension))
 		return
 	}
-	var width, height uint
-	if o.m["x"] == "" {
-		var d uint64
-		d, _ = strconv.ParseUint(dimension, 10, 32)
-		width = uint(d)
-		height = uint(d)
-	} else {
-		a := strings.Split(dimension, "x")
-		var dw, dh uint64
-		dw, _ = strconv.ParseUint(a[0], 10, 32)
-		dh, _ = strconv.ParseUint(a[1], 10, 32)
-		width = uint(dw)
-		height = uint(dh)
-	}
 
-	var topt = iimg.ThumbOption{Width: width, Height: height, IsFit: true}
-	if mode == "c" {
+	var topt = iimg.ThumbOption{Width: o.p.Width, Height: o.p.Height, IsFit: true}
+	if o.p.Mode == "c" {
 		topt.IsCrop = true
-	} else if mode == "w" {
-		topt.MaxWidth = width
-	} else if mode == "h" {
-		topt.MaxHeight = height
+	} else if o.p.Mode == "w" {
+		topt.MaxWidth = o.p.Width
+	} else if o.p.Mode == "h" {
+		topt.MaxHeight = o.p.Height
 	}
 	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.name, "opt", topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
@@ -284,7 +222,7 @@ func (o *outItem) thumbnail() (err error) {
 		return
 	}
 
-	if o.m["mop"] == "w" && width < 100 {
+	if o.p.Mop == "w" && o.p.Width < 100 {
 		return NewHttpError(400, "bad size with watermark")
 	}
 	return
@@ -303,30 +241,36 @@ func (o *outItem) Modified() time.Time {
 	return o.modified
 }
 
-type harg map[string]string
-
-func parsePath(s string) (m harg, err error) {
-	if !ire.MatchString(s) {
-		err = NewHttpError(400, fmt.Sprintf("Invalid Path: %s", s))
+// LoadPath ...
+func LoadPath(u string) (item *outItem, err error) {
+	// log.Printf("load: %s", url)
+	var p *imagio.Param
+	p, err = imagio.ParseFromPath(u)
+	if err != nil {
+		logger().Infow("bad url", "url", u, "err", err)
 		return
 	}
-	match := ire.FindStringSubmatch(s)
-	names := ire.SubexpNames()
-	m = make(harg)
-	for i, n := range names {
-		if n != "" {
-			m[n] = match[i]
-		}
+	logger().Debugw("parsed", "param", p)
+	item = &outItem{
+		p:      p,
+		src:    p.Path,
+		isOrig: p.IsOrig,
 	}
-	return
-}
 
-func LoadPath(url string) (item *outItem, err error) {
-	// log.Printf("load: %s", url)
+	orgFile := item.srcName()
+	if item.isOrig {
+		item.dst = orgFile
+	} else {
+		dstPath := fmt.Sprintf("%s/%s", p.SizeOp, item.src)
+		item.dst = path.Join(item.thumbRoot(), dstPath)
+	}
 
-	item, err = newOutItem(url)
+	dir := path.Dir(orgFile)
+	err = os.MkdirAll(dir, os.FileMode(0755))
+
+	item.lock, err = NewFLock(orgFile + ".lock")
 	if err != nil {
-		logger().Infow("bad url", "url", url, "err", err)
+		log.Printf("create lock error: %s", err)
 		return
 	}
 	err = item.prepare()

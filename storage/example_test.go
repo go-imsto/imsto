@@ -40,13 +40,13 @@ func TestEntry(t *testing.T) {
 		_id   = "1kvyfwpt4u9l9"
 	)
 
-	pinID := entry.Id
+	IID := entry.Id
 
 	if entry.h != _hash {
 		t.Fatalf("unexpected result from HashContent:\n+ %v\n- %v", entry.h, _hash)
 	}
-	if pinID.String() != _id {
-		t.Fatalf("unexpected result from HashContent:\n+ %v\n- %v", pinID, _id)
+	if IID.String() != _id {
+		t.Fatalf("unexpected result from HashContent:\n+ %v\n- %v", IID, _id)
 	}
 
 	err = entry.Trek("demo")
