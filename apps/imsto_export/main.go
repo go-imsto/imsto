@@ -80,17 +80,12 @@ func main() {
 
 	mw := storage.NewMetaWrapper(roof)
 	if eid != "" {
-		id, err := storage.NewEntryId(eid)
-		if err != nil {
-			fmt.Printf("error id: %s, %s", eid, err)
-			return
-		}
-		entry, err := mw.GetEntry(*id)
+		entry, err := mw.GetMapping(eid)
 		if err != nil {
 			fmt.Printf("get entry error: %s", err)
 			return
 		}
-		_save_export(entry, edir)
+		_save_export(entry.Path, entry.Size, edir)
 	}
 
 	filter := storage.MetaFilter{}
@@ -123,7 +118,7 @@ func main() {
 		}
 
 		for _, entry := range a {
-			if !_save_export(entry, edir) {
+			if !_save_export(entry.Path, entry.Size, edir) {
 				return
 			}
 		}
@@ -133,14 +128,14 @@ func main() {
 	return
 }
 
-func _save_export(entry *storage.Entry, edir string) bool {
-	name := path.Join(edir, entry.Path)
+func _save_export(key string, size uint32, edir string) bool {
+	name := path.Join(edir, key)
 	fmt.Printf("save to: %s ", name)
-	if fi, fe := os.Stat(name); fe == nil && fi.Size() == int64(entry.Size) {
+	if fi, fe := os.Stat(name); fe == nil && fi.Size() == int64(size) {
 		fmt.Println("exist")
 		return true
 	}
-	err := storage.Dump(entry, roof, name)
+	err := storage.Dump(key, roof, name)
 	if err != nil {
 		fmt.Println(err)
 		return false

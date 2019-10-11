@@ -54,16 +54,16 @@ type WriteOption struct {
 	Quality  Quality
 }
 
-// WriteTo ...
-func (im *Image) WriteTo(w io.Writer, opt *WriteOption) error {
+// SaveTo ...
+func (im *Image) SaveTo(w io.Writer, opt *WriteOption) error {
 	if opt.Format == "" {
 		opt.Format = im.Format
 	}
-	return WriteTo(w, im.m, opt)
+	return SaveTo(w, im.m, opt)
 }
 
-// WriteTo ...
-func WriteTo(w io.Writer, m image.Image, opt *WriteOption) error {
+// SaveTo ...
+func SaveTo(w io.Writer, m image.Image, opt *WriteOption) error {
 	switch opt.Format {
 	case formatJPEG:
 		return jpeg.Encode(w, m, &jpeg.Options{Quality: int(opt.Quality)})

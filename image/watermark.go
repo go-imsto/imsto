@@ -146,7 +146,7 @@ func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) 
 	if err != nil {
 		return err
 	}
-	err = jpeg.Encode(w, m, &jpeg.Options{MinJPEGQuality})
+	err = jpeg.Encode(w, m, &jpeg.Options{Quality: MinJPEGQuality})
 
 	if err != nil {
 		log.Print(err)

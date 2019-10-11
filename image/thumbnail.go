@@ -151,7 +151,7 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 		return err
 	}
 
-	err = WriteTo(w, m, &WriteOption{
+	err = SaveTo(w, m, &WriteOption{
 		Format:  format,
 		Quality: topt.GetQuality(),
 	})
