@@ -26,8 +26,10 @@ type Param struct {
 	IsOrig bool       `json:"isOrig"`
 	Path   string     `json:"path"`
 	SizeOp string     `json:"size"`
-	Mop    string     `json:"mop"`
+	Mop    string     `json:"mop,omitempty"`
 	Mode   string     `json:"mode"`
+	Ext    string     `json:"ext"`
+	Name   string     `json:"name,omitempty"`
 
 	Width  uint `json:"width"`
 	Height uint `json:"height"`
@@ -50,19 +52,23 @@ func ParseFromPath(uri string) (p *Param, err error) {
 	if err != nil {
 		return
 	}
-	p = &Param{m: m}
 	idstr := m["t1"] + m["t2"] + m["t3"]
-	p.Path = StoredPath(idstr + "." + m["ext"])
 	var id imagid.IID
 	id, err = imagid.ParseID(idstr)
 	if err != nil {
 		log.Printf("invalid id: %s", err)
 		return
 	}
-	p.ID = id
-	p.SizeOp = m["size"]
-	p.Mop = m["mop"]
-	p.IsOrig = m["size"] == "orig"
+	name := idstr + "." + m["ext"]
+	p = &Param{m: m,
+		ID:     id,
+		Path:   StoredPath(name),
+		SizeOp: m["size"],
+		Mop:    m["mop"],
+		Ext:    m["ext"],
+		IsOrig: m["size"] == "orig",
+		Name:   name,
+	}
 	if !p.IsOrig {
 		p.splitSize()
 	}
