@@ -13,6 +13,7 @@ import (
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/backend"
+	"github.com/go-imsto/imsto/storage/hash"
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
@@ -59,6 +60,8 @@ type Entry struct {
 	Modified uint64      `json:"modified,omitempty"`
 	Created  time.Time   `json:"created,omitempty"`
 
+	Err string `json:"err,omitempty"`
+
 	exif cdb.JsonKV
 	sev  cdb.JsonKV
 
@@ -78,7 +81,7 @@ const (
 
 // NewEntryReader ...
 func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
-	w := newHasher()
+	w := hash.New()
 	io.Copy(w, rs)
 	e = &Entry{
 		Name:    name,
@@ -129,7 +132,7 @@ func (e *Entry) Trek(roof string) (err error) {
 
 	hashes := cdb.StringArray{e.h}
 	ids := cdb.StringArray{e.Id.String()}
-	id2, hash2 := HashContent(e.b)
+	id2, hash2 := hash.SumContent(e.b)
 	if hash2 != e.h {
 		logger().Infow("hashed", "hash1", e.h, "hash2", hash2)
 		hashes = append(hashes, hash2)
@@ -145,20 +148,6 @@ func (e *Entry) Trek(roof string) (err error) {
 	e.IDs = ids
 
 	return
-}
-
-// return hash value string
-// func (e *Entry) Hashed() string {
-// 	return e.h
-// }
-// storedPath ...
-func storedPath(r string) string {
-	if len(r) < 5 {
-		return r
-	}
-	p := r[0:2] + "/" + r[2:4] + "/" + r[4:]
-
-	return p
 }
 
 func (e *Entry) IsDone() bool {
@@ -264,7 +253,7 @@ func (e *Entry) fill(data []byte) error {
 		return fmt.Errorf("invliad size: %d (%d)", size, e.Size)
 	}
 
-	_, m := HashContent(data)
+	_, m := hash.SumContent(data)
 
 	if !StringSlice(e.Hashes).Contains(m) {
 		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)

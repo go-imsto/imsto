@@ -52,21 +52,21 @@ func newToken(ver VerID, appid AppID, salt []byte) (*apiToken, error) {
 	return &apiToken{ver: ver, appid: appid, salt: salt, stamp: unixStamp()}, nil
 }
 
-func (a *apiToken) VerifyString(str string) (bool, error) {
+func (a *apiToken) VerifyString(str string) error {
 	if str == "" {
-		return false, errors.New("api: token is empty")
+		return errors.New("api: token is empty")
 	}
 	s, err := base64.URLEncoding.DecodeString(str)
 	if err != nil {
 		log.Printf("verifystring '%s' error: %s", str, err)
-		return false, err
+		return err
 	}
 	return a.Verify(s)
 }
 
-func (a *apiToken) Verify(s []byte) (bool, error) {
+func (a *apiToken) Verify(s []byte) error {
 	if len(s) < min_token_length {
-		return false, errors.New("api: invalid token size")
+		return errors.New("api: invalid token size")
 	}
 	// log.Printf("token %x", s)
 	vc := s[di_vc:di_hash]
@@ -80,14 +80,14 @@ func (a *apiToken) Verify(s []byte) (bool, error) {
 	// timeout
 	if isExpired(stamp) {
 		log.Printf("token %x expired", s)
-		return false, errors.New("api: the token is expired")
+		return errors.New("api: the token is expired")
 	}
 	value := s[di_value:]
 
 	// invalid hash
 	if !bytes.Equal(hash, hashToken(a.salt, value, stamp)) {
 		// log.Printf("invalid token %x", s)
-		return false, errors.New("api: invalid token")
+		return errors.New("api: invalid token")
 	}
 
 	log.Printf("api: verify ok, and got value: %x", value)
@@ -95,7 +95,7 @@ func (a *apiToken) Verify(s []byte) (bool, error) {
 	a.vc = valueCate(vc[0])
 	a.value = value
 
-	return true, nil
+	return nil
 }
 
 func (a *apiToken) IsExpired() bool {

@@ -35,6 +35,14 @@ type Param struct {
 	m harg
 }
 
+// StoredPath 计算存储路径
+func StoredPath(r string) string {
+	if len(r) < 7 {
+		return r
+	}
+	return r[0:2] + "/" + r[2:4] + "/" + r[4:]
+}
+
 // ParseFromPath ...
 func ParseFromPath(uri string) (p *Param, err error) {
 	var m harg
@@ -43,8 +51,10 @@ func ParseFromPath(uri string) (p *Param, err error) {
 		return
 	}
 	p = &Param{m: m}
+	idstr := m["t1"] + m["t2"] + m["t3"]
+	p.Path = StoredPath(idstr + "." + m["ext"])
 	var id imagid.IID
-	id, err = imagid.ParseID(m["t1"] + m["t2"] + m["t3"])
+	id, err = imagid.ParseID(idstr)
 	if err != nil {
 		log.Printf("invalid id: %s", err)
 		return
@@ -53,7 +63,6 @@ func ParseFromPath(uri string) (p *Param, err error) {
 	p.SizeOp = m["size"]
 	p.Mop = m["mop"]
 	p.IsOrig = m["size"] == "orig"
-	p.Path = fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
 	if !p.IsOrig {
 		p.splitSize()
 	}

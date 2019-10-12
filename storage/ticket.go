@@ -2,12 +2,10 @@ package storage
 
 import (
 	"database/sql"
-	_ "database/sql/driver"
 	"encoding/binary"
-	"github.com/go-imsto/imsto/config"
-	_ "github.com/lib/pq"
 	"log"
-	"net/http"
+
+	"github.com/go-imsto/imsto/config"
 )
 
 type Ticket struct {
@@ -30,38 +28,12 @@ func newTicket(roof string, appid AppID) *Ticket {
 	return t
 }
 
-// deprecated
-func TokenRequestNew(r *http.Request) (t *apiToken, err error) {
+// TicketRequestNew ... deprecated
+func (a *App) TicketRequestNew(roof, token string, uid int, prompt string) (t *apiToken, err error) {
+	ticket := newTicket(roof, a.Id)
 
-	cr, e := parseRequest(r, false)
-	if e != nil {
-		logger().Warnw("parseRequest fail", "err", e)
-		err = e
-		return
-	}
-
-	t, err = cr.app.genToken()
-	if err != nil {
-		logger().Warnw("genToken fail", "err", err)
-		return
-	}
-	var b = make([]byte, 4)
-	binary.BigEndian.PutUint32(b, uint32(cr.author))
-	t.SetValue(b, VC_TOKEN)
-	return
-}
-
-func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
-	cr, e := parseRequest(r, true)
-	if e != nil {
-		err = e
-		return
-	}
-
-	ticket := newTicket(cr.roof, cr.app.Id)
-
-	ticket.Author = cr.author
-	ticket.Prompt = r.FormValue("prompt")
+	ticket.Author = Author(uid)
+	ticket.Prompt = prompt
 
 	err = ticket.saveNew()
 
@@ -70,7 +42,7 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 		return
 	}
 
-	t, err = cr.app.genToken()
+	t, err = a.VerifyToken(token)
 	if err != nil {
 		logger().Warnw("genToken fail", "err", err)
 		return
@@ -84,18 +56,18 @@ func TicketRequestNew(r *http.Request) (t *apiToken, err error) {
 	return
 }
 
-func TicketRequestLoad(r *http.Request) (ticket *Ticket, err error) {
-	cr, e := parseRequest(r, true)
-	if e != nil {
-		err = e
+func (a *App) TicketRequestLoad(token, roof string, author int) (ticket *Ticket, err error) {
+
+	at, err := a.VerifyToken(token)
+	if err != nil {
 		return
 	}
 
-	id := cr.token.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
+	id := at.GetValuleInt() // int(binary.BigEndian.Uint64(t.GetValue()))
 
-	ticket, err = loadTicket(cr.roof, int(id))
-	if ticket.Author != cr.author {
-		log.Printf("mismatch author %d : %d", ticket.Author, cr.author)
+	ticket, err = loadTicket(roof, int(id))
+	if ticket.Author != Author(author) {
+		log.Printf("mismatch author %d : %d", ticket.Author, author)
 	}
 	return
 }

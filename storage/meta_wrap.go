@@ -399,7 +399,7 @@ func (mw *MetaWrap) GetMapping(id string) (*mapItem, error) {
 	var e = mapItem{ID: IID}
 	err := row.Scan(&e.Name, &e.Path, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
 	if err != nil {
-		log.Printf("[%s]GetMapping %s error %s", mw.roof, id, err)
+		logger().Infow("GetMapping fail", "roof", mw.roof, "id", id, "err", err)
 		return nil, err
 	}
 	return &e, nil

@@ -118,21 +118,12 @@ func (o *outItem) prepare() (err error) {
 			return
 		}
 		o.roof = entry.roof()
-		// log.Printf("got %s", entry.Path)
 		roof := o.roof
-		// thumb_path := config.GetValue(roof, "thumb_path")
-		if o.src != storedPath(entry.Path) { // 302 found
-			newPath := path.Join(ViewName, o.p.SizeOp, entry.Path)
-			ie := NewHttpError(302, "Found "+newPath)
-			ie.Path = newPath
-			err = ie
-			return
-		}
 
 		if len(entry.Roofs) > 0 {
 			roof0 := fmt.Sprint(entry.Roofs[0])
 			if roof != roof0 {
-				log.Printf("mismatch roof: %s => %s", o.roof, roof0)
+				logger().Infow("mismatch roof", "roof", o.roof, "roof0", roof0)
 				roof = roof0
 			}
 		}
@@ -238,6 +229,11 @@ func (o *outItem) Modified() time.Time {
 	return o.modified
 }
 
+// storedPath ...
+func storedPath(r string) string {
+	return imagio.StoredPath(r)
+}
+
 // LoadPath ...
 func LoadPath(u string) (item *outItem, err error) {
 	// log.Printf("load: %s", url)
@@ -250,6 +246,7 @@ func LoadPath(u string) (item *outItem, err error) {
 	logger().Debugw("parsed", "param", p)
 	item = &outItem{
 		p:      p,
+		id:     p.ID,
 		src:    p.Path,
 		isOrig: p.IsOrig,
 	}
@@ -262,8 +259,7 @@ func LoadPath(u string) (item *outItem, err error) {
 		item.dst = path.Join(item.thumbRoot(), dstPath)
 	}
 
-	dir := path.Dir(orgFile)
-	err = os.MkdirAll(dir, os.FileMode(0755))
+	ReadyDir(orgFile)
 
 	item.lock, err = NewFLock(orgFile + ".lock")
 	if err != nil {
@@ -272,19 +268,10 @@ func LoadPath(u string) (item *outItem, err error) {
 	}
 	err = item.prepare()
 	if err != nil {
-		logger().Warnw("prepare fail", "item", item, "err", err)
+		logger().Warnw("prepare fail", "param", item.p, "err", err)
 		return
 	}
 	return
-}
-
-func stringInSlice(s string, a []string) bool {
-	for _, v := range a {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 func Dump(key, roof, file string) error {
@@ -297,18 +284,6 @@ func Dump(key, roof, file string) error {
 	}
 	logger().Infow("pulled", "roof", roof, "bytes", len(data))
 	return SaveFile(file, data)
-}
-
-func ReadyDir(filename string) error {
-	dir := path.Dir(filename)
-	return os.MkdirAll(dir, os.FileMode(0755))
-}
-
-func SaveFile(filename string, data []byte) error {
-	if err := ReadyDir(filename); err != nil {
-		return err
-	}
-	return ioutil.WriteFile(filename, data, os.FileMode(0644))
 }
 
 func PopReadyDone() (entry *Entry, err error) {
@@ -331,6 +306,7 @@ func PopReadyDone() (entry *Entry, err error) {
 	return
 }
 
+// PrepareReader ...
 func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry, err error) {
 
 	entry, err = NewEntryReader(r, name)
@@ -341,15 +317,16 @@ func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry,
 	return
 }
 
-func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
-	entry, err = PrepareReader(r, name, modified)
-	if err != nil {
-		return
-	}
-	err = entry.Store(roof)
-	return
-}
+// func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
+// 	entry, err = PrepareReader(r, name, modified)
+// 	if err != nil {
+// 		return
+// 	}
+// 	err = entry.Store(roof)
+// 	return
+// }
 
+// PrepareFile ...
 func PrepareFile(file, name string) (entry *Entry, err error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -374,14 +351,14 @@ func PrepareFile(file, name string) (entry *Entry, err error) {
 	return PrepareReader(f, name, modified)
 }
 
-func StoredFile(file, name, roof string) (entry *Entry, err error) {
-	entry, err = PrepareFile(file, name)
-	if err != nil {
-		return
-	}
-	err = entry.Store(roof)
-	return
-}
+// func StoredFile(file, name, roof string) (entry *Entry, err error) {
+// 	entry, err = PrepareFile(file, name)
+// 	if err != nil {
+// 		return
+// 	}
+// 	err = entry.Store(roof)
+// 	return
+// }
 
 func ParseTags(s string) (cdb.StringArray, error) {
 	return strings.Split(strings.ToLower(s), ","), nil

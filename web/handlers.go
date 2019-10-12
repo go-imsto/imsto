@@ -26,13 +26,13 @@ func Handler() http.Handler {
 	mux := pat.New()
 	mux.Get("/imsto/roofs", http.HandlerFunc(roofsHandler))
 
-	mux.Post("/imsto/ticket", http.HandlerFunc(ticketHandlerPost))
-	mux.Get("/imsto/ticket", http.HandlerFunc(ticketHandlerGet))
+	mux.Post("/imsto/ticket", storage.CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
+	mux.Get("/imsto/ticket", storage.CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
 
-	mux.Post("/imsto/token", http.HandlerFunc(tokenHandler))
+	mux.Post("/imsto/token", storage.CheckAPIKey(http.HandlerFunc(tokenHandler)))
 
-	mux.Post("/imsto/:roof", secure(whiteList, postHandler))
-	mux.Del("/imsto/:roof/:id", secure(whiteList, deleteHandler))
+	mux.Post("/imsto/:roof", storage.CheckAPIKey(secure(whiteList, storedHandler)))
+	mux.Del("/imsto/:roof/:id", storage.CheckAPIKey(secure(whiteList, deleteHandler)))
 	mux.Get("/imsto/:roof/id", http.HandlerFunc(GetOrHeadHandler))
 	mux.Get("/imsto/:roof/metas/count", http.HandlerFunc(countHandler))
 	mux.Get("/imsto/:roof/metas", http.HandlerFunc(browseHandler))
@@ -49,17 +49,12 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		logger().Warnw("loadPath fail", "ref", r.Referer(), "err", err)
-		switch err.(type) {
-		case *storage.HttpError:
-			ie := err.(*storage.HttpError)
-			if ie.Code == 302 {
-				// log.Printf("redirect to %s", ie.Path)
-				http.Redirect(w, r, ie.Path, ie.Code)
+		if he, ok := err.(*storage.HttpError); ok {
+			if he.Code == 302 {
+				logger().Infow("redirect", "path", he.Path)
+				http.Redirect(w, r, he.Path, he.Code)
 				return
 			}
-			// w.WriteHeader(ie.Code)
-			http.Error(w, ie.Text, ie.Code)
-			return
 		}
 		writeJsonError(w, r, err)
 
@@ -231,8 +226,66 @@ func getUrl(scheme, roof, size string) string {
 	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
 }
 
-func postHandler(w http.ResponseWriter, r *http.Request) {
-	entries, err := storage.StoredRequest(r)
+func storedHandler(w http.ResponseWriter, r *http.Request) {
+	var us uploadSchema
+	err := Bind(r, &us)
+	if err != nil {
+		writeJsonError(w, r, err)
+		return
+	}
+	if us.Roof == "" {
+		us.Roof = r.URL.Query().Get(":roof")
+	}
+	if err = r.ParseMultipartForm(storage.DefaultMaxMemory); err != nil {
+		log.Print("multipart form parse error:", err)
+		writeJsonError(w, r, err)
+		return
+	}
+	app, appOK := storage.AppFromContext(r.Context())
+	if !appOK {
+		w.WriteHeader(400)
+		writeJson(w, r, "app error")
+		return
+	}
+	_, err = app.VerifyToken(us.Token)
+	if err != nil {
+		writeJsonError(w, r, err)
+		return
+	}
+
+	tags, _ := storage.ParseTags(us.Tags)
+	entries := make(map[string][]*storage.Entry)
+	for k, fhs := range r.MultipartForm.File {
+		entries[k] = make([]*storage.Entry, len(fhs))
+		for i, fh := range fhs {
+			log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
+			mime := fh.Header.Get("Content-Type")
+			file, fe := fh.Open()
+			if fe != nil {
+				entries[k][i].Err = fe.Error()
+			}
+
+			log.Printf("post %s (%s) size %d\n", fh.Filename, mime, len(fh.Header))
+
+			entry, ee := storage.PrepareReader(file, fh.Filename, us.Modified)
+			if ee != nil {
+				entries[k][i].Err = ee.Error()
+				continue
+			}
+			entry.AppId = app.Id
+			entry.Author = storage.Author(us.User)
+			// entry.Modified = lastModified
+			entry.Tags = tags
+			ee = entry.Store(us.Roof)
+			if ee != nil {
+				log.Printf("%02d stored error: %s", i, ee)
+				entries[k][i].Err = ee.Error()
+				continue
+			}
+			log.Printf("%02d [%s]stored %s %s", i, us.Roof, entry.Id, entry.Path)
+			entries[k][i] = entry
+		}
+	}
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -265,35 +318,61 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func tokenHandler(w http.ResponseWriter, r *http.Request) {
-	token, err := storage.TokenRequestNew(r)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("ERROR: %s", err)
+	var param tokenSchema
+	if err := Bind(r, &param); err != nil {
 		writeJsonError(w, r, err)
 		return
 	}
+	app, appOK := storage.AppFromContext(r.Context())
+	if !appOK {
+		w.WriteHeader(400)
+		writeJson(w, r, "app error")
+		return
+	}
 
-	meta := newApiMeta(true)
-	meta["token"] = token.String()
+	token := app.RequestNewToken(param.User)
+	meta := newApiMeta(token != "")
+	meta["token"] = token
 	writeJsonQuiet(w, r, newApiRes(meta, nil))
 }
 
 func ticketHandlerPost(w http.ResponseWriter, r *http.Request) {
-	token, err := storage.TicketRequestNew(r)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("ERROR: %s", err)
+	var param ticketSchema
+	if err := Bind(r, &param); err != nil {
 		writeJsonError(w, r, err)
 		return
 	}
-	meta := newApiMeta(false)
-	meta["ok"] = true
-	meta["token"] = token.String()
+	app, appOK := storage.AppFromContext(r.Context())
+	if !appOK {
+		w.WriteHeader(400)
+		writeJson(w, r, "app error")
+		return
+	}
+
+	token, err := app.TicketRequestNew(param.Roof, param.Token, param.User, param.Prompt)
+	if err != nil {
+		writeJsonError(w, r, err)
+		return
+	}
+	str := token.String()
+	meta := newApiMeta(str != "")
+	meta["token"] = str
 	writeJsonQuiet(w, r, newApiRes(meta, nil))
 }
 
 func ticketHandlerGet(w http.ResponseWriter, r *http.Request) {
-	ticket, err := storage.TicketRequestLoad(r)
+	var param ticketSchema
+	if err := Bind(r, &param); err != nil {
+		writeJsonError(w, r, err)
+		return
+	}
+	app, appOK := storage.AppFromContext(r.Context())
+	if !appOK {
+		w.WriteHeader(400)
+		writeJson(w, r, "app error")
+		return
+	}
+	ticket, err := app.TicketRequestLoad(param.Token, param.Roof, param.User)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
