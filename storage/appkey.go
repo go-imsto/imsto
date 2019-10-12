@@ -5,19 +5,18 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"time"
 
-	_ "database/sql/driver"
-	_ "github.com/lib/pq"
-
 	"github.com/go-imsto/imsto/base"
 )
 
 const (
-	salt_size = 32
+	saltSize = 32
 )
 
 type App struct {
@@ -59,13 +58,13 @@ func LoadApp(api_key string) (app *App, err error) {
 	return
 }
 
-func (this *App) load() error {
+func (a *App) load() error {
 
 	db := getDb("")
 	defer db.Close()
 
 	sql := "SELECT id, name, api_ver, api_salt, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
-	rows, err := db.Query(sql, this.ApiKey)
+	rows, err := db.Query(sql, a.ApiKey)
 	if err != nil {
 		return err
 	}
@@ -74,19 +73,19 @@ func (this *App) load() error {
 		return fmt.Errorf("not found or disabled")
 	}
 
-	return rows.Scan(&this.Id, &this.Name, &this.Version, &this.ApiSalt, &this.Disabled, &this.Created)
+	return rows.Scan(&a.Id, &a.Name, &a.Version, &a.ApiSalt, &a.Disabled, &a.Created)
 
 }
 
-func (this *App) Save() error {
+func (a *App) Save() error {
 	qs := func(tx *sql.Tx) (err error) {
 		sql := "SELECT app_save($1, $2, $3, $4);"
 		var ret int
-		err = tx.QueryRow(sql, this.Name, this.ApiKey, this.ApiSalt, this.Version).Scan(&ret)
+		err = tx.QueryRow(sql, a.Name, a.ApiKey, a.ApiSalt, a.Version).Scan(&ret)
 		if err == nil {
 			log.Printf("app saved: %v\n", ret)
 			if ret > 0 {
-				this.Id = AppID(ret)
+				a.Id = AppID(ret)
 			}
 		}
 		return
@@ -94,17 +93,44 @@ func (this *App) Save() error {
 	return withTxQuery("", qs)
 }
 
-func (this *App) genToken() (*apiToken, error) {
-	salt, err := this.saltBytes()
+func (a *App) genToken() (*apiToken, error) {
+	salt, err := a.saltBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	return newToken(this.Version, this.Id, salt)
+	return newToken(a.Version, a.Id, salt)
+}
+
+func (a *App) RequestNewToken(uid int) string {
+	t, err := a.genToken()
+	if err != nil {
+		logger().Warnw("genToken fail", "err", err)
+		return ""
+	}
+	var b = make([]byte, 4)
+	binary.BigEndian.PutUint32(b, uint32(uid))
+	t.SetValue(b, VC_TOKEN)
+	return t.String()
+}
+
+// VerifyToken ...
+func (a *App) VerifyToken(token string) (at *apiToken, err error) {
+	if token == "" {
+		err = errors.New("api: need token argument")
+		return
+	}
+
+	if at, err = a.genToken(); err != nil {
+		err = fmt.Errorf("genToken: %s", err)
+		return
+	}
+	err = at.VerifyString(token)
+	return
 }
 
 func newSalt() (rs string, err error) {
-	rb := make([]byte, salt_size)
+	rb := make([]byte, saltSize)
 	_, err = rand.Read(rb)
 
 	if err != nil {
@@ -115,6 +141,6 @@ func newSalt() (rs string, err error) {
 	return
 }
 
-func (this *App) saltBytes() ([]byte, error) {
-	return base64.URLEncoding.DecodeString(this.ApiSalt)
+func (a *App) saltBytes() ([]byte, error) {
+	return base64.URLEncoding.DecodeString(a.ApiSalt)
 }

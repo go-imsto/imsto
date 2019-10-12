@@ -6,7 +6,7 @@ set search_path = imsto, public;
 
 -- 初始化 hash 表
 
-CREATE OR REPLACE FUNCTION imsto.hash_tables_init()
+CREATE OR REPLACE FUNCTION hash_tables_init()
 RETURNS int AS
 $$
 DECLARE
@@ -43,7 +43,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 -- 初始化 mapping 表
 
-CREATE OR REPLACE FUNCTION imsto.mapping_tables_init()
+CREATE OR REPLACE FUNCTION mapping_tables_init()
 RETURNS int AS
 $$
 DECLARE
@@ -83,7 +83,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 保存 hash 记录
-CREATE OR REPLACE FUNCTION imsto.hash_save(a_hashed text, a_item_id text, a_path text)
+CREATE OR REPLACE FUNCTION hash_save(a_hashed text, a_item_id text, a_path text)
 
 RETURNS int AS
 $$
@@ -136,7 +136,7 @@ LANGUAGE plpgsql;
 
 
 -- 保存 map 记录
-CREATE OR REPLACE FUNCTION imsto.map_save(
+CREATE OR REPLACE FUNCTION map_save(
 	a_id text, a_path text, a_name text, a_size int, a_sev jsonb, a_roof text)
 
 RETURNS int AS
@@ -186,7 +186,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 -- DROP FUNCTION entry_save(text, text, text, jsonb, jsonb, text[], text[], smallint, integer);
 
 -- 保存某条完整 entry 信息
-CREATE OR REPLACE FUNCTION imsto.entry_save (a_roof text,
+CREATE OR REPLACE FUNCTION entry_save (a_roof text,
 	a_id text, a_path text, a_size int, a_meta jsonb, a_sev jsonb
 	, a_hashes text[], a_ids text[]
 	, a_appid int, a_author int, a_tags text[])
@@ -247,7 +247,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 
 
 -- 预先保存某条完整 entry 信息
-CREATE OR REPLACE FUNCTION imsto.entry_ready (a_roof text,
+CREATE OR REPLACE FUNCTION entry_ready (a_roof text,
 	a_id text, a_path text, a_meta json
 	, a_hashes text[], a_ids text[]
 	, a_appid smallint, a_author int, a_tags text[])
@@ -274,7 +274,7 @@ END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
 
-CREATE OR REPLACE FUNCTION imsto.entry_set_done(a_id text, a_sev jsonb)
+CREATE OR REPLACE FUNCTION entry_set_done(a_id text, a_sev jsonb)
 RETURNS int AS
 $$
 DECLARE
@@ -299,7 +299,7 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
-CREATE OR REPLACE FUNCTION imsto.entry_delete(a_roof text, a_id text)
+CREATE OR REPLACE FUNCTION entry_delete(a_roof text, a_id text)
 RETURNS int AS
 $$
 DECLARE
@@ -323,7 +323,7 @@ BEGIN
 		INSERT INTO meta__deleted (id, path, name, roof, meta, hashes, ids, size
 			, sev, exif, app_id, author, status, created, tags)
 		 VALUES(rec.id, rec.path, rec.name, rec.roof, rec.meta, rec.hashes, rec.ids, rec.size
-		 , rec.sev, COALESCE(rec.exif, ''), rec.app_id, rec.author, rec.status, rec.created, rec.tags);
+		 , rec.sev, COALESCE(rec.exif, '{}'), rec.app_id, rec.author, rec.status, rec.created, rec.tags);
 	END IF;
 
 	-- delete hashes
@@ -352,7 +352,7 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
-CREATE OR REPLACE FUNCTION imsto.tag_map(a_roof text, a_id text, VARIADIC a_tags text[])
+CREATE OR REPLACE FUNCTION tag_map(a_roof text, a_id text, VARIADIC a_tags text[])
 RETURNS int AS
 $$
 DECLARE
@@ -403,7 +403,7 @@ $$
 LANGUAGE 'plpgsql' VOLATILE;
 
 
-CREATE OR REPLACE FUNCTION imsto.tag_unmap(a_roof text, a_id text, VARIADIC a_tags text[])
+CREATE OR REPLACE FUNCTION tag_unmap(a_roof text, a_id text, VARIADIC a_tags text[])
 RETURNS int AS
 $$
 DECLARE

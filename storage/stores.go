@@ -6,28 +6,24 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	// "net/http"
 	"os"
 	"path"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
+	"github.com/go-imsto/imsto/storage/imagio"
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
 const (
 	// ViewName ...
-	ViewName    = "show"
-	ptImagePath = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	ViewName = "show"
 )
 
 var (
-	ire            = regexp.MustCompile(ptImagePath)
 	ErrWriteFailed = errors.New("Err: Write file failed")
 	ErrEmptyRoof   = errors.New("empty roof")
 	ErrEmptyID     = errors.New("empty id")
@@ -54,63 +50,16 @@ func NewHttpError(code int, text string) *HttpError {
 
 // temporary item for http read
 type outItem struct {
-	m        harg
+	p        *imagio.Param
 	roof     string
 	src      string
 	dst      string
-	id       base.PinID
+	id       imagid.IID
 	isOrig   bool
 	lock     FLock
 	name     string
 	length   int64
 	modified time.Time
-}
-
-func newOutItem(url string) (oi *outItem, err error) {
-
-	var m harg
-	m, err = parsePath(url)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	logger().Debugw("parsed", "m", m)
-
-	var id base.PinID
-	id, err = base.ParseID(m["t1"] + m["t2"] + m["t3"])
-	if err != nil {
-		log.Printf("invalid id: %s", err)
-		return
-	}
-
-	src := fmt.Sprintf("%s/%s/%s.%s", m["t1"], m["t2"], m["t3"], m["ext"])
-
-	oi = &outItem{
-		m:      m,
-		id:     id,
-		src:    src,
-		isOrig: m["size"] == "orig",
-		name:   fmt.Sprintf("%s.%s", id, m["ext"]),
-	}
-
-	orgFile := oi.srcName()
-	if oi.isOrig {
-		oi.dst = orgFile
-	} else {
-		dstPath := fmt.Sprintf("%s/%s", m["size"], oi.src)
-		oi.dst = path.Join(oi.thumbRoot(), dstPath)
-	}
-
-	dir := path.Dir(orgFile)
-	err = os.MkdirAll(dir, os.FileMode(0755))
-
-	oi.lock, err = NewFLock(orgFile + ".lock")
-	if err != nil {
-		log.Printf("create lock error: %s", err)
-		return
-	}
-
-	return
 }
 
 func (o *outItem) cfg(s string) string {
@@ -141,7 +90,7 @@ func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 		return err
 	}
 	if file == nil {
-		return fmt.Errorf("Fatal error: open %s failed", o.name)
+		return fmt.Errorf("Fatal error: open %s failed", o.p.Path)
 	}
 	defer file.Close()
 	c(file)
@@ -153,7 +102,7 @@ func (o *outItem) prepare() (err error) {
 	defer o.Unlock()
 	orgFile := o.srcName()
 
-	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.m["mop"] == "" {
+	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.p.Mop == "" {
 		o.length = fi.Size()
 		o.modified = fi.ModTime()
 		return
@@ -169,21 +118,12 @@ func (o *outItem) prepare() (err error) {
 			return
 		}
 		o.roof = entry.roof()
-		// log.Printf("got %s", entry.Path)
 		roof := o.roof
-		// thumb_path := config.GetValue(roof, "thumb_path")
-		if o.src != storedPath(entry.Path) { // 302 found
-			newPath := path.Join(ViewName, o.m["size"], entry.Path)
-			ie := NewHttpError(302, "Found "+newPath)
-			ie.Path = newPath
-			err = ie
-			return
-		}
 
 		if len(entry.Roofs) > 0 {
 			roof0 := fmt.Sprint(entry.Roofs[0])
 			if roof != roof0 {
-				log.Printf("mismatch roof: %s => %s", o.roof, roof0)
+				logger().Infow("mismatch roof", "roof", o.roof, "roof0", roof0)
 				roof = roof0
 			}
 		}
@@ -206,10 +146,10 @@ func (o *outItem) prepare() (err error) {
 		return
 	}
 
-	if o.m["mop"] != "" {
-		if o.m["mop"] == "w" {
-			orgFile := path.Join(o.thumbRoot(), o.m["size"], o.src)
-			dstFile := path.Join(o.thumbRoot(), o.m["size"]+"w", o.src)
+	if o.p.Mop != "" {
+		if o.p.Mop == "w" {
+			orgFile := path.Join(o.thumbRoot(), o.p.SizeOp, o.src)
+			dstFile := path.Join(o.thumbRoot(), o.p.SizeOp+"w", o.src)
 			watermarkFile := path.Join(config.Root(), config.GetValue(o.roof, "watermark"))
 			copyright := config.GetValue(o.roof, "copyright")
 			opacity := config.GetInt(o.roof, "watermark_opacity")
@@ -246,36 +186,22 @@ func (o *outItem) thumbnail() (err error) {
 		// log.Print("thumbnail already done")
 		return
 	}
-	mode := o.m["size"][0:1]
-	dimension := o.m["size"][1:]
+	// mode := o.m["size"][0:1]
+	dimension := o.p.SizeOp[1:]
 	// log.Printf("mode %s, dimension %s", mode, dimension)
 	supportSize := strings.Split(config.GetValue(o.roof, "support_size"), ",")
 	if !stringInSlice(dimension, supportSize) {
 		err = NewHttpError(400, fmt.Sprintf("Unsupported size: %s", dimension))
 		return
 	}
-	var width, height uint
-	if o.m["x"] == "" {
-		var d uint64
-		d, _ = strconv.ParseUint(dimension, 10, 32)
-		width = uint(d)
-		height = uint(d)
-	} else {
-		a := strings.Split(dimension, "x")
-		var dw, dh uint64
-		dw, _ = strconv.ParseUint(a[0], 10, 32)
-		dh, _ = strconv.ParseUint(a[1], 10, 32)
-		width = uint(dw)
-		height = uint(dh)
-	}
 
-	var topt = iimg.ThumbOption{Width: width, Height: height, IsFit: true}
-	if mode == "c" {
+	var topt = iimg.ThumbOption{Width: o.p.Width, Height: o.p.Height, IsFit: true}
+	if o.p.Mode == "c" {
 		topt.IsCrop = true
-	} else if mode == "w" {
-		topt.MaxWidth = width
-	} else if mode == "h" {
-		topt.MaxHeight = height
+	} else if o.p.Mode == "w" {
+		topt.MaxWidth = o.p.Width
+	} else if o.p.Mode == "h" {
+		topt.MaxHeight = o.p.Height
 	}
 	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.name, "opt", topt)
 	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
@@ -284,7 +210,7 @@ func (o *outItem) thumbnail() (err error) {
 		return
 	}
 
-	if o.m["mop"] == "w" && width < 100 {
+	if o.p.Mop == "w" && o.p.Width < 100 {
 		return NewHttpError(400, "bad size with watermark")
 	}
 	return
@@ -303,47 +229,49 @@ func (o *outItem) Modified() time.Time {
 	return o.modified
 }
 
-type harg map[string]string
-
-func parsePath(s string) (m harg, err error) {
-	if !ire.MatchString(s) {
-		err = NewHttpError(400, fmt.Sprintf("Invalid Path: %s", s))
-		return
-	}
-	match := ire.FindStringSubmatch(s)
-	names := ire.SubexpNames()
-	m = make(harg)
-	for i, n := range names {
-		if n != "" {
-			m[n] = match[i]
-		}
-	}
-	return
+// storedPath ...
+func storedPath(r string) string {
+	return imagio.StoredPath(r)
 }
 
-func LoadPath(url string) (item *outItem, err error) {
+// LoadPath ...
+func LoadPath(u string) (item *outItem, err error) {
 	// log.Printf("load: %s", url)
-
-	item, err = newOutItem(url)
+	var p *imagio.Param
+	p, err = imagio.ParseFromPath(u)
 	if err != nil {
-		logger().Infow("bad url", "url", url, "err", err)
+		logger().Infow("bad url", "url", u, "err", err)
+		return
+	}
+	logger().Debugw("parsed", "param", p)
+	item = &outItem{
+		p:      p,
+		id:     p.ID,
+		src:    p.Path,
+		isOrig: p.IsOrig,
+	}
+
+	orgFile := item.srcName()
+	if item.isOrig {
+		item.dst = orgFile
+	} else {
+		dstPath := fmt.Sprintf("%s/%s", p.SizeOp, item.src)
+		item.dst = path.Join(item.thumbRoot(), dstPath)
+	}
+
+	ReadyDir(orgFile)
+
+	item.lock, err = NewFLock(orgFile + ".lock")
+	if err != nil {
+		log.Printf("create lock error: %s", err)
 		return
 	}
 	err = item.prepare()
 	if err != nil {
-		logger().Warnw("prepare fail", "item", item, "err", err)
+		logger().Warnw("prepare fail", "param", item.p, "err", err)
 		return
 	}
 	return
-}
-
-func stringInSlice(s string, a []string) bool {
-	for _, v := range a {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 func Dump(key, roof, file string) error {
@@ -356,18 +284,6 @@ func Dump(key, roof, file string) error {
 	}
 	logger().Infow("pulled", "roof", roof, "bytes", len(data))
 	return SaveFile(file, data)
-}
-
-func ReadyDir(filename string) error {
-	dir := path.Dir(filename)
-	return os.MkdirAll(dir, os.FileMode(0755))
-}
-
-func SaveFile(filename string, data []byte) error {
-	if err := ReadyDir(filename); err != nil {
-		return err
-	}
-	return ioutil.WriteFile(filename, data, os.FileMode(0644))
 }
 
 func PopReadyDone() (entry *Entry, err error) {
@@ -390,6 +306,7 @@ func PopReadyDone() (entry *Entry, err error) {
 	return
 }
 
+// PrepareReader ...
 func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry, err error) {
 
 	entry, err = NewEntryReader(r, name)
@@ -400,15 +317,16 @@ func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry,
 	return
 }
 
-func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
-	entry, err = PrepareReader(r, name, modified)
-	if err != nil {
-		return
-	}
-	err = entry.Store(roof)
-	return
-}
+// func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
+// 	entry, err = PrepareReader(r, name, modified)
+// 	if err != nil {
+// 		return
+// 	}
+// 	err = entry.Store(roof)
+// 	return
+// }
 
+// PrepareFile ...
 func PrepareFile(file, name string) (entry *Entry, err error) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -433,14 +351,14 @@ func PrepareFile(file, name string) (entry *Entry, err error) {
 	return PrepareReader(f, name, modified)
 }
 
-func StoredFile(file, name, roof string) (entry *Entry, err error) {
-	entry, err = PrepareFile(file, name)
-	if err != nil {
-		return
-	}
-	err = entry.Store(roof)
-	return
-}
+// func StoredFile(file, name, roof string) (entry *Entry, err error) {
+// 	entry, err = PrepareFile(file, name)
+// 	if err != nil {
+// 		return
+// 	}
+// 	err = entry.Store(roof)
+// 	return
+// }
 
 func ParseTags(s string) (cdb.StringArray, error) {
 	return strings.Split(strings.ToLower(s), ","), nil

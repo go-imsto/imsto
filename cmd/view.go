@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/storage"
 )
 
@@ -35,7 +35,7 @@ func runView(args []string) bool {
 		return false
 	}
 	if vid != "" {
-		id, err := base.ParseID(vid)
+		id, err := imagid.ParseID(vid)
 		if err != nil {
 			fmt.Printf("error: %s", err)
 			return false

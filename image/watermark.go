@@ -15,21 +15,24 @@ import (
 type Position uint8
 type Opacity uint8
 
+// Position
 const (
 	BottomRight Position = iota
+	BottomLeft
 	TopLeft
 	TopRight
-	BottomLeft
 	Center
 	Golden
 )
 
+// WaterOption ...
 type WaterOption struct {
 	Pos                 Position
 	Opacity             Opacity
 	Filename, Copyright string
 }
 
+// GetPoint ...
 func GetPoint(sm, wm image.Point, pos Position) (pt image.Point) {
 
 	switch pos {
@@ -83,6 +86,8 @@ func (g *grayMask) Bounds() image.Rectangle {
 func (g *grayMask) At(x, y int) color.Color {
 	return color.Alpha{g.alpha}
 }
+
+// WatermarkImage add a watermark and copyright into a image with position and opacity
 func WatermarkImage(img, water, cpm image.Image, pos Position, opacity Opacity) (image.Image, error) {
 	sm := img.Bounds().Max
 	wm := water.Bounds().Max
@@ -112,6 +117,7 @@ func WatermarkImage(img, water, cpm image.Image, pos Position, opacity Opacity) 
 	return m, nil
 }
 
+// Watermark ...
 func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) error {
 
 	im, _, err := image.Decode(r)
@@ -140,7 +146,7 @@ func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) 
 	if err != nil {
 		return err
 	}
-	err = jpeg.Encode(w, m, &jpeg.Options{MIN_JPEG_QUALITY})
+	err = jpeg.Encode(w, m, &jpeg.Options{Quality: MinJPEGQuality})
 
 	if err != nil {
 		log.Print(err)

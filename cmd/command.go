@@ -23,8 +23,7 @@ type Command struct {
 	Run                    func(args []string) bool
 	UsageLine, Short, Long string
 	// Flag is a set of flags specific to this command.
-	Flag    flag.FlagSet
-	IsDebug bool
+	Flag flag.FlagSet
 }
 
 func (cmd *Command) Name() string {
@@ -47,11 +46,15 @@ func (cmd *Command) Usage() {
 
 // main
 var (
-	IsDebug    bool
 	exitStatus = 0
 	exitMu     sync.Mutex
 	cfgDir     string
+	version    = "dev"
 )
+
+func inDevelop() bool {
+	return version == "dev"
+}
 
 var commands = []*Command{
 	// cmdImport,
@@ -108,25 +111,24 @@ func Main() {
 		usage(2)
 	}
 
+	var logger *zap.Logger
+	if inDevelop() {
+		logger, _ = zap.NewDevelopment()
+		logger.Debug("logger start")
+	} else {
+		logger, _ = zap.NewProduction()
+	}
+	defer logger.Sync() // flushes buffer, if any
+	sugar := logger.Sugar()
+
+	zlog.Set(sugar)
+
 	for _, cmd := range commands {
 		name := cmd.Name()
 		if name == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			cmd.Flag.Parse(args[1:])
 			args = cmd.Flag.Args()
-			IsDebug = cmd.IsDebug
-
-			var logger *zap.Logger
-			if IsDebug {
-				logger, _ = zap.NewDevelopment()
-				logger.Debug("logger start")
-			} else {
-				logger, _ = zap.NewProduction()
-			}
-			defer logger.Sync() // flushes buffer, if any
-			sugar := logger.Sugar()
-
-			zlog.Set(sugar)
 
 			// }
 			if !cmd.Run(args) {

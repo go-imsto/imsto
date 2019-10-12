@@ -30,6 +30,7 @@
 		return size + ' bytes';
 	};
 
+	var api_key = '54hLDqgr6tkgb2LzF9396C';
 	var allow_delete = true, default_roof = 'demo', roof, page_size = 20;
 	var post_data = {roof:default_roof, sort_name:'created', sort_order:'desc', tags: ''};
 
@@ -115,6 +116,7 @@
 									var id = $(this).parent().attr("id").substr(6);
 									$.ajax({
 										url: "/imsto/"+roof+"/"+id,
+										headers: {"X-Access-Key": api_key},
 										type: 'DELETE',
 										cache: false,
 										dataType: 'json',

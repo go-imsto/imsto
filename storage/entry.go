@@ -9,14 +9,15 @@ import (
 	"path"
 	"time"
 
-	"github.com/go-imsto/imsto/base"
+	"github.com/go-imsto/imagid"
 	"github.com/go-imsto/imsto/config"
 	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/backend"
+	"github.com/go-imsto/imsto/storage/hash"
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
-type PinID = base.PinID
+type IID = imagid.IID
 type AppID uint16
 
 type Author uint32
@@ -25,7 +26,7 @@ type StringArray = cdb.StringArray
 type StringSlice = cdb.StringSlice
 
 type mapItem struct {
-	ID      PinID       `json:"id"`
+	ID      IID         `json:"id"`
 	Hash    string      `json:"hash"`
 	Name    string      `json:"name"`
 	Size    uint32      `json:"size"`
@@ -44,7 +45,7 @@ func (e *mapItem) roof() string {
 }
 
 type Entry struct {
-	Id       base.PinID  `json:"id"`
+	Id       imagid.IID  `json:"id"`
 	Name     string      `json:"name"`
 	Size     uint32      `json:"size"`
 	Path     string      `json:"path"`
@@ -58,6 +59,8 @@ type Entry struct {
 	Author   Author      `json:"author,omitempty"`
 	Modified uint64      `json:"modified,omitempty"`
 	Created  time.Time   `json:"created,omitempty"`
+
+	Err string `json:"err,omitempty"`
 
 	exif cdb.JsonKV
 	sev  cdb.JsonKV
@@ -78,7 +81,7 @@ const (
 
 // NewEntryReader ...
 func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
-	w := newHasher()
+	w := hash.New()
 	io.Copy(w, rs)
 	e = &Entry{
 		Name:    name,
@@ -94,7 +97,7 @@ func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 	e.im.Name = name
 	e.Meta = e.im.Attr
 	id, hash := w.Hash()
-	e.Id = base.PinID(id)
+	e.Id = imagid.IID(id)
 	e.h = hash
 	e.Path = e.Id.String() + e.im.Attr.Ext
 	return
@@ -114,9 +117,9 @@ func (e *Entry) Trek(roof string) (err error) {
 	}
 
 	var buf bytes.Buffer
-	err = e.im.WriteTo(&buf, wopt)
+	err = e.im.SaveTo(&buf, wopt)
 	if err != nil {
-		logger().Infow("im.WriteTo fail", "id", e.Id, "err", err)
+		logger().Infow("im.SaveTo fail", "id", e.Id, "err", err)
 		return
 	}
 	e.b = buf.Bytes()
@@ -129,13 +132,13 @@ func (e *Entry) Trek(roof string) (err error) {
 
 	hashes := cdb.StringArray{e.h}
 	ids := cdb.StringArray{e.Id.String()}
-	id2, hash2 := HashContent(e.b)
+	id2, hash2 := hash.SumContent(e.b)
 	if hash2 != e.h {
 		logger().Infow("hashed", "hash1", e.h, "hash2", hash2)
 		hashes = append(hashes, hash2)
 
-		ids = append(ids, PinID(id2).String())
-		e.Id = PinID(id2) // 使用新的 Id 作为主键
+		ids = append(ids, IID(id2).String())
+		e.Id = IID(id2) // 使用新的 Id 作为主键
 		e.h = hash2
 		e.Size = uint32(size)
 		e.Meta = e.im.Attr
@@ -145,20 +148,6 @@ func (e *Entry) Trek(roof string) (err error) {
 	e.IDs = ids
 
 	return
-}
-
-// return hash value string
-// func (e *Entry) Hashed() string {
-// 	return e.h
-// }
-// storedPath ...
-func storedPath(r string) string {
-	if len(r) < 5 {
-		return r
-	}
-	p := r[0:2] + "/" + r[2:4] + "/" + r[4:]
-
-	return p
 }
 
 func (e *Entry) IsDone() bool {
@@ -174,7 +163,7 @@ func (e *Entry) Store(roof string) (err error) {
 	if _err != nil { // ok, not exsits
 		logger().Infow("check hash fail", "h", e.h, "err", _err)
 	} else if eh != nil && eh.id != "" {
-		if _id, _err := base.ParseID(eh.id); _err == nil {
+		if _id, _err := imagid.ParseID(eh.id); _err == nil {
 			e.Id = _id
 			_ne, _err := mw.GetMeta(_id.String())
 			if _err == nil { // path, mime, size, sev, status, created
@@ -264,7 +253,7 @@ func (e *Entry) fill(data []byte) error {
 		return fmt.Errorf("invliad size: %d (%d)", size, e.Size)
 	}
 
-	_, m := HashContent(data)
+	_, m := hash.SumContent(data)
 
 	if !StringSlice(e.Hashes).Contains(m) {
 		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)
@@ -290,7 +279,7 @@ func (e *Entry) roof() string {
 	return ""
 }
 
-func newStorePath(id base.PinID, ext string) string {
+func newStorePath(id imagid.IID, ext string) string {
 	r := id.String()
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
 

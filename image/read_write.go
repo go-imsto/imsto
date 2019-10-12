@@ -2,6 +2,7 @@ package image
 
 import (
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -10,6 +11,7 @@ import (
 )
 
 const (
+	formatGIF  = "gif"
 	formatJPEG = "jpeg"
 	formatPNG  = "png"
 )
@@ -52,19 +54,25 @@ type WriteOption struct {
 	Quality  Quality
 }
 
-// WriteTo ...
-func (im *Image) WriteTo(w io.Writer, opt *WriteOption) error {
+// SaveTo ...
+func (im *Image) SaveTo(w io.Writer, opt *WriteOption) error {
 	if opt.Format == "" {
 		opt.Format = im.Format
 	}
-	return WriteTo(w, im.m, opt)
+	return SaveTo(w, im.m, opt)
 }
 
-// WriteTo ...
-func WriteTo(w io.Writer, m image.Image, opt *WriteOption) error {
+// SaveTo ...
+func SaveTo(w io.Writer, m image.Image, opt *WriteOption) error {
 	switch opt.Format {
 	case formatJPEG:
 		return jpeg.Encode(w, m, &jpeg.Options{Quality: int(opt.Quality)})
+	case formatGIF:
+		return gif.Encode(w, m, &gif.Options{
+			NumColors: 256,
+			Quantizer: nil,
+			Drawer:    nil,
+		})
 	case formatPNG:
 		return png.Encode(w, m)
 	}

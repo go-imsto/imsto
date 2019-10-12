@@ -32,7 +32,7 @@ func TestImage(t *testing.T) {
 	assert.Equal(t, int(jpegQuality), int(im.Attr.Quality))
 
 	var buf bytes.Buffer
-	err = im.WriteTo(&buf, &WriteOption{Format: "jpeg", Quality: 84})
+	err = im.SaveTo(&buf, &WriteOption{Format: "jpeg", Quality: 84})
 	assert.NoError(t, err)
 
 	assert.Equal(t, int(jpegSize), buf.Len())

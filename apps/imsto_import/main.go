@@ -2,8 +2,10 @@ package main
 
 import (
 	"archive/zip"
+	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -142,7 +144,13 @@ func _store_zip(zipfile string) bool {
 		}
 		name := _shrink_name(f.Name)
 
-		entry, err := storage.PrepareReader(rc, name, uint64(f.FileInfo().ModTime().Unix()))
+		var buf []byte
+		buf, err = ioutil.ReadAll(rc)
+		if err != nil {
+			log.Print(err)
+			return false
+		}
+		entry, err := storage.PrepareReader(bytes.NewReader(buf), name, uint64(f.FileInfo().ModTime().Unix()))
 		if err != nil {
 			log.Print(err)
 			continue

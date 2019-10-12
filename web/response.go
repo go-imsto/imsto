@@ -3,7 +3,6 @@ package web
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 )
 
@@ -12,7 +11,7 @@ type apiMeta map[string]interface{}
 type apiError struct {
 	Code int    `json:"code,omitempty"`
 	Msg  string `json:"message,omitempty"`
-	err  error  `json:"-"`
+	err  error
 }
 
 func newApiRes(meta apiMeta, data interface{}) apiRes {
@@ -80,24 +79,4 @@ func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 	res["error"] = newApiError(err)
 
 	writeJsonQuiet(w, r, res)
-}
-
-func secure(whiteList []string, f http.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(whiteList) == 0 {
-			f(w, r)
-			return
-		}
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err == nil {
-			for _, ip := range whiteList {
-				if ip == host {
-					f(w, r)
-					return
-				}
-			}
-		}
-		w.WriteHeader(http.StatusForbidden)
-		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
-	})
 }

@@ -1,11 +1,19 @@
-package storage
+package hash
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/cespare/xxhash"
 	"github.com/spaolacci/murmur3"
 )
+
+// Hasher ...
+type Hasher interface {
+	io.Writer
+	Hash() (uint64, string)
+	Len() uint32
+}
 
 type hasher struct {
 	xxh *xxhash.Digest
@@ -13,7 +21,8 @@ type hasher struct {
 	n   int
 }
 
-func newHasher() *hasher {
+// New ...
+func New() Hasher {
 	return &hasher{
 		xxh: xxhash.New(),
 		mm3: murmur3.New128(),
@@ -35,21 +44,21 @@ func (h *hasher) Write(b []byte) (n int, err error) {
 
 func (h *hasher) Hash() (uint64, string) {
 	h1, h2 := h.mm3.Sum128()
-	return h.xxh.Sum64(), fmt.Sprintf("%x", combineHash(h1, h2))
+	return h.xxh.Sum64(), fmt.Sprintf("%x", combine(h1, h2))
 }
 
 func (h *hasher) Len() uint32 {
 	return uint32(h.n)
 }
 
-// HashContent ...
-func HashContent(data []byte) (uint64, string) {
+// SumContent ...
+func SumContent(data []byte) (uint64, string) {
 	c := xxhash.Sum64(data)
 	h1, h2 := murmur3.Sum128(data)
-	return c, fmt.Sprintf("%x", combineHash(h1, h2))
+	return c, fmt.Sprintf("%x", combine(h1, h2))
 }
 
-func combineHash(h1, h2 uint64) []byte {
+func combine(h1, h2 uint64) []byte {
 	return []byte{
 		byte(h1 >> 56), byte(h1 >> 48), byte(h1 >> 40), byte(h1 >> 32),
 		byte(h1 >> 24), byte(h1 >> 16), byte(h1 >> 8), byte(h1),
