@@ -17,10 +17,6 @@ import (
 	"github.com/go-imsto/imsto/storage"
 )
 
-var (
-	whiteList = []string{}
-)
-
 // Handler ...
 func Handler() http.Handler {
 	mux := pat.New()
