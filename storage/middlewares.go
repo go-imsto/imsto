@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-
-	"github.com/go-imsto/imagid"
 )
 
 // consts
@@ -13,27 +11,6 @@ const (
 	DefaultMaxMemory = 12 << 20 // 8 MB
 	APIKeyHeader     = "X-Access-Key"
 )
-
-// Delete ...
-func Delete(roof, id string) error {
-	if roof == "" {
-		return ErrEmptyRoof
-	}
-	if id == "" {
-		return ErrEmptyID
-	}
-
-	mw := NewMetaWrapper(roof)
-	eid, err := imagid.ParseID(id)
-	if err != nil {
-		return err
-	}
-	err = mw.Delete(eid.String())
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 type ctxKey uint16
 

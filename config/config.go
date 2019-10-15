@@ -20,7 +20,6 @@ max_width = 1600
 max_height = 1600
 min_width = 50
 min_height = 50
-thumb_path = /thumb
 thumb_root = /opt/imsto/cache/thumb/
 temp_root = /tmp/
 support_size = 120,160,400

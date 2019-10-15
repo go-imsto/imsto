@@ -147,9 +147,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	m["total"] = t
 
-	// thumb_path := config.GetValue(roof, "thumb_path")
-	// m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
-	m["url_prefix"] = getUrl(r.URL.Scheme, roof, "") + "/"
+	m["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
 	m["version"] = config.Version
 	writeJsonQuiet(w, r, newApiRes(m, a))
 }
@@ -196,7 +194,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "HEAD" {
 		return
 	}
-	url := getUrl(r.URL.Scheme, roof, "orig/"+entry.Path)
+	url := getURL(r.URL.Scheme, roof, "orig/"+entry.Path)
 	log.Printf("Get entry: %v", entry.Id)
 	meta := newApiMeta(true)
 	obj := struct {
@@ -209,8 +207,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	writeJsonQuiet(w, r, newApiRes(meta, obj))
 }
 
-func getUrl(scheme, roof, size string) string {
-	// thumbPath := config.GetValue(roof, "thumb_path")
+func getURL(scheme, roof, size string) string {
 	spath := path.Join("/", storage.ViewName, size)
 	stageHost := config.GetValue(roof, "stage_host")
 	if stageHost == "" {
@@ -261,7 +258,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 				entries[k][i].Err = fe.Error()
 			}
 
-			log.Printf("post %s (%s) size %d\n", fh.Filename, mime, len(fh.Header))
+			logger().Infow("post upload", "name", fh.Filename, "mime", mime, "size", fh.Size)
 
 			entry, ee := storage.PrepareReader(file, fh.Filename, us.Modified)
 			if ee != nil {
@@ -274,11 +271,11 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 			entry.Tags = tags
 			ee = entry.Store(us.Roof)
 			if ee != nil {
-				log.Printf("%02d stored error: %s", i, ee)
+				logger().Infow("stored fail", "i", i, "roof", us.Roof, "id", entry.Id, "err", ee)
 				entries[k][i].Err = ee.Error()
 				continue
 			}
-			log.Printf("%02d [%s]stored %s %s", i, us.Roof, entry.Id, entry.Path)
+			logger().Infow("stored", "i", i, "roof", us.Roof, "id", entry.Id, "path", entry.Path)
 			entries[k][i] = entry
 		}
 	}
@@ -294,7 +291,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	var roof = r.FormValue("roof")
 
 	meta["stage_host"] = config.GetValue(roof, "stage_host")
-	meta["url_prefix"] = getUrl(r.URL.Scheme, roof, "") + "/"
+	meta["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
 	meta["version"] = config.Version
 
 	writeJsonQuiet(w, r, newApiRes(meta, entries))

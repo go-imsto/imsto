@@ -16,6 +16,14 @@ const (
 	formatPNG  = "png"
 )
 
+var (
+	mtypes = map[string]string{
+		formatGIF:  "image/gif",
+		formatJPEG: "image/jpeg",
+		formatPNG:  "image/png",
+	}
+)
+
 // Image ...
 type Image struct {
 	m image.Image
@@ -31,8 +39,10 @@ func Open(rs io.ReadSeeker) (*Image, error) {
 	}
 
 	pt := m.Bounds().Max
-	attr := NewAttr(uint(pt.X), uint(pt.Y), 0)
-	attr.Ext = getExt(format)
+	attr := NewAttr(uint(pt.X), uint(pt.Y), format)
+	if mt, ok := mtypes[format]; ok {
+		attr.Mime = mt
+	}
 	if format == formatJPEG {
 		jr, err := jpegquality.New(rs)
 		if err != nil {

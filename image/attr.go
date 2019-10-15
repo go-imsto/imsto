@@ -14,14 +14,21 @@ type Attr struct {
 	Height  Dimension `json:"height"`
 	Quality Quality   `json:"quality,omitempty"`
 	Ext     string    `json:"ext,omitempty"`
+	Mime    string    `json:"mime,omitempty"`
 	Name    string    `json:"name,omitempty"`
 }
 
+// ToMap ...
 func (a Attr) ToMap() map[string]interface{} {
 	m := map[string]interface{}{
 		"width":  a.Width,
 		"height": a.Height,
 		"ext":    a.Ext,
+		"mime":   a.Mime,
+	}
+
+	if len(a.Name) > 0 {
+		m["name"] = a.Name
 	}
 	if a.Quality > 0 {
 		m["quality"] = a.Quality
@@ -51,6 +58,11 @@ func (a *Attr) FromMap(m map[string]interface{}) {
 			a.Ext = vv
 		}
 	}
+	if v, ok := m["mime"]; ok {
+		if vv, ok := v.(string); ok {
+			a.Mime = vv
+		}
+	}
 }
 
 func (a *Attr) Scan(b interface{}) error {
@@ -69,12 +81,13 @@ func (a Attr) Value() (driver.Value, error) {
 }
 
 // NewAttr ...
-func NewAttr(w, h uint, q uint8) *Attr {
-	return &Attr{
-		Width:   Dimension(w),
-		Height:  Dimension(h),
-		Quality: Quality(q),
+func NewAttr(w, h uint, ext string) *Attr {
+	a := &Attr{
+		Width:  Dimension(w),
+		Height: Dimension(h),
+		Ext:    getExt(ext),
 	}
+	return a
 }
 
 func getExt(f string) string {

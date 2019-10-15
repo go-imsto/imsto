@@ -60,28 +60,16 @@ type outItem struct {
 	name     string
 	length   int64
 	modified time.Time
-}
-
-func (o *outItem) cfg(s string) string {
-	return config.GetValue(o.roof, s)
-}
-
-func (o *outItem) srcName() string {
-	return path.Join(o.thumbRoot(), "orig", o.src)
-}
-
-func (o *outItem) thumbRoot() string {
-	return o.cfg("thumb_root")
+	root     string
+	origFile string
 }
 
 func (o *outItem) Lock() error {
 	return o.lock.Lock()
-	// return syscall.Flock(int(o.dst_f.Fd()), syscall.LOCK_EX)
 }
 
 func (o *outItem) Unlock() error {
 	return o.lock.Unlock()
-	// return syscall.Flock(int(o.dst_f.Fd()), syscall.LOCK_UN)
 }
 
 func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
@@ -100,7 +88,6 @@ func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 func (o *outItem) prepare() (err error) {
 	o.Lock()
 	defer o.Unlock()
-	orgFile := o.srcName()
 
 	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.p.Mop == "" {
 		o.length = fi.Size()
@@ -108,7 +95,8 @@ func (o *outItem) prepare() (err error) {
 		return
 	}
 
-	if fi, fe := os.Stat(orgFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
+	var roof string
+	if fi, fe := os.Stat(o.origFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
 		mw := NewMetaWrapper(o.roof)
 		var entry *mapItem
 		entry, err = mw.GetMapping(o.id.String())
@@ -118,7 +106,7 @@ func (o *outItem) prepare() (err error) {
 			return
 		}
 		o.roof = entry.roof()
-		roof := o.roof
+		roof = o.roof
 
 		if len(entry.Roofs) > 0 {
 			roof0 := fmt.Sprint(entry.Roofs[0])
@@ -128,12 +116,12 @@ func (o *outItem) prepare() (err error) {
 			}
 		}
 
-		err = Dump(entry.Path, roof, orgFile)
+		err = Dump(entry.Path, roof, o.origFile)
 		if err != nil {
 			log.Printf("dump fail: %s", err)
 			return NewHttpError(404, err.Error())
 		}
-		if fi, fe := os.Stat(orgFile); fe != nil {
+		if fi, fe := os.Stat(o.origFile); fe != nil {
 			if os.IsNotExist(fe) || fi.Size() == 0 {
 				err = ErrWriteFailed
 				return
@@ -148,8 +136,8 @@ func (o *outItem) prepare() (err error) {
 
 	if o.p.Mop != "" {
 		if o.p.Mop == "w" {
-			orgFile := path.Join(o.thumbRoot(), o.p.SizeOp, o.src)
-			dstFile := path.Join(o.thumbRoot(), o.p.SizeOp+"w", o.src)
+			orgFile := path.Join(o.root, o.p.SizeOp, o.src)
+			dstFile := path.Join(o.root, o.p.SizeOp+"w", o.src)
 			watermarkFile := path.Join(config.Root(), config.GetValue(o.roof, "watermark"))
 			copyright := config.GetValue(o.roof, "copyright")
 			opacity := config.GetInt(o.roof, "watermark_opacity")
@@ -204,7 +192,7 @@ func (o *outItem) thumbnail() (err error) {
 		topt.MaxHeight = o.p.Height
 	}
 	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.name, "opt", topt)
-	err = iimg.ThumbnailFile(o.srcName(), o.dst, topt)
+	err = iimg.ThumbnailFile(o.origFile, o.dst, topt)
 	if err != nil {
 		logger().Infow("iimg.ThumbnailFile fail", "src", o.src, "name", o.name, "opt", topt, "err", err)
 		return
@@ -217,8 +205,7 @@ func (o *outItem) thumbnail() (err error) {
 }
 
 func (o *outItem) Name() string {
-	// return o.dst
-	return o.name
+	return o.p.Name
 }
 
 func (o *outItem) Size() int64 {
@@ -235,7 +222,7 @@ func storedPath(r string) string {
 }
 
 // LoadPath ...
-func LoadPath(u string) (item *outItem, err error) {
+func LoadPath(u string) (oi *outItem, err error) {
 	// log.Printf("load: %s", url)
 	var p *imagio.Param
 	p, err = imagio.ParseFromPath(u)
@@ -244,31 +231,33 @@ func LoadPath(u string) (item *outItem, err error) {
 		return
 	}
 	logger().Debugw("parsed", "param", p)
-	item = &outItem{
-		p:      p,
-		id:     p.ID,
-		src:    p.Path,
-		isOrig: p.IsOrig,
+	root := config.GetValue("common", "thumb_root")
+	oi = &outItem{
+		p:        p,
+		id:       p.ID,
+		src:      p.Path,
+		isOrig:   p.IsOrig,
+		root:     root,
+		origFile: path.Join(root, "orig", p.Path),
 	}
 
-	orgFile := item.srcName()
-	if item.isOrig {
-		item.dst = orgFile
+	if oi.isOrig {
+		oi.dst = oi.origFile
 	} else {
-		dstPath := fmt.Sprintf("%s/%s", p.SizeOp, item.src)
-		item.dst = path.Join(item.thumbRoot(), dstPath)
+		dstPath := fmt.Sprintf("%s/%s", p.SizeOp, oi.src)
+		oi.dst = path.Join(oi.root, dstPath)
 	}
 
-	ReadyDir(orgFile)
+	ReadyDir(oi.origFile)
 
-	item.lock, err = NewFLock(orgFile + ".lock")
+	oi.lock, err = NewFLock(oi.origFile + ".lock")
 	if err != nil {
 		log.Printf("create lock error: %s", err)
 		return
 	}
-	err = item.prepare()
+	err = oi.prepare()
 	if err != nil {
-		logger().Warnw("prepare fail", "param", item.p, "err", err)
+		logger().Warnw("prepare fail", "param", oi.p, "err", err)
 		return
 	}
 	return
@@ -379,31 +368,23 @@ func newStoredEntry(entry *Entry, err error) entryStored {
 	return entryStored{entry, es}
 }
 
-var thumbRoofs = make(map[string]string)
+// Delete ...
+func Delete(roof, id string) error {
+	if roof == "" {
+		return ErrEmptyRoof
+	}
+	if id == "" {
+		return ErrEmptyID
+	}
 
-func loadThumbRoofs() error {
-	for sec, _ := range config.Sections() {
-		s := config.GetValue(sec, "thumb_path")
-		tp := strings.TrimPrefix(s, "/")
-		if _, ok := thumbRoofs[tp]; !ok {
-			thumbRoofs[tp] = sec
-		} else {
-			return fmt.Errorf("duplicate 'thumb_path=%s' in config", s)
-			// log.Printf("duplicate thumb_root in config")
-		}
+	mw := NewMetaWrapper(roof)
+	eid, err := imagid.ParseID(id)
+	if err != nil {
+		return err
+	}
+	err = mw.Delete(eid.String())
+	if err != nil {
+		return err
 	}
 	return nil
-}
-
-// deprecated
-func getThumbRoof(s string) string {
-	tp := strings.Trim(s, "/")
-	if v, ok := thumbRoofs[tp]; ok {
-		return v
-	}
-	return ""
-}
-
-func init() {
-	config.AtLoaded(loadThumbRoofs)
 }

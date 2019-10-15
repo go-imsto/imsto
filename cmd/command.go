@@ -16,6 +16,7 @@ import (
 
 	"github.com/go-imsto/imsto/config"
 	zlog "github.com/go-imsto/imsto/log"
+	"github.com/go-imsto/imsto/storage"
 )
 
 // Cribbed from the genius organization of the "go" command.
@@ -89,6 +90,8 @@ func init() {
 	if err != nil {
 		log.Print("config load error: ", err)
 	}
+
+	storage.InitMetaTables()
 }
 
 func Main() {

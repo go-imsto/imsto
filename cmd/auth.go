@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/go-imsto/imsto/storage"
 	"log"
+
+	"github.com/go-imsto/imsto/storage"
 )
 
 var cmdAuth = &Command{
