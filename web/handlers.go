@@ -147,8 +147,6 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	m["total"] = t
 
-	// thumb_path := config.GetValue(roof, "thumb_path")
-	// m["thumb_path"] = strings.TrimSuffix(thumb_path, "/") + "/"
 	m["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
 	m["version"] = config.Version
 	writeJsonQuiet(w, r, newApiRes(m, a))
@@ -210,7 +208,6 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getURL(scheme, roof, size string) string {
-	// thumbPath := config.GetValue(roof, "thumb_path")
 	spath := path.Join("/", storage.ViewName, size)
 	stageHost := config.GetValue(roof, "stage_host")
 	if stageHost == "" {

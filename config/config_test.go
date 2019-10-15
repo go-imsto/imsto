@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"testing"
 )
 
@@ -18,6 +19,7 @@ func TestLoadConfig(t *testing.T) {
 	var tc = func() error {
 		return nil
 	}
+	os.Setenv("IMSTO_CONF", "../apps/demo-config")
 	AtLoaded(tc)
 	err := Load()
 
@@ -40,12 +42,12 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetConfig(t *testing.T) {
 	section := defaultSection
-	dft_thumb_path := "/thumb"
-	thumb_path := GetValue(section, "thumb_path")
+	dft_thumb_root := "/opt/imsto/cache/images/"
+	thumb_root := GetValue(section, "thumb_root")
 
-	if thumb_path != dft_thumb_path {
+	if thumb_root != dft_thumb_root {
 
-		t.Fatalf("unexpected result from thumb_path:\n+ %v\n- %v", thumb_path, dft_thumb_path)
+		t.Fatalf("unexpected result from thumb_root:\n+ %v\n- %v", thumb_root, dft_thumb_root)
 	}
 
 	dft_max_quality := 88

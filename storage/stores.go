@@ -368,35 +368,6 @@ func newStoredEntry(entry *Entry, err error) entryStored {
 	return entryStored{entry, es}
 }
 
-var thumbRoofs = make(map[string]string)
-
-func loadThumbRoofs() error {
-	for sec, _ := range config.Sections() {
-		s := config.GetValue(sec, "thumb_path")
-		tp := strings.TrimPrefix(s, "/")
-		if _, ok := thumbRoofs[tp]; !ok {
-			thumbRoofs[tp] = sec
-		} else {
-			return fmt.Errorf("duplicate 'thumb_path=%s' in config", s)
-			// log.Printf("duplicate thumb_root in config")
-		}
-	}
-	return nil
-}
-
-// deprecated
-func getThumbRoof(s string) string {
-	tp := strings.Trim(s, "/")
-	if v, ok := thumbRoofs[tp]; ok {
-		return v
-	}
-	return ""
-}
-
-func init() {
-	config.AtLoaded(loadThumbRoofs)
-}
-
 // Delete ...
 func Delete(roof, id string) error {
 	if roof == "" {
