@@ -28,3 +28,4 @@ dist/
 /imsto
 cache/
 tests/
+.env

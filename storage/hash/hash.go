@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/spaolacci/murmur3"
 )
 
