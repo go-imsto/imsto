@@ -29,6 +29,7 @@ func TestImage(t *testing.T) {
 	assert.Equal(t, jpegWidth, im.Attr.Width)
 	assert.Equal(t, jpegHeight, im.Attr.Height)
 	assert.Equal(t, ".jpg", im.Attr.Ext)
+	assert.Equal(t, "image/jpeg", im.Attr.Mime)
 	assert.Equal(t, int(jpegQuality), int(im.Attr.Quality))
 
 	var buf bytes.Buffer
@@ -36,6 +37,14 @@ func TestImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, int(jpegSize), buf.Len())
+
+	meta := im.Attr.ToMap()
+	assert.NotNil(t, meta)
+	assert.Equal(t, ".jpg", meta["ext"])
+
+	var a Attr
+	a.FromMap(meta)
+	assert.Equal(t, ".jpg", a.Ext)
 }
 
 const (
