@@ -76,6 +76,22 @@ var (
 	ErrDbError      = errors.New("database error")
 )
 
+const (
+	metaCreateTmpl = `CREATE TABLE IF NOT EXISTS meta_%s ( LIKE meta_template INCLUDING ALL )`
+)
+
+func InitMetaTables() {
+	db := getDb("common")
+	roofs := config.Sections()
+	logger().Infow("checking or create tables of metas", "roofs", len(roofs))
+	for k := range roofs {
+		_, err := db.Exec(fmt.Sprintf(metaCreateTmpl, k))
+		if err != nil {
+			logger().Fatalw("create table of meta_? fail", "roof", k, "err", err)
+		}
+	}
+}
+
 func NewMetaWrapper(roof string) (mw MetaWrapper) {
 	var ok bool
 	if mw, ok = meta_wrappers[roof]; !ok {
@@ -222,6 +238,7 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFi
 		var entry *Entry
 		entry, err = _bindRow(r)
 		if err != nil {
+			logger().Infow("bind fail", "err", err)
 			return
 		}
 		a = append(a, entry)
@@ -239,7 +256,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	err := rs.Scan(&id, &e.Path, &e.Name, &meta, &e.Hashes, &e.IDs, &e.Size,
 		&e.sev, &e.Tags, &e.exif, &e.AppId, &e.Author, &e.Created, &roof)
 	if err != nil {
-		logger().Warnw("bind fail", "err", err)
+		logger().Infow("bind fail", "err", err)
 		err = ErrDbError
 		return nil, err
 	}
@@ -254,14 +271,20 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	return &e, nil
 }
 
-func (mw *MetaWrap) GetMeta(id string) (*Entry, error) {
+func (mw *MetaWrap) GetMeta(id string) (entry *Entry, err error) {
 	db := mw.getDb()
 
 	sql := "SELECT " + meta_columns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 
 	row := db.QueryRow(sql, id)
 
-	return _bindRow(row)
+	entry, err = _bindRow(row)
+	if err != nil {
+		logger().Infow("bind fail", "id", id, "err", err)
+		return
+	}
+
+	return
 }
 
 func popPrepared() (*Entry, error) {

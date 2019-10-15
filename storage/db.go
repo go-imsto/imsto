@@ -21,6 +21,7 @@ func init() {
 	}
 
 	dbcpool = make(map[string]*sql.DB)
+
 }
 
 func openDb(roof string) *sql.DB {
