@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +23,6 @@ serve tiring http service
 var (
 	mport           = cmdTiring.Flag.Int("port", 8964, "tcp listen port")
 	mReadTimeout    = cmdTiring.Flag.Int("readTimeout", 3, "connection read timeout in seconds")
-	mMaxCpu         = cmdTiring.Flag.Int("maxCpu", 0, "maximum number of CPUs. 0 means all available CPUs")
 	whiteListOption = cmdTiring.Flag.String("whiteList", "", "comma separated Ip addresses having write permission. No limit if empty.")
 	whiteList       []string
 )
@@ -34,10 +32,6 @@ func init() {
 }
 
 func runTiring(args []string) bool {
-	if *mMaxCpu < 1 {
-		*mMaxCpu = runtime.NumCPU()
-	}
-	runtime.GOMAXPROCS(*mMaxCpu)
 
 	if *whiteListOption != "" {
 		whiteList = strings.Split(*whiteListOption, ",")

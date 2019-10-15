@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime"
 	"strconv"
 	"time"
 
@@ -23,7 +22,6 @@ stage is a image handler.
 var (
 	sport        = cmdStage.Flag.Int("port", 8968, "tcp listen port")
 	sReadTimeout = cmdStage.Flag.Int("readTimeout", 15, "connection read timeout in seconds")
-	sMaxCpu      = cmdStage.Flag.Int("maxCpu", 0, "maximum number of CPUs. 0 means all available CPUs")
 )
 
 func init() {
@@ -31,25 +29,21 @@ func init() {
 }
 
 func runStage(args []string) bool {
-	if *sMaxCpu < 1 {
-		*sMaxCpu = runtime.NumCPU()
-	}
-	runtime.GOMAXPROCS(*sMaxCpu)
 
-	var e error
-	http.HandleFunc("/", web.StageHandler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", web.StageHandler)
 
 	str := fmt.Sprintf("Start Stage service %s at port %d", config.Version, *sport)
 	fmt.Println(str)
 	log.Print(str)
 	srv := &http.Server{
 		Addr:        ":" + strconv.Itoa(*sport),
-		Handler:     http.DefaultServeMux,
+		Handler:     mux,
 		ReadTimeout: time.Duration(*sReadTimeout) * time.Second,
 	}
-	e = srv.ListenAndServe()
-	if e != nil {
-		log.Printf("Fail to start:%s\n", e)
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Printf("Fail to start:%s\n", err)
 		return false
 	}
 
