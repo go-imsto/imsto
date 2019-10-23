@@ -1,2 +1,3 @@
-stage: rerun --build --ignore apps github.com/go-imsto/imsto -conf apps/demo-config stage
-tiring: rerun --build --ignore apps github.com/go-imsto/imsto -conf apps/demo-config tiring
+rpc: rerun --build --ignore apps github.com/go-imsto/imsto rpc
+stage: rerun --build --ignore apps github.com/go-imsto/imsto stage
+tiring: rerun --build --ignore apps github.com/go-imsto/imsto tiring

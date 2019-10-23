@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"github.com/vaughan0/go-ini"
 	"log"
 	"os"
@@ -47,18 +46,16 @@ func Root() string {
 	return cfgDir
 }
 
-func SetRoot(dir string) {
-
-	if _, err := os.Stat(dir); err != nil {
-		log.Println(err)
-		return
-	}
-
-	cfgDir = dir
-}
-
 func init() {
 	defaultConfig, _ = ini.Load(strings.NewReader(defaultConfigIni))
+	if v, ok := os.LookupEnv("IMSTO_CONF"); ok {
+		if v == "" {
+			log.Print("IMSTO_CONF not found in environment, use default value /etc/imsto")
+			cfgDir = "/etc/imsto"
+		} else {
+			cfgDir = v
+		}
+	}
 }
 
 func GetValue(section, name string) string {
@@ -120,27 +117,16 @@ func Sections() map[string]string {
 	return a
 }
 
+// Load ...
 func Load() (err error) {
-	var dir string
-	if cfgDir == "" {
-		dir = os.Getenv("IMSTO_CONF")
-		if dir == "" {
-			err = errors.New("IMSTO_CONF not found in environment or -conf unset")
-			return
-		}
-	} else {
-		dir = cfgDir
-	}
-	cfgFile := path.Join(dir, "imsto.ini")
+	cfgFile := path.Join(cfgDir, "imsto.ini")
 
 	loadedConfig, err = ini.LoadFile(cfgFile)
 
 	if err != nil {
 		log.Print(err)
 		return
-	} /*else {
-		log.Print("config loaded from " + cfgFile)
-	}*/
+	}
 
 	for _, f := range afterCalles {
 		err = f()
@@ -174,4 +160,12 @@ var (
 
 func AtLoaded(f func() error) {
 	afterCalles = append(afterCalles, f)
+}
+
+// EnvOr ...
+func EnvOr(key, dft string) string {
+	if v, ok := os.LookupEnv(key); ok {
+		return v
+	}
+	return dft
 }

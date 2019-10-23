@@ -1,4 +1,4 @@
-// The command line tool for running Imsto bootstrap.
+// Package cmd The command line tool for running Imsto bootstrap.
 package cmd
 
 import (
@@ -19,7 +19,7 @@ import (
 	"github.com/go-imsto/imsto/storage"
 )
 
-// Cribbed from the genius organization of the "go" command.
+// Command Cribbed from the genius organization of the "go" command.
 type Command struct {
 	Run                    func(args []string) bool
 	UsageLine, Short, Long string
@@ -49,7 +49,6 @@ func (cmd *Command) Usage() {
 var (
 	exitStatus = 0
 	exitMu     sync.Mutex
-	cfgDir     string
 	version    = "dev"
 )
 
@@ -58,14 +57,15 @@ func inDevelop() bool {
 }
 
 var commands = []*Command{
+	cmdAuth,
 	// cmdImport,
 	// cmdExport,
 	// cmdOptimize,
+	cmdRPC,
 	cmdTiring,
 	cmdStage,
 	cmdView,
 	cmdTest,
-	cmdAuth,
 }
 
 func setExitStatus(n int) {
@@ -81,11 +81,7 @@ func logger() zlog.Logger {
 }
 
 func init() {
-	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app config dir")
 	flag.Parse()
-	if cfgDir != "" {
-		config.SetRoot(cfgDir)
-	}
 	err := config.Load()
 	if err != nil {
 		log.Print("config load error: ", err)
