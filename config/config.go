@@ -7,30 +7,6 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-// const defaultConfigIni = `[common]
-// ;meta_table_suffix = demo
-// engine = s3
-// bucket_name = imsto-demo
-// max_quality = 88
-// max_file_size = 262114
-// max_width = 1600
-// max_height = 1600
-// min_width = 50
-// min_height = 50
-// thumb_root = /opt/imsto/cache/thumb/
-// temp_root = /tmp/
-// support_size = 120,160,400
-// ticket_table = upload_ticket
-// watermark = watermark.png
-// watermark_opacity = 20
-// ;copyright_label = imsto.net
-// copyright =
-// log_dir = /var/log/imsto
-// stage_host =
-// `
-
-// var once sync.Once
-
 // Section ...
 type Section struct { // example: {demo,file,Demo,/var/lib/imsto/,demo.imsto.org}
 	Name   string `json:"name,omitempty"`
@@ -99,11 +75,6 @@ func init() {
 // GetSections return administrable sections
 func GetSections() map[string]string {
 	return Current.Sections
-	// a := make(map[string]string)
-	// for _, v := range Current.Sections {
-	// 	a[v.Name] = strings.Trim(v.Label, "\"")
-	// }
-	// return a
 }
 
 // GetEngine ...
