@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/rpc"
 )
 
@@ -22,6 +25,7 @@ func init() {
 }
 
 func runRPC(args []string) bool {
+	fmt.Printf("Start RPC service %s at addr %s\n", config.Version, *rpcAddr)
 	s := rpc.NewServer(*rpcAddr, *isTLS)
 	s.Serve()
 	return true

@@ -61,6 +61,11 @@ var (
 	Current = new(Config)
 )
 
+// InDevelop ...
+func InDevelop() bool {
+	return "dev" == Version
+}
+
 // Root ...
 func Root() string {
 	return cfgDir

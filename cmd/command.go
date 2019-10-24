@@ -13,6 +13,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/go-imsto/imsto/config"
 	zlog "github.com/go-imsto/imsto/log"
 	"github.com/go-imsto/imsto/storage"
 )
@@ -47,12 +48,7 @@ func (cmd *Command) Usage() {
 var (
 	exitStatus = 0
 	exitMu     sync.Mutex
-	version    = "dev"
 )
-
-func inDevelop() bool {
-	return version == "dev"
-}
 
 var commands = []*Command{
 	cmdAuth,
@@ -105,7 +101,7 @@ func Main() {
 	}
 
 	var logger *zap.Logger
-	if inDevelop() {
+	if config.InDevelop() {
 		logger, _ = zap.NewDevelopment()
 		logger.Debug("logger start")
 	} else {
@@ -165,6 +161,7 @@ var helpTemplate = `usage: imsto {{.UsageLine}}
 `
 
 func usage(exitCode int) {
+	fmt.Fprintln(os.Stderr, "version ", config.Version)
 	tmpl(os.Stderr, usageTemplate, commands)
 	os.Exit(exitCode)
 }
