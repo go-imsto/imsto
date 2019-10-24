@@ -35,15 +35,12 @@ func s3Dial(roof string) (Wagoner, error) {
 		access, secret, bucket string
 		err                    error
 	)
-	access = config.GetValue(roof, "s3_access_key")
-	if access == "" {
-		access = os.Getenv("S3_ACCESS_KEY")
-	}
-	secret = config.GetValue(roof, "s3_secret_key")
-	if secret == "" {
-		secret = os.Getenv("S3_SECRET_KEY")
-	}
-	bucket = config.GetValue(roof, "bucket_name")
+
+	access = os.Getenv("S3_ACCESS_KEY")
+
+	secret = os.Getenv("S3_SECRET_KEY")
+
+	bucket = config.Current.Buckets[roof]
 	if bucket == "" {
 		err = ErrBucketName
 		log.Print(err)

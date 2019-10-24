@@ -73,7 +73,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 func roofsHandler(w http.ResponseWriter, r *http.Request) {
 	m := newApiMeta(true)
 	// m["roofs"] = config.Sections()
-	writeJsonQuiet(w, r, newApiRes(m, config.Sections()))
+	writeJsonQuiet(w, r, newApiRes(m, config.GetSections()))
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
@@ -209,7 +209,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 
 func getURL(scheme, roof, size string) string {
 	spath := path.Join("/", storage.ViewName, size)
-	stageHost := config.GetValue(roof, "stage_host")
+	stageHost := config.Current.StageHost
 	if stageHost == "" {
 		return spath
 	}
@@ -251,6 +251,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	for k, fhs := range r.MultipartForm.File {
 		entries[k] = make([]*storage.Entry, len(fhs))
 		for i, fh := range fhs {
+			entries[k][i] = new(storage.Entry)
 			log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
 			mime := fh.Header.Get("Content-Type")
 			file, fe := fh.Open()
@@ -262,6 +263,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 
 			entry, ee := storage.PrepareReader(file, fh.Filename, us.Modified)
 			if ee != nil {
+				logger().Infow("prepare upload fail", "name", fh.Filename)
 				entries[k][i].Err = ee.Error()
 				continue
 			}
@@ -269,7 +271,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 			entry.Author = storage.Author(us.User)
 			// entry.Modified = lastModified
 			entry.Tags = tags
-			ee = entry.Store(us.Roof)
+			ee = <-entry.Store(us.Roof)
 			if ee != nil {
 				logger().Infow("stored fail", "i", i, "roof", us.Roof, "id", entry.Id, "err", ee)
 				entries[k][i].Err = ee.Error()
@@ -290,7 +292,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	meta := newApiMeta(true)
 	var roof = r.FormValue("roof")
 
-	meta["stage_host"] = config.GetValue(roof, "stage_host")
+	meta["stage_host"] = config.Current.StageHost
 	meta["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
 	meta["version"] = config.Version
 

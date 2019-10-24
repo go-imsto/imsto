@@ -100,6 +100,7 @@ func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 	e.Id = imagid.IID(id)
 	e.h = hash
 	e.Path = e.Id.String() + e.im.Attr.Ext
+	e.Tags = StringArray{}
 	return
 }
 
@@ -125,8 +126,8 @@ func (e *Entry) Trek(roof string) (err error) {
 	e.b = buf.Bytes()
 
 	size := len(e.b)
-	if maxFileSize := config.GetInt(roof, "max_file_size"); size > maxFileSize {
-		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, maxFileSize)
+	if uint(size) > config.Current.MaxFileSize {
+		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, config.Current.MaxFileSize)
 		return
 	}
 
@@ -155,8 +156,8 @@ func (e *Entry) IsDone() bool {
 }
 
 // Store ...
-func (e *Entry) Store(roof string) (err error) {
-
+func (e *Entry) Store(roof string) (ch chan error) {
+	ch = make(chan error, 1)
 	// TODO:
 	mw := NewMetaWrapper(roof)
 	eh, _err := mw.GetHash(e.h)
@@ -180,6 +181,7 @@ func (e *Entry) Store(roof string) (err error) {
 					mw.Save(e, true)
 
 					logger().Infow("exist entry", "id", e.Id, "path", e.Path)
+					close(ch)
 					return
 				}
 
@@ -191,32 +193,35 @@ func (e *Entry) Store(roof string) (err error) {
 		}
 	}
 
-	if err = e.Trek(roof); err != nil {
+	if err := e.Trek(roof); err != nil {
+		ch <- err
 		return
 	}
 	logger().Infow("trek ok", "entry", e)
 	// log.Printf("new id: %v, size: %d, path: %v\n", e.Id, e.Size, e.Path)
 
-	thumbRoot := config.GetValue(roof, "thumb_root")
+	thumbRoot := path.Join(config.Current.CacheRoot, "thumb")
 	filename := path.Join(thumbRoot, "orig", storedPath(e.Path))
-	err = SaveFile(filename, e.b)
-	if err != nil {
+
+	if err := SaveFile(filename, e.b); err != nil {
+		logger().Infow("entry save file fail", "filename", filename)
+		ch <- err
 		return
 	}
 
-	err = mw.Ready(e)
-	if err != nil {
+	if err := mw.Ready(e); err != nil {
+		ch <- err
 		return
 	}
 	e.ready = 1
 
-	e.Done = make(chan bool, 1)
 	go func() {
-		err = e._save(roof)
-		if err != nil {
+		if err := e._save(roof); err != nil {
 			log.Printf("_save error: %s", err)
+			ch <- err
+		} else {
+			close(ch)
 		}
-		e.Done <- true
 	}()
 
 	log.Printf("[%s] store ready ok %s", roof, e.Path)
@@ -225,7 +230,7 @@ func (e *Entry) Store(roof string) (err error) {
 }
 
 func (e *Entry) _save(roof string) (err error) {
-	en := config.GetValue(roof, "engine")
+	en := config.GetEngine(roof)
 	log.Printf("start save %s to engine %s", e.Id, en)
 
 	e.sev, err = e.PushTo(roof)
@@ -268,8 +273,8 @@ func (e *Entry) reset() {
 }
 
 func (e *Entry) origFullname() string {
-	thumb_root := config.GetValue(e.roof(), "thumb_root")
-	return path.Join(thumb_root, "orig", storedPath(e.Path))
+	thumbRoot := path.Join(config.Current.CacheRoot, "thumb")
+	return path.Join(thumbRoot, "orig", storedPath(e.Path))
 }
 
 func (e *Entry) roof() string {
@@ -322,8 +327,8 @@ func (e *Entry) PushTo(roof string) (sev cdb.JsonKV, err error) {
 
 func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err error) {
 
-	maxQuality := iimg.Quality(config.GetInt(roof, "max_quality"))
-	if ia.Quality > 0 {
+	maxQuality := iimg.Quality(config.Current.MaxQuality)
+	if ia.Quality > 0 && maxQuality > 0 {
 		if ia.Quality > maxQuality {
 			log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, maxQuality)
 		} else {
@@ -332,15 +337,16 @@ func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err er
 		}
 	}
 
-	maxWidth := iimg.Dimension(config.GetInt(roof, "max_width"))
-	maxHeight := iimg.Dimension(config.GetInt(roof, "max_height"))
+	maxWidth := iimg.Dimension(config.Current.MaxWidth)
+	maxHeight := iimg.Dimension(config.Current.MaxHeight)
 	if ia.Width > maxWidth || ia.Height > maxHeight {
+		logger().Infow("dimension warning", "maxWidth", maxWidth, "maxHeight", maxHeight, "ia", ia)
 		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, ia.Name)
 		return
 	}
 
-	minWidth := iimg.Dimension(config.GetInt(roof, "min_width"))
-	minHeight := iimg.Dimension(config.GetInt(roof, "min_height"))
+	minWidth := iimg.Dimension(config.Current.MinWidth)
+	minHeight := iimg.Dimension(config.Current.MinHeight)
 	if ia.Width < minWidth || ia.Height < minHeight {
 		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, ia.Name)
 		return

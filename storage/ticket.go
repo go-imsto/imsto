@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"log"
-
-	"github.com/go-imsto/imsto/config"
 )
 
 type Ticket struct {
@@ -21,9 +19,7 @@ type Ticket struct {
 }
 
 func newTicket(roof string, appid AppID) *Ticket {
-	table := getTicketTable(roof)
-	// log.Printf("table: %s", table)
-	t := &Ticket{roof: roof, table: table, AppID: appid}
+	t := &Ticket{roof: roof, table: "upload_ticket", AppID: appid}
 
 	return t
 }
@@ -140,12 +136,4 @@ func (t *Ticket) GetId() int {
 
 func (t *Ticket) getDb() *sql.DB {
 	return getDb(t.roof)
-}
-
-func getTicketTable(sn string) (table string) {
-	table = config.GetValue(sn, "ticket_table")
-	if table == "" {
-		log.Print("'ticket_table' is not found in config")
-	}
-	return
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 
@@ -25,7 +24,7 @@ func init() {
 }
 
 func locDial(roof string) (Wagoner, error) {
-	dir := config.GetValue(roof, "local_root")
+	dir := config.EnvOr("IMSTO_LOCAL_ROOT", "/var/lib/imsto/stores")
 	if dir == "" {
 		dir = _check_local_dir()
 		if dir == "" {
@@ -66,15 +65,17 @@ func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err err
 	err = ioutil.WriteFile(name, data, os.FileMode(0644))
 	// sev = JsonKV{"root": l.root}
 	if err != nil {
+		logger().Warnw("write file fail", "name", name, "id", id, "err", err)
 		return
 	}
-	meta_file := name + ".meta"
-	err = saveMeta(meta_file, meta)
+	metaFile := name + ".meta"
+	err = saveMeta(metaFile, meta)
 	if err != nil {
-		log.Print("engine file save meta fail: ", err.Error())
+		logger().Warnw("saveMeta fail", "metaFile", metaFile, "id", id, "err", err)
+		return
 	}
 	sev = JsonKV{"engine": "file", "key": key}
-	log.Printf("engine file save %s done", key)
+	logger().Infow("save meta OK", "sev", sev, "name", name)
 	return
 }
 

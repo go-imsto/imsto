@@ -28,22 +28,22 @@ func init() {
 }
 
 func gridfsDial(roof string) (Wagoner, error) {
-	mg_url := config.GetValue(roof, "servers")
-	if mg_url == "" {
-		return nil, errors.New("config servers is empty")
+	mgUrl := config.EnvOr("IMSTO_GRID_SERVERS", "localhost:27017")
+	if mgUrl == "" {
+		return nil, errors.New("IMSTO_GRID_SERVERS is empty")
 	}
-	mg_db := config.GetValue(roof, "db_name")
-	if mg_db == "" {
-		return nil, errors.New("config db_name is empty")
+	mgDb := config.EnvOr("IMSTO_GRID_DB", "imsto")
+	if mgDb == "" {
+		return nil, errors.New("IMSTO_GRID_DB is empty")
 	}
-	fs_prefix := config.GetValue(roof, "fs_prefix")
-	if fs_prefix == "" {
-		return nil, errors.New("config fs_prefix is empty")
+	fsPrefix := config.EnvOr("IMSTO_GRID_FS_PREFIX", "img")
+	if fsPrefix == "" {
+		return nil, errors.New("IMSTO_GRID_FS_PREFIX is empty")
 	}
 	g := &gridfsConn{
-		url:    mg_url,
-		db:     mg_db,
-		prefix: fs_prefix,
+		url:    mgUrl,
+		db:     mgDb,
+		prefix: fsPrefix,
 	}
 	return g, nil
 }

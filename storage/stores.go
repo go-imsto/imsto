@@ -135,19 +135,14 @@ func (o *outItem) prepare() (err error) {
 	}
 
 	if o.p.Mop != "" {
-		if o.p.Mop == "w" {
+		watermarkFile := config.Current.WatermarkFile
+		if o.p.Mop == "w" && watermarkFile != "" {
 			orgFile := path.Join(o.root, o.p.SizeOp, o.src)
 			dstFile := path.Join(o.root, o.p.SizeOp+"w", o.src)
-			watermarkFile := path.Join(config.Root(), config.GetValue(o.roof, "watermark"))
-			copyright := config.GetValue(o.roof, "copyright")
-			opacity := config.GetInt(o.roof, "watermark_opacity")
 			waterOption := iimg.WaterOption{
 				Pos:      iimg.Golden,
 				Filename: watermarkFile,
-				Opacity:  iimg.Opacity(opacity),
-			}
-			if copyright != "" {
-				waterOption.Copyright = path.Join(config.Root(), copyright)
+				Opacity:  iimg.Opacity(config.Current.WatermarkOpacity),
 			}
 			err = iimg.WatermarkFile(orgFile, dstFile, waterOption)
 			if err != nil {
@@ -177,8 +172,8 @@ func (o *outItem) thumbnail() (err error) {
 	// mode := o.m["size"][0:1]
 	dimension := o.p.SizeOp[1:]
 	// log.Printf("mode %s, dimension %s", mode, dimension)
-	supportSize := strings.Split(config.GetValue(o.roof, "support_size"), ",")
-	if !stringInSlice(dimension, supportSize) {
+	supportSize := config.Current.SupportSizes
+	if !supportSize.Has(o.p.Width) || !supportSize.Has(o.p.Height) {
 		err = NewHttpError(400, fmt.Sprintf("Unsupported size: %s", dimension))
 		return
 	}
@@ -231,7 +226,7 @@ func LoadPath(u string) (oi *outItem, err error) {
 		return
 	}
 	logger().Debugw("parsed", "param", p)
-	root := config.GetValue("common", "thumb_root")
+	root := path.Join(config.Current.CacheRoot, "thumb")
 	oi = &outItem{
 		p:        p,
 		id:       p.ID,

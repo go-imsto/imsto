@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	// "runtime"
 	"strings"
@@ -14,7 +13,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/go-imsto/imsto/config"
 	zlog "github.com/go-imsto/imsto/log"
 	"github.com/go-imsto/imsto/storage"
 )
@@ -82,10 +80,6 @@ func logger() zlog.Logger {
 
 func init() {
 	flag.Parse()
-	err := config.Load()
-	if err != nil {
-		log.Print("config load error: ", err)
-	}
 
 	storage.InitMetaTables()
 }

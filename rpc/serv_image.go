@@ -34,14 +34,14 @@ func (ri *rpcImage) Store(ctx context.Context, in *pb.ImageInput) (*pb.ImageOutp
 	entry.AppId = app.Id
 	entry.Author = storage.Author(in.UserID)
 
-	err = entry.Store(in.Roof)
+	err = <-entry.Store(in.Roof)
 	if err != nil {
 		reportError(err, nil)
 		return nil, err
 	}
 	return &pb.ImageOutput{
 		Path: entry.Path,
-		Uri:  config.GetValue(in.Roof, "stage_host"),
+		Uri:  config.Current.StageHost,
 		ID:   uint64(entry.Id),
 	}, err
 }

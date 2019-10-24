@@ -12,10 +12,11 @@ import (
 	"path"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/qiniu/api.v7/auth/qbox"
 	"github.com/qiniu/api.v7/storage"
-	"github.com/vrischmann/envconfig"
 
+	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage/backend"
 )
 
@@ -40,15 +41,11 @@ type bucketWrap struct {
 
 var (
 	conf struct {
-		AccessKey string     `envconfig:"QINIU_ACCESS_KEY,optional"`
-		SecretKey string     `envconfig:"QINIU_SECRET_KEY,optional"`
-		Prefix    string     `envconfig:"QINIU_PREFIX,optional"` // example: imsto/
-		Buckets   []struct { // example: {demo,Huabei,demo,https://demo.imsto.org},{ui,Huabei,im-ui,https://ui.imsto.org}
-			Roof string
-			Zone string
-			Name string
-			URI  string // cdn uri
-		} `envconfig:"QINIU_BUCKETS,optional"`
+		AccessKey string            `envconfig:"ACCESS_KEY"`
+		SecretKey string            `envconfig:"SECRET_KEY"`
+		Prefix    string            `envconfig:"PREFIX"` // example: imsto/
+		Zones     map[string]string `envconfig:"ZONES"`  // [roof]zone
+		URIs      map[string]string `envconfig:"URIS"`   // [roof]uri
 	}
 
 	mac     *qbox.Mac
@@ -61,35 +58,40 @@ var (
 )
 
 func init() {
-	if err := envconfig.Init(&conf); err != nil {
-		panic(err)
-	}
+	envconfig.MustProcess("qiniu", &conf)
 
 	mac = qbox.NewMac(conf.AccessKey, conf.SecretKey)
 	buckets = map[string]*bucketWrap{}
-	for _, b := range conf.Buckets {
+	for roof, name := range config.Current.Buckets {
+		zone := conf.Zones[roof]
 		cfg := storage.Config{}
-		switch b.Zone {
-		case "Huadong":
-			cfg.Zone = &storage.ZoneHuadong
-		case "Huabei":
-			cfg.Zone = &storage.ZoneHuabei
-		case "Huanan":
-			cfg.Zone = &storage.ZoneHuanan
-		case "Beimei":
-			cfg.Zone = &storage.ZoneBeimei
-		}
+		cfg.Zone = getZone(zone)
 		cfg.UseHTTPS = false
-		buckets[b.Roof] = &bucketWrap{
+		buckets[roof] = &bucketWrap{
 			cfg:    &cfg,
 			mgr:    storage.NewBucketManager(mac, &cfg),
-			Name:   b.Name,
-			URI:    b.URI,
+			Name:   name,
+			URI:    conf.URIs[roof],
 			Prefix: conf.Prefix,
 		}
 	}
 
 	backend.RegisterEngine("qiniu", qnDial)
+}
+
+func getZone(zone string) *storage.Region {
+	switch zone {
+	case "Huadong":
+		return &storage.ZoneHuadong
+	case "Huabei":
+		return &storage.ZoneHuabei
+	case "Huanan":
+		return &storage.ZoneHuanan
+	case "Beimei":
+		return &storage.ZoneBeimei
+	}
+	logger().Errorw("qn: invalid zone", "zone", zone)
+	return &storage.ZoneHuabei
 }
 
 func qnDial(roof string) (Wagoner, error) {

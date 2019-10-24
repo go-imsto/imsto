@@ -53,27 +53,16 @@ type MetaWrap struct {
 }
 
 func newMetaWrap(roof string) *MetaWrap {
-	if roof == "" {
-		log.Print("arg roof is empty")
-		roof = "common"
-	}
-
-	table := config.GetValue(roof, "meta_table_suffix")
-	if table == "" {
-		// log.Print("meta_table_suffix is empty, use roof")
-		table = roof
-	}
-	log.Printf("table suffix: %s", table)
-	mw := &MetaWrap{roof: roof, tableSuffix: table}
+	mw := &MetaWrap{roof: roof, tableSuffix: roof}
 
 	return mw
 }
 
 var (
-	meta_wrappers   = make(map[string]MetaWrapper)
-	meta_columns    = "id, path, name, meta, hashes, ids, size, sev, tags, exif, app_id, author, created, roof"
-	sortable_fields = []string{"id", "created"}
-	ErrDbError      = errors.New("database error")
+	metaWrappers   = make(map[string]MetaWrapper)
+	metaColumns    = "id, path, name, meta, hashes, ids, size, sev, tags, exif, app_id, author, created, roof"
+	sortableFields = []string{"id", "created"}
+	ErrDbError     = errors.New("database error")
 )
 
 const (
@@ -82,7 +71,7 @@ const (
 
 func InitMetaTables() {
 	db := getDb("common")
-	roofs := config.Sections()
+	roofs := config.GetSections()
 	logger().Infow("checking or create tables of metas", "roofs", len(roofs))
 	for k := range roofs {
 		_, err := db.Exec(fmt.Sprintf(metaCreateTmpl, k))
@@ -94,9 +83,9 @@ func InitMetaTables() {
 
 func NewMetaWrapper(roof string) (mw MetaWrapper) {
 	var ok bool
-	if mw, ok = meta_wrappers[roof]; !ok {
+	if mw, ok = metaWrappers[roof]; !ok {
 		mw = newMetaWrap(roof)
-		meta_wrappers[roof] = mw
+		metaWrappers[roof] = mw
 	}
 
 	return mw
@@ -116,7 +105,7 @@ const (
 )
 
 func isSortable(k string) bool {
-	for _, sf := range sortable_fields {
+	for _, sf := range sortableFields {
 		if k == sf {
 			return true
 		}
@@ -217,7 +206,7 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFi
 		}
 	}
 	where, args := buildWhere(filter)
-	str := "SELECT " + meta_columns + " FROM " + table + where
+	str := "SELECT " + metaColumns + " FROM " + table + where
 
 	if len(orders) > 0 {
 		str = str + " ORDER BY " + strings.Join(orders, ",")
@@ -246,7 +235,7 @@ func (mw *MetaWrap) Browse(limit, offset int, sort map[string]int, filter MetaFi
 	return
 }
 
-// depends meta_columns
+// depends metaColumns
 func _bindRow(rs rowScanner) (*Entry, error) {
 
 	e := Entry{}
@@ -274,7 +263,7 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 func (mw *MetaWrap) GetMeta(id string) (entry *Entry, err error) {
 	db := mw.getDb()
 
-	sql := "SELECT " + meta_columns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
+	sql := "SELECT " + metaColumns + " FROM " + mw.table() + " WHERE id = $1 LIMIT 1"
 
 	row := db.QueryRow(sql, id)
 
@@ -293,7 +282,7 @@ func popPrepared() (*Entry, error) {
 
 	db := mw.getDb()
 
-	sql := "SELECT " + meta_columns + " FROM meta__prepared ORDER BY created ASC LIMIT 1"
+	sql := "SELECT " + metaColumns + " FROM meta__prepared ORDER BY created ASC LIMIT 1"
 
 	row := db.QueryRow(sql)
 
@@ -345,7 +334,7 @@ func (mw *MetaWrap) Save(entry *Entry, isUpdate bool) error {
 			r, err = tx.Exec(query, entry.AppId, entry.Author, entry.Id)
 			if err == nil {
 				a, _ := r.RowsAffected()
-				log.Printf("entry '%s' updated: %v", entry.Id, a)
+				logger().Infow("entry updated", "id", entry.Id, "ra", a)
 			} else {
 				logger().Warnw("save fail", "err", err)
 			}

@@ -1,165 +1,117 @@
 package config
 
 import (
-	"github.com/vaughan0/go-ini"
 	"log"
 	"os"
-	"path"
-	"strconv"
-	"strings"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
-const defaultConfigIni = `[common]
-;meta_table_suffix = demo
-engine = s3
-bucket_name = imsto-demo
-max_quality = 88
-max_file_size = 262114
-max_width = 1600
-max_height = 1600
-min_width = 50
-min_height = 50
-thumb_root = /opt/imsto/cache/thumb/
-temp_root = /tmp/
-support_size = 120,160,400
-ticket_table = upload_ticket
-watermark = watermark.png
-watermark_opacity = 20
-;copyright_label = imsto.net
-copyright =
-log_dir = /var/log/imsto
-stage_host =
-`
+// const defaultConfigIni = `[common]
+// ;meta_table_suffix = demo
+// engine = s3
+// bucket_name = imsto-demo
+// max_quality = 88
+// max_file_size = 262114
+// max_width = 1600
+// max_height = 1600
+// min_width = 50
+// min_height = 50
+// thumb_root = /opt/imsto/cache/thumb/
+// temp_root = /tmp/
+// support_size = 120,160,400
+// ticket_table = upload_ticket
+// watermark = watermark.png
+// watermark_opacity = 20
+// ;copyright_label = imsto.net
+// copyright =
+// log_dir = /var/log/imsto
+// stage_host =
+// `
 
 // var once sync.Once
 
+// Section ...
+type Section struct { // example: {demo,file,Demo,/var/lib/imsto/,demo.imsto.org}
+	Name   string `json:"name,omitempty"`
+	Engine string `json:"engine,omitempty"`
+	Label  string `json:"label,omitempty"`
+	Root   string `json:"root,omitempty"`
+	Host   string `json:"host,omitempty"` // stage host
+}
+
+// Sections ...
+type Sections map[string]Section
+
+// Sizes ...
+type Sizes []uint
+
+// Has ...
+func (z Sizes) Has(v uint) bool {
+	for _, size := range z {
+		if v == size {
+			return true
+		}
+	}
+	return false
+}
+
+// Config ...
+type Config struct {
+	MaxFileSize      uint              `envconfig:"MAX_FILESIZE" default:"2097152"`
+	MaxWidth         uint              `envconfig:"MAX_WIDTH" default:"1600"`
+	MaxHeight        uint              `envconfig:"MAX_HEIGHT" default:"1600"`
+	MinWidth         uint              `envconfig:"MIN_WIDTH" default:"50"`
+	MinHeight        uint              `envconfig:"MIN_HEIGHT" default:"50"`
+	MaxQuality       uint8             `envconfig:"MAX_QUALITY" default:"88"`
+	CacheRoot        string            `envconfig:"CACHE_ROOT" default:"/opt/imsto/cache/"`
+	TempRoot         string            `envconfig:"TEMP_ROOT" default:"/tmp/"`
+	StageHost        string            `envconfig:"STAGE_HOST"`
+	WatermarkFile    string            `envconfig:"WATERMARK_FILE"` // /opt/imsto/watermark.png
+	WatermarkOpacity uint8             `envconfig:"WATERMARK_OPACITY" default:"30"`
+	SupportSizes     Sizes             `envconfig:"SUPPORT_SIZE" default:"60,120,256"`
+	Sections         map[string]string `envconfig:"SECTIONS"` // [roof]label
+	Engines          map[string]string `envconfig:"ENGINES"`  // [roof]engine
+	Buckets          map[string]string `envconfig:"BUCKETS"`  // [roof]bucket
+}
+
+// vars
 var (
-	// Version ...
-	Version       = "dev"
-	cfgDir        string
-	logDir        string
-	defaultConfig ini.File
-	loadedConfig  ini.File
+	Version = "dev"
+	Name    = "imsto"
+	cfgDir  string
+
+	// Current ...
+	Current = new(Config)
 )
 
+// Root ...
 func Root() string {
 	return cfgDir
 }
 
 func init() {
-	defaultConfig, _ = ini.Load(strings.NewReader(defaultConfigIni))
-	if v, ok := os.LookupEnv("IMSTO_CONF"); ok {
-		if v == "" {
-			log.Print("IMSTO_CONF not found in environment, use default value /etc/imsto")
-			cfgDir = "/etc/imsto"
-		} else {
-			cfgDir = v
-		}
+	if err := envconfig.Process(Name, Current); err != nil {
+		log.Printf("envconfig init ERR %s", err)
 	}
 }
 
-func GetValue(section, name string) string {
-	var (
-		s  string
-		ok bool
-	)
-
-	if s, ok = loadedConfig.Get(section, name); !ok {
-		if s, ok = loadedConfig.Get("common", name); !ok {
-			if s, ok = defaultConfig.Get("common", name); !ok {
-				log.Printf("'%v' variable missing from '%v' section", name, section)
-				return ""
-			}
-		}
-	}
-
-	return strings.Trim(s, "\"")
+// GetSections return administrable sections
+func GetSections() map[string]string {
+	return Current.Sections
+	// a := make(map[string]string)
+	// for _, v := range Current.Sections {
+	// 	a[v.Name] = strings.Trim(v.Label, "\"")
+	// }
+	// return a
 }
 
-func GetInt(section, name string) int {
-	s := GetValue(section, name)
-	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
-		return int(i)
+// GetEngine ...
+func GetEngine(roof string) string {
+	if v, ok := Current.Engines[roof]; ok {
+		return v
 	}
-	return 0
-}
-
-func GetSection(sname string) (section ini.Section) {
-	if section = loadedConfig.Section(sname); len(section) > 0 {
-		return section
-	}
-
-	return defaultConfig.Section("")
-}
-
-func HasSection(sname string) bool {
-	if _, ok := loadedConfig[sname]; ok {
-		return true
-	}
-	return false
-}
-
-// return administrable sections
-func Sections() map[string]string {
-	a := make(map[string]string)
-	for k, v := range loadedConfig {
-		if k != "common" {
-			// a = append(a, k)
-			if admin, oka := v["administrable"]; oka && admin == "true" {
-				label, ok := v["label"]
-				if !ok {
-					label = strings.ToTitle(k)
-				}
-				a[k] = strings.Trim(label, "\"")
-			}
-		}
-	}
-	return a
-}
-
-// Load ...
-func Load() (err error) {
-	cfgFile := path.Join(cfgDir, "imsto.ini")
-
-	loadedConfig, err = ini.LoadFile(cfgFile)
-
-	if err != nil {
-		log.Print(err)
-		return
-	}
-
-	for _, f := range afterCalles {
-		err = f()
-		if err != nil {
-			log.Printf("loaded call error: %s %s", err, cfgFile)
-		}
-	}
-
-	return
-}
-
-func SetLogFile(name string) error {
-	if logDir != "" {
-		logfile := path.Join(logDir, name+".log")
-		// log.Printf("logfile: %s", logfile)
-		fd, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0664)
-		if err != nil {
-			log.Printf("logfile %s create failed", logfile)
-			return err
-		}
-		log.SetOutput(fd)
-	} else {
-		log.Print("log dir is empty")
-	}
-	return nil
-}
-
-var (
-	afterCalles [](func() error)
-)
-
-func AtLoaded(f func() error) {
-	afterCalles = append(afterCalles, f)
+	return ""
 }
 
 // EnvOr ...

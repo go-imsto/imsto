@@ -12,6 +12,7 @@ require (
 	github.com/go-imsto/imagid v0.0.1
 	github.com/go-imsto/imsto-client v0.0.1
 	github.com/go-playground/form v3.1.4+incompatible
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.1.1
 	github.com/liut/jpegquality v0.0.0-20191002165442-bae201ebadd1
@@ -20,12 +21,10 @@ require (
 	github.com/qiniu/api.v7 v0.0.0-20190428091645-29aeaab9220c
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72
 	github.com/stretchr/testify v1.3.0
-	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
-	github.com/vrischmann/envconfig v1.2.0
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0
-	google.golang.org/grpc v1.24.0
+	google.golang.org/grpc v1.23.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce

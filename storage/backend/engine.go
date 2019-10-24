@@ -1,7 +1,7 @@
 package backend
 
 import (
-	"errors"
+	"fmt"
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage/types"
 	"strings"
@@ -42,12 +42,14 @@ func RegisterEngine(name string, farm FarmFunc) {
 
 // FarmEngine get a intance of Wagoner by a special config name
 func FarmEngine(roof string) (Wagoner, error) {
-	name := config.GetValue(roof, "engine")
-	if engine, ok := engines[name]; ok {
-		return engine.farm(roof)
+	if name := config.GetEngine(roof); name != "" {
+		if engine, ok := engines[name]; ok {
+			return engine.farm(roof)
+		}
+		return nil, fmt.Errorf("invalid engine %s of %s", name, roof)
 	}
 
-	return nil, errors.New("invalid engine name: " + name)
+	return nil, fmt.Errorf("invalid engine of %s", roof)
 }
 
 // ID2Path ...

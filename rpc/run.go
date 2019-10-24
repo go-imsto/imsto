@@ -5,7 +5,9 @@ import (
 	"crypto/x509"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/getsentry/raven-go"
 	"google.golang.org/grpc"
@@ -87,12 +89,22 @@ func NewServer(addr string, isTLS bool) *server {
 
 func (s *server) Serve() {
 
+	logger().Infow("listen", "addr", s.Addr)
 	lis, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		logger().Fatalw("error listen", "addr", s.Addr)
 	}
-	if err := s.rs.Serve(lis); err != nil {
+	if err := http.Serve(lis, s); err != nil {
 		logger().Fatalw("error in Serve", "err", err)
+	}
+
+}
+
+func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+		s.rs.ServeHTTP(w, r)
+	} else {
+		w.WriteHeader(http.StatusNoContent)
 	}
 
 }
