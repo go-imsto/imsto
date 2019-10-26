@@ -19,8 +19,8 @@ github.com/getsentry/raven-go v0.2.0 h1:no+xWJRb5ZI7eE8TWgIq1jLulQiIoLG0IfYxv5JY
 github.com/getsentry/raven-go v0.2.0/go.mod h1:KungGk8q33+aIAZUIVWZDr2OfAEBsO49PX4NzFV5kcQ=
 github.com/go-imsto/imagid v0.0.2 h1:NO+Ewqf19wiVeVCT3Vd17I6KvMhdbOqP/TUXakyY+EQ=
 github.com/go-imsto/imagid v0.0.2/go.mod h1:ZXCYwOMpMBjZTtawAli5qt7Tv4Qtkhu+rQUdU1aXi6g=
-github.com/go-imsto/imsto-client v0.1.0 h1:yztbpTGpoBbciqFw9BK/8yze1C4Z5P9a6QhN245B0cg=
-github.com/go-imsto/imsto-client v0.1.0/go.mod h1:pqhbadrhPUdmY5Sathqg/mCNUbl4JYDyKdYSLUc4GjQ=
+github.com/go-imsto/imsto-client v0.1.1 h1:zYt9zAPH1YFW8TzDmh00QLHJ5PQn97Gzqj1kJI4U3XA=
+github.com/go-imsto/imsto-client v0.1.1/go.mod h1:pqhbadrhPUdmY5Sathqg/mCNUbl4JYDyKdYSLUc4GjQ=
 github.com/go-playground/form v3.1.4+incompatible h1:lvKiHVxE2WvzDIoyMnWcjyiBxKt2+uFJyZcPYWsLnjI=
 github.com/go-playground/form v3.1.4+incompatible/go.mod h1:lhcKXfTuhRtIZCIKUeJ0b5F207aeQCPbZU09ScKjwWg=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b h1:VKtxabqXZkF25pY9ekfRL6a582T4P37/31XEstQ5p58=

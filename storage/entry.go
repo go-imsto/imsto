@@ -45,20 +45,19 @@ func (e *mapItem) roof() string {
 }
 
 type Entry struct {
-	Id       imagid.IID  `json:"id"`
-	Name     string      `json:"name"`
-	Size     uint32      `json:"size"`
-	Path     string      `json:"path"`
-	Status   uint8       `json:"-"`
-	Hashes   StringArray `json:"hashes,omitempty"`
-	IDs      StringArray `json:"-"`
-	Roofs    StringArray `json:"roofs,omitempty"`
-	Tags     StringArray `json:"tags,omitempty"`
-	Meta     *iimg.Attr  `json:"meta,omitempty"`
-	AppId    AppID       `json:"appid,omitempty"`
-	Author   Author      `json:"author,omitempty"`
-	Modified uint64      `json:"modified,omitempty"`
-	Created  time.Time   `json:"created,omitempty"`
+	Id      imagid.IID  `json:"id"`
+	Name    string      `json:"name"`
+	Size    uint32      `json:"size"`
+	Path    string      `json:"path"`
+	Status  uint8       `json:"-"`
+	Hashes  StringArray `json:"hashes,omitempty"`
+	IDs     StringArray `json:"-"`
+	Roofs   StringArray `json:"roofs,omitempty"`
+	Tags    StringArray `json:"tags,omitempty"`
+	Meta    *iimg.Attr  `json:"meta,omitempty"`
+	AppId   AppID       `json:"appid,omitempty"`
+	Author  Author      `json:"author,omitempty"`
+	Created time.Time   `json:"created,omitempty"`
 
 	Err string `json:"err,omitempty"`
 

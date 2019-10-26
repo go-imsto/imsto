@@ -261,7 +261,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 
 			logger().Infow("post upload", "name", fh.Filename, "mime", mime, "size", fh.Size)
 
-			entry, ee := storage.PrepareReader(file, fh.Filename, us.Modified)
+			entry, ee := storage.PrepareReader(file, fh.Filename)
 			if ee != nil {
 				logger().Infow("prepare upload fail", "name", fh.Filename)
 				entries[k][i].Err = ee.Error()

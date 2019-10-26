@@ -12,10 +12,12 @@ import (
 
 const (
 	ptImagePath = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png)$`
+	ptImageSize = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?)(?P<mop>[a-z])?`
 )
 
 var (
 	ire = regexp.MustCompile(ptImagePath)
+	sre = regexp.MustCompile(ptImageSize)
 )
 
 type harg map[string]string
@@ -70,7 +72,7 @@ func ParseFromPath(uri string) (p *Param, err error) {
 		Name:   name,
 	}
 	if !p.IsOrig {
-		p.splitSize()
+		p.Mode, p.Width, p.Height = parseSizeOp(p.SizeOp)
 	}
 
 	return
@@ -91,24 +93,28 @@ func parsePath(s string) (m harg, err error) {
 	return
 }
 
-func (p *Param) splitSize() {
-
-	mode := p.SizeOp[0:1]
-	dimension := p.SizeOp[1:]
-	p.Mode = mode
-
-	if p.m["x"] == "" {
-		var d uint64
-		d, _ = strconv.ParseUint(dimension, 10, 32)
-		p.Width = uint(d)
-		p.Height = uint(d)
-	} else {
-		a := strings.Split(dimension, "x")
-		var dw, dh uint64
-		dw, _ = strconv.ParseUint(a[0], 10, 32)
-		dh, _ = strconv.ParseUint(a[1], 10, 32)
-		p.Width = uint(dw)
-		p.Height = uint(dh)
+// ParseSize ...
+func ParseSize(s string) (mode string, width, height uint, err error) {
+	if !sre.MatchString(s) {
+		err = fmt.Errorf("invalid size %q", s)
+		return
 	}
+	mode, width, height = parseSizeOp(s)
+	return
+}
 
+func parseSizeOp(s string) (mode string, width, height uint) {
+	mode = s[0:1]
+	sz := s[1:]
+	if i := strings.Index(sz, "x"); i > 1 {
+		dw, _ := strconv.Atoi(sz[0:i])
+		dh, _ := strconv.Atoi(sz[i+1:])
+		width = uint(dw)
+		height = uint(dh)
+	} else {
+		d, _ := strconv.Atoi(sz)
+		width = uint(d)
+		height = uint(d)
+	}
+	return
 }
