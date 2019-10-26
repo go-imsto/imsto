@@ -5,17 +5,24 @@ import (
 	"encoding/json"
 )
 
+// Dimension ...
 type Dimension uint32
+
+// Quality ...
 type Quality uint8
+
+// Size ...
+type Size uint32
 
 // Attr ...
 type Attr struct {
 	Width   Dimension `json:"width"`
 	Height  Dimension `json:"height"`
-	Quality Quality   `json:"quality,omitempty"`
-	Ext     string    `json:"ext,omitempty"`
+	Quality Quality   `json:"quality,omitempty"` // Original quality
+	Size    Size      `json:"size,omitempty"`    // Original size
+	Ext     string    `json:"ext"`               // file extension include dot
 	Mime    string    `json:"mime,omitempty"`
-	Name    string    `json:"name,omitempty"`
+	Name    string    `json:"name,omitempty"` // Deprecated
 }
 
 // ToMap ...
@@ -36,6 +43,7 @@ func (a Attr) ToMap() map[string]interface{} {
 	return m
 }
 
+// FromMap ...
 func (a *Attr) FromMap(m map[string]interface{}) {
 	if m == nil {
 		return
@@ -65,6 +73,7 @@ func (a *Attr) FromMap(m map[string]interface{}) {
 	}
 }
 
+// Scan implements the Scanner interface.
 func (a *Attr) Scan(b interface{}) error {
 	if b == nil {
 		return nil
@@ -72,6 +81,7 @@ func (a *Attr) Scan(b interface{}) error {
 	return json.Unmarshal(b.([]byte), a)
 }
 
+// Value implements the driver Valuer interface.
 func (a Attr) Value() (driver.Value, error) {
 	b, err := json.Marshal(a)
 	if err != nil {

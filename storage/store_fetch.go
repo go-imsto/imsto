@@ -44,6 +44,7 @@ func Fetch(in FetchInput) (entry *Entry, err error) {
 	if err != nil {
 		return
 	}
+	logger().Infow("fetched body", "len", len(data))
 	// Check the response
 	if res.StatusCode != 200 {
 		err = fmt.Errorf("status code %d: %s", res.StatusCode, res.Status)

@@ -325,6 +325,7 @@ func (mw *MetaWrap) SetDone(id string, sev cdb.JsonKV) error {
 	return mw.withTxQuery(qs)
 }
 
+// Save ...
 func (mw *MetaWrap) Save(entry *Entry, isUpdate bool) error {
 	var qs func(tx *sql.Tx) (err error)
 	if isUpdate {
@@ -342,10 +343,9 @@ func (mw *MetaWrap) Save(entry *Entry, isUpdate bool) error {
 		}
 	} else {
 		qs = func(tx *sql.Tx) (err error) {
-			query := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
-
+			query := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);"
 			err = tx.QueryRow(query, mw.tableSuffix,
-				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.IDs,
+				entry.Id, entry.Path, entry.Name, entry.Size, entry.Meta, entry.sev, entry.Hashes, entry.IDs,
 				entry.AppId, entry.Author).Scan(&entry.ret)
 			if err == nil {
 				log.Printf("entry save ret: %v\n", entry.ret)
@@ -360,14 +360,14 @@ func (mw *MetaWrap) Save(entry *Entry, isUpdate bool) error {
 func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 	qs := func(tx *sql.Tx) error {
 
-		sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9);"
+		sql := "SELECT entry_save($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);"
 		st, err := tx.Prepare(sql)
 		if err != nil {
 			return err
 		}
 		for _, entry := range entries {
 			err := st.QueryRow(mw.tableSuffix,
-				entry.Id, entry.Path, entry.Meta, entry.sev, entry.Hashes, entry.IDs,
+				entry.Id, entry.Path, entry.Name, entry.Size, entry.Meta, entry.sev, entry.Hashes, entry.IDs,
 				entry.AppId, entry.Author).Scan(&entry.ret)
 			if err != nil {
 				log.Printf("batchSave %s %s error: %s", entry.Id, entry.Path, err)

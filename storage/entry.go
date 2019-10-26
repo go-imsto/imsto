@@ -94,7 +94,7 @@ func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 		return
 	}
 	e.Size = w.Len()
-	e.im.Name = name
+	// e.im.Name = name
 	e.Meta = e.im.Attr
 	id, hash := w.Hash()
 	e.Id = imagid.IID(id)
