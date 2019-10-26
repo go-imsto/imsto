@@ -44,10 +44,6 @@ func NewHttpError(code int, text string) *HttpError {
 	return &HttpError{Code: code, Text: text}
 }
 
-// var lockes = make(map[string]sync.Locker)
-
-// TODO:: clean lockes delay
-
 // temporary item for http read
 type outItem struct {
 	p        *imagio.Param
@@ -301,15 +297,6 @@ func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry,
 	return
 }
 
-// func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
-// 	entry, err = PrepareReader(r, name, modified)
-// 	if err != nil {
-// 		return
-// 	}
-// 	err = entry.Store(roof)
-// 	return
-// }
-
 // PrepareFile ...
 func PrepareFile(file, name string) (entry *Entry, err error) {
 	f, err := os.Open(file)
@@ -335,32 +322,9 @@ func PrepareFile(file, name string) (entry *Entry, err error) {
 	return PrepareReader(f, name, modified)
 }
 
-// func StoredFile(file, name, roof string) (entry *Entry, err error) {
-// 	entry, err = PrepareFile(file, name)
-// 	if err != nil {
-// 		return
-// 	}
-// 	err = entry.Store(roof)
-// 	return
-// }
-
+// ParseTags ...
 func ParseTags(s string) (cdb.StringArray, error) {
 	return strings.Split(strings.ToLower(s), ","), nil
-}
-
-type entryStored struct {
-	*Entry
-	Err string `json:"error,omitempty"`
-}
-
-func newStoredEntry(entry *Entry, err error) entryStored {
-	var es string
-	if err != nil {
-		es = err.Error()
-	} else {
-		es = ""
-	}
-	return entryStored{entry, es}
 }
 
 // Delete ...

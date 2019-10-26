@@ -16,8 +16,29 @@ var (
 type rpcImage struct{}
 
 func (ri *rpcImage) Fetch(ctx context.Context, in *pb.FetchInput) (*pb.ImageOutput, error) {
-	// TODO:
-	return nil, nil
+	app, err := storage.LoadApp(in.ApiKey)
+	if err != nil {
+		reportError(err, nil)
+		return nil, err
+	}
+
+	entry, err := storage.Fetch(storage.FetchInput{
+		URI:     in.Uri,
+		Roof:    in.Roof,
+		Referer: in.Referer,
+		AppID:   int(app.Id),
+		UserID:  int(in.UserID),
+	})
+	if err != nil {
+		reportError(err, nil)
+		return nil, err
+	}
+
+	return &pb.ImageOutput{
+		Path: entry.Path,
+		Uri:  config.Current.StageHost,
+		ID:   uint64(entry.Id),
+	}, err
 }
 
 func (ri *rpcImage) Store(ctx context.Context, in *pb.ImageInput) (*pb.ImageOutput, error) {
@@ -26,6 +47,7 @@ func (ri *rpcImage) Store(ctx context.Context, in *pb.ImageInput) (*pb.ImageOutp
 		reportError(err, nil)
 		return nil, err
 	}
+
 	entry, err := storage.NewEntryReader(bytes.NewReader(in.Image), in.Name)
 	if err != nil {
 		reportError(err, nil)
@@ -39,6 +61,7 @@ func (ri *rpcImage) Store(ctx context.Context, in *pb.ImageInput) (*pb.ImageOutp
 		reportError(err, nil)
 		return nil, err
 	}
+
 	return &pb.ImageOutput{
 		Path: entry.Path,
 		Uri:  config.Current.StageHost,
