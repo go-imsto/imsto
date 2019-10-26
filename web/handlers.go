@@ -145,7 +145,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	m["total"] = t
 
-	m["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
+	m["url_prefix"] = getURL(r, "") + "/"
 	m["version"] = config.Version
 	writeJsonQuiet(w, r, newApiRes(m, a))
 }
@@ -192,7 +192,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "HEAD" {
 		return
 	}
-	url := getURL(r.URL.Scheme, roof, "orig/"+entry.Path)
+	url := getURL(r, "orig/"+entry.Path)
 	log.Printf("Get entry: %v", entry.Id)
 	meta := newApiMeta(true)
 	obj := struct {
@@ -205,7 +205,11 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	writeJsonQuiet(w, r, newApiRes(meta, obj))
 }
 
-func getURL(scheme, roof, size string) string {
+func getURL(r *http.Request, size string) string {
+	scheme := r.URL.Scheme
+	if strings.HasPrefix(r.Header.Get("X-Scheme"), "https") {
+		scheme = "https"
+	}
 	return storage.GetURL(scheme, size)
 }
 
@@ -280,10 +284,9 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// log.Print(entries[0].Path)
 	meta := newApiMeta(true)
-	var roof = r.FormValue("roof")
 
 	meta["stage_host"] = config.Current.StageHost
-	meta["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
+	meta["url_prefix"] = getURL(r, "") + "/"
 	meta["version"] = config.Version
 
 	writeJsonQuiet(w, r, newApiRes(meta, entries))
