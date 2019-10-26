@@ -7,7 +7,7 @@ WITH_ENV = env `cat .env 2>/dev/null | xargs`
 ORIG:=liut7
 NAME:=imsto
 ROOF:=github.com/go-imsto/$(NAME)
-SOURCES=$(shell find base cmd config image storage -type f \( -name "*.go" ! -name "*_test.go" \) -print )
+SOURCES=$(shell find cmd config image rpc storage -type f \( -name "*.go" ! -name "*_test.go" \) -print )
 TAG:=`git describe --tags --always`
 LDFLAGS:=-X $(ROOF)/config.Version=$(TAG)-$(DATE)
 VET=go vet -vettool=$(which shadow) -atomic -bool -copylocks -nilfunc -printf -rangeloops -unreachable -unsafeptr -unusedresult
@@ -21,7 +21,7 @@ dep:
 
 vet:
 	echo "Checking ./..."
-	$(VET) ./base/... ./cmd/... ./config ./image/... ./storage/... ./web/...
+	$(VET) ./cmd/... ./config ./image/... ./rpc/... ./storage/... ./web/...
 
 clean:
 	echo "Cleaning dist"

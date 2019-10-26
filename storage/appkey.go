@@ -12,7 +12,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-imsto/imsto/base"
+	base "github.com/liut/baseconv"
 )
 
 const (
