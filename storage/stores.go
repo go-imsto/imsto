@@ -63,14 +63,6 @@ type outItem struct {
 	origFile string
 }
 
-func (o *outItem) Lock() error {
-	return o.lock.Lock()
-}
-
-func (o *outItem) Unlock() error {
-	return o.lock.Unlock()
-}
-
 func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 	file, err := os.Open(o.dst)
 	if err != nil {
@@ -85,8 +77,8 @@ func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 }
 
 func (o *outItem) prepare() (err error) {
-	o.Lock()
-	defer o.Unlock()
+	o.lock.Lock()
+	defer o.lock.Unlock()
 
 	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.p.Mop == "" {
 		o.length = fi.Size()
@@ -351,4 +343,17 @@ func Delete(roof, id string) error {
 		return err
 	}
 	return nil
+}
+
+// GetURL ...
+func GetURL(scheme, suffix string) string {
+	spath := path.Join("/", ViewName, suffix)
+	stageHost := config.Current.StageHost
+	if stageHost == "" {
+		return spath
+	}
+	if scheme == "" {
+		scheme = "http"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
 }

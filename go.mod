@@ -10,7 +10,7 @@ require (
 	github.com/crowdmob/goamz v0.0.0-20150128194925-3a06871fe9fc
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/imagid v0.0.2
-	github.com/go-imsto/imsto-client v0.1.1
+	github.com/go-imsto/imsto-client v0.1.3
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kr/pretty v0.1.0 // indirect

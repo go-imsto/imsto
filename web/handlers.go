@@ -1,12 +1,10 @@
 package web
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"math"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 
@@ -208,15 +206,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getURL(scheme, roof, size string) string {
-	spath := path.Join("/", storage.ViewName, size)
-	stageHost := config.Current.StageHost
-	if stageHost == "" {
-		return spath
-	}
-	if scheme == "" {
-		scheme = "http"
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
+	return storage.GetURL(scheme, size)
 }
 
 func storedHandler(w http.ResponseWriter, r *http.Request) {
