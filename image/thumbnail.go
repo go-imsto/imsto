@@ -30,18 +30,7 @@ type ThumbOption struct {
 }
 
 func (topt ThumbOption) String() string {
-	return fmt.Sprintf("%dx%d q%d %v %v", topt.Width, topt.Height, topt.GetQuality(), topt.IsFit, topt.IsCrop)
-}
-
-func (t ThumbOption) GetQuality() Quality {
-	// if topt.Quality < MinJPEGQuality {
-	// 	topt.Quality = MinJPEGQuality
-	// }
-	q := t.Quality
-	if q < MinJPEGQuality {
-		q = MinJPEGQuality
-	}
-	return q
+	return fmt.Sprintf("%dx%d q%d %v %v", topt.Width, topt.Height, topt.Quality, topt.IsFit, topt.IsCrop)
 }
 
 func (topt *ThumbOption) calc(ow, oh uint) error {
@@ -51,15 +40,15 @@ func (topt *ThumbOption) calc(ow, oh uint) error {
 
 	if topt.IsFit {
 		if topt.IsCrop {
-			ratio_x := float32(topt.Width) / float32(ow)
-			ratio_y := float32(topt.Height) / float32(oh)
+			ratioX := float32(topt.Width) / float32(ow)
+			ratioY := float32(topt.Height) / float32(oh)
 
-			if ratio_x > ratio_y {
+			if ratioX > ratioY {
 				topt.ctWidth = topt.Width
-				topt.ctHeight = uint(ratio_x * float32(oh))
+				topt.ctHeight = uint(ratioX * float32(oh))
 			} else {
 				topt.ctHeight = topt.Height
-				topt.ctWidth = uint(ratio_y * float32(ow))
+				topt.ctWidth = uint(ratioY * float32(ow))
 			}
 			// :resize
 
@@ -130,7 +119,7 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	var err error
 	im, format, err := image.Decode(r)
 	if err != nil {
-		log.Printf("ThumbnailIo image decode error: %s", err)
+		log.Printf("Thumbnail image decode error: %s", err)
 		return err
 	}
 
@@ -151,10 +140,14 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 		return err
 	}
 
-	err = SaveTo(w, m, &WriteOption{
-		Format:  format,
-		Quality: topt.GetQuality(),
-	})
+	opt := topt.WriteOption
+	if opt.Format != "" {
+		opt.Format = Ext2Format(opt.Format)
+	} else {
+		opt.Format = format
+	}
+
+	err = SaveTo(w, m, opt)
 
 	if err != nil {
 		log.Print(err)

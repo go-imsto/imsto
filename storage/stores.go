@@ -168,6 +168,7 @@ func (o *outItem) thumbnail() (err error) {
 	}
 
 	var topt = iimg.ThumbOption{Width: o.p.Width, Height: o.p.Height, IsFit: true}
+	topt.Format = o.p.Ext
 	if o.p.Mode == "c" {
 		topt.IsCrop = true
 	} else if o.p.Mode == "w" {

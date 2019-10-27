@@ -6,6 +6,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"log"
 
 	"github.com/liut/jpegquality"
 )
@@ -68,7 +69,7 @@ type WriteOption struct {
 }
 
 // SaveTo ...
-func (im *Image) SaveTo(w io.Writer, opt *WriteOption) error {
+func (im *Image) SaveTo(w io.Writer, opt WriteOption) error {
 	if opt.Format == "" {
 		opt.Format = im.Format
 	}
@@ -76,10 +77,14 @@ func (im *Image) SaveTo(w io.Writer, opt *WriteOption) error {
 }
 
 // SaveTo ...
-func SaveTo(w io.Writer, m image.Image, opt *WriteOption) error {
+func SaveTo(w io.Writer, m image.Image, opt WriteOption) error {
 	switch opt.Format {
 	case formatJPEG:
-		return jpeg.Encode(w, m, &jpeg.Options{Quality: int(opt.Quality)})
+		qlt := int(opt.Quality)
+		if qlt == 0 {
+			qlt = MinJPEGQuality
+		}
+		return jpeg.Encode(w, m, &jpeg.Options{Quality: qlt})
 	case formatGIF:
 		return gif.Encode(w, m, &gif.Options{
 			NumColors: 256,
@@ -89,5 +94,7 @@ func SaveTo(w io.Writer, m image.Image, opt *WriteOption) error {
 	case formatPNG:
 		return png.Encode(w, m)
 	}
+
+	log.Printf("opt %v", opt)
 	return ErrorFormat
 }
