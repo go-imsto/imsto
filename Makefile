@@ -31,16 +31,23 @@ clean:
 dist/linux_amd64/$(NAME): $(SOURCES)
 	echo "Building $(NAME) of linux"
 	mkdir -p dist/linux_amd64 && cd dist/linux_amd64 && GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS) -s -w" $(ROOF)
+	ls -l $@
 
 dist/darwin_amd64/$(NAME): $(SOURCES)
 	echo "Building $(NAME) of darwin"
 	mkdir -p dist/darwin_amd64 && cd dist/darwin_amd64 && GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS) -w" $(ROOF)
+	ls -l $@
 
 dist: vet dist/linux_amd64/$(NAME) dist/darwin_amd64/$(NAME)
 
-package: dist
+package-linux: dist/linux_amd64/$(NAME)
 	tar -cvJf $(NAME)-linux-amd64-$(TAG).tar.xz -C dist/linux_amd64 $(NAME)
+
+package-macos: dist/darwin_amd64/$(NAME)
 	tar -cvJf $(NAME)-darwin-amd64-$(TAG).tar.xz -C dist/darwin_amd64 $(NAME)
+
+package: package-linux package-macos
+	ls -l $(NAME)-*.tar.?z
 
 test-image:
 	$(VET) ./image
