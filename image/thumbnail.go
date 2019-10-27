@@ -4,18 +4,12 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"image/jpeg"
 	"io"
 	"log"
 	"os"
 	"path"
 
 	"github.com/nfnt/resize"
-)
-
-// consts
-const (
-	MinJPEGQuality = jpeg.DefaultQuality // 75
 )
 
 // ThumbOption ...
@@ -147,8 +141,7 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 		opt.Format = format
 	}
 
-	err = SaveTo(w, m, opt)
-
+	_, err = SaveTo(w, m, opt)
 	if err != nil {
 		log.Print(err)
 		return err

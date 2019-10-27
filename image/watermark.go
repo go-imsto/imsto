@@ -11,7 +11,10 @@ import (
 	"path"
 )
 
+// Position ...
 type Position uint8
+
+// Opacity ...
 type Opacity uint8
 
 // Position
@@ -136,7 +139,7 @@ func Watermark(r, wr io.Reader, w io.Writer, wo WaterOption) error {
 		opt.Format = format
 	}
 
-	err = SaveTo(w, m, opt)
+	_, err = SaveTo(w, m, opt)
 	if err != nil {
 		return err
 	}

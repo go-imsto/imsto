@@ -1,6 +1,7 @@
 package image
 
 import (
+	"bytes"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -8,13 +9,22 @@ import (
 	"io"
 	"log"
 
+	"github.com/chai2010/webp"
+
 	"github.com/liut/jpegquality"
+)
+
+// consts
+const (
+	MinJPEGQuality = jpeg.DefaultQuality // 75
+	MinWebpQuality = 80
 )
 
 const (
 	formatGIF  = "gif"
 	formatJPEG = "jpeg"
 	formatPNG  = "png"
+	formatWEBP = "webp"
 )
 
 var (
@@ -22,6 +32,7 @@ var (
 		formatGIF:  "image/gif",
 		formatJPEG: "image/jpeg",
 		formatPNG:  "image/png",
+		formatWEBP: "image/webp",
 	}
 )
 
@@ -30,6 +41,8 @@ type Image struct {
 	m image.Image
 	*Attr
 	Format string
+	r      io.Reader
+	n      int
 }
 
 // Open ...
@@ -58,6 +71,8 @@ func Open(rs io.ReadSeeker) (*Image, error) {
 		m:      m,
 		Attr:   attr,
 		Format: format,
+		r:      rs,
+		n:      cw.Len(),
 	}, nil
 }
 
@@ -73,28 +88,49 @@ func (im *Image) SaveTo(w io.Writer, opt WriteOption) error {
 	if opt.Format == "" {
 		opt.Format = im.Format
 	}
-	return SaveTo(w, im.m, opt)
+	var buf bytes.Buffer
+	n, err := SaveTo(&buf, im.m, opt)
+	if n > im.n {
+		_, err = io.Copy(w, im.r)
+	} else {
+		_, err = io.Copy(w, &buf)
+	}
+	return err
 }
 
 // SaveTo ...
-func SaveTo(w io.Writer, m image.Image, opt WriteOption) error {
+func SaveTo(w io.Writer, m image.Image, opt WriteOption) (n int, err error) {
+	cw := new(CountWriter)
+	defer func() { n = cw.Len() }()
+	w = io.MultiWriter(w, cw)
 	switch opt.Format {
 	case formatJPEG:
 		qlt := int(opt.Quality)
 		if qlt == 0 {
 			qlt = MinJPEGQuality
 		}
-		return jpeg.Encode(w, m, &jpeg.Options{Quality: qlt})
+		err = jpeg.Encode(w, m, &jpeg.Options{Quality: qlt})
+		return
 	case formatGIF:
-		return gif.Encode(w, m, &gif.Options{
+		err = gif.Encode(w, m, &gif.Options{
 			NumColors: 256,
 			Quantizer: nil,
 			Drawer:    nil,
 		})
+		return
 	case formatPNG:
-		return png.Encode(w, m)
+		err = png.Encode(w, m)
+		return
+	case formatWEBP:
+		qlt := int(opt.Quality)
+		if qlt == 0 {
+			qlt = MinWebpQuality
+		}
+		err = webp.Encode(w, m, &webp.Options{Quality: float32(qlt)})
+		return
 	}
 
 	log.Printf("opt %v", opt)
-	return ErrorFormat
+	err = ErrorFormat
+	return
 }
