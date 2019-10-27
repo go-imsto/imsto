@@ -1,12 +1,10 @@
 package web
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"math"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 
@@ -147,7 +145,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	m["total"] = t
 
-	m["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
+	m["url_prefix"] = getURL(r, "") + "/"
 	m["version"] = config.Version
 	writeJsonQuiet(w, r, newApiRes(m, a))
 }
@@ -194,7 +192,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "HEAD" {
 		return
 	}
-	url := getURL(r.URL.Scheme, roof, "orig/"+entry.Path)
+	url := getURL(r, "orig/"+entry.Path)
 	log.Printf("Get entry: %v", entry.Id)
 	meta := newApiMeta(true)
 	obj := struct {
@@ -207,16 +205,12 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	writeJsonQuiet(w, r, newApiRes(meta, obj))
 }
 
-func getURL(scheme, roof, size string) string {
-	spath := path.Join("/", storage.ViewName, size)
-	stageHost := config.Current.StageHost
-	if stageHost == "" {
-		return spath
+func getURL(r *http.Request, size string) string {
+	scheme := r.URL.Scheme
+	if strings.HasPrefix(r.Header.Get("X-Scheme"), "https") {
+		scheme = "https"
 	}
-	if scheme == "" {
-		scheme = "http"
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
+	return storage.GetURL(scheme, size)
 }
 
 func storedHandler(w http.ResponseWriter, r *http.Request) {
@@ -261,7 +255,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 
 			logger().Infow("post upload", "name", fh.Filename, "mime", mime, "size", fh.Size)
 
-			entry, ee := storage.PrepareReader(file, fh.Filename, us.Modified)
+			entry, ee := storage.PrepareReader(file, fh.Filename)
 			if ee != nil {
 				logger().Infow("prepare upload fail", "name", fh.Filename)
 				entries[k][i].Err = ee.Error()
@@ -290,10 +284,9 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// log.Print(entries[0].Path)
 	meta := newApiMeta(true)
-	var roof = r.FormValue("roof")
 
 	meta["stage_host"] = config.Current.StageHost
-	meta["url_prefix"] = getURL(r.URL.Scheme, roof, "") + "/"
+	meta["url_prefix"] = getURL(r, "") + "/"
 	meta["version"] = config.Version
 
 	writeJsonQuiet(w, r, newApiRes(meta, entries))

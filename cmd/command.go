@@ -55,6 +55,7 @@ var commands = []*Command{
 	// cmdImport,
 	// cmdExport,
 	// cmdOptimize,
+	cmdFetch,
 	cmdRPC,
 	cmdTiring,
 	cmdStage,

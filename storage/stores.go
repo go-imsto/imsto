@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -23,6 +22,7 @@ const (
 	ViewName = "show"
 )
 
+// errors
 var (
 	ErrWriteFailed = errors.New("Err: Write file failed")
 	ErrEmptyRoof   = errors.New("empty roof")
@@ -30,23 +30,22 @@ var (
 	ErrZeroSize    = errors.New("zero size")
 )
 
+// HttpError ...
 type HttpError struct {
 	Code int
 	Text string
 	Path string
 }
 
+// Error ...
 func (ie *HttpError) Error() string {
 	return fmt.Sprintf("%d: %s", ie.Code, ie.Text)
 }
 
+// NewHttpError ...
 func NewHttpError(code int, text string) *HttpError {
 	return &HttpError{Code: code, Text: text}
 }
-
-// var lockes = make(map[string]sync.Locker)
-
-// TODO:: clean lockes delay
 
 // temporary item for http read
 type outItem struct {
@@ -64,14 +63,6 @@ type outItem struct {
 	origFile string
 }
 
-func (o *outItem) Lock() error {
-	return o.lock.Lock()
-}
-
-func (o *outItem) Unlock() error {
-	return o.lock.Unlock()
-}
-
 func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 	file, err := os.Open(o.dst)
 	if err != nil {
@@ -86,8 +77,8 @@ func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
 }
 
 func (o *outItem) prepare() (err error) {
-	o.Lock()
-	defer o.Unlock()
+	o.lock.Lock()
+	defer o.lock.Unlock()
 
 	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 && o.p.Mop == "" {
 		o.length = fi.Size()
@@ -101,7 +92,6 @@ func (o *outItem) prepare() (err error) {
 		var entry *mapItem
 		entry, err = mw.GetMapping(o.id.String())
 		if err != nil {
-			// log.Print(err)
 			err = NewHttpError(404, err.Error())
 			return
 		}
@@ -118,7 +108,6 @@ func (o *outItem) prepare() (err error) {
 
 		err = Dump(entry.Path, roof, o.origFile)
 		if err != nil {
-			log.Printf("dump fail: %s", err)
 			return NewHttpError(404, err.Error())
 		}
 		if fi, fe := os.Stat(o.origFile); fe != nil {
@@ -146,7 +135,7 @@ func (o *outItem) prepare() (err error) {
 			}
 			err = iimg.WatermarkFile(orgFile, dstFile, waterOption)
 			if err != nil {
-				log.Printf("watermark error: %s", err)
+				logger().Infow("watermark fail", "err", err)
 			}
 			o.dst = dstFile
 		}
@@ -243,11 +232,15 @@ func LoadPath(u string) (oi *outItem, err error) {
 		oi.dst = path.Join(oi.root, dstPath)
 	}
 
-	ReadyDir(oi.origFile)
+	err = ReadyDir(oi.origFile)
+	if err != nil {
+		logger().Infow("ready dir fail", "err", err)
+		return
+	}
 
 	oi.lock, err = NewFLock(oi.origFile + ".lock")
 	if err != nil {
-		log.Printf("create lock error: %s", err)
+		logger().Infow("create lock fail", "err", err)
 		return
 	}
 	err = oi.prepare()
@@ -258,6 +251,7 @@ func LoadPath(u string) (oi *outItem, err error) {
 	return
 }
 
+// Dump ...
 func Dump(key, roof, file string) error {
 	logger().Infow("pulling", "roof", roof, "path", key)
 
@@ -270,12 +264,13 @@ func Dump(key, roof, file string) error {
 	return SaveFile(file, data)
 }
 
+// PopReadyDone ...
 func PopReadyDone() (entry *Entry, err error) {
 	entry, err = popPrepared()
 	if err != nil {
 		return
 	}
-	log.Printf("poped %s", entry.Path)
+	logger().Infow("poped", "path", entry.Path)
 
 	var data []byte
 	data, err = ioutil.ReadFile(entry.origFullname())
@@ -291,24 +286,14 @@ func PopReadyDone() (entry *Entry, err error) {
 }
 
 // PrepareReader ...
-func PrepareReader(r io.ReadSeeker, name string, modified uint64) (entry *Entry, err error) {
+func PrepareReader(r io.ReadSeeker, name string) (entry *Entry, err error) {
 
 	entry, err = NewEntryReader(r, name)
 	if err != nil {
 		return
 	}
-	entry.Modified = modified
 	return
 }
-
-// func StoredReader(r io.ReadSeeker, name, roof string, modified uint64) (entry *Entry, err error) {
-// 	entry, err = PrepareReader(r, name, modified)
-// 	if err != nil {
-// 		return
-// 	}
-// 	err = entry.Store(roof)
-// 	return
-// }
 
 // PrepareFile ...
 func PrepareFile(file, name string) (entry *Entry, err error) {
@@ -317,6 +302,7 @@ func PrepareFile(file, name string) (entry *Entry, err error) {
 		return nil, err
 	}
 	defer f.Close()
+
 	fi, err := f.Stat()
 	if err != nil {
 		return nil, err
@@ -330,37 +316,12 @@ func PrepareFile(file, name string) (entry *Entry, err error) {
 		name = path.Base(file)
 	}
 
-	modified := uint64(fi.ModTime().Unix())
-
-	return PrepareReader(f, name, modified)
+	return PrepareReader(f, name)
 }
 
-// func StoredFile(file, name, roof string) (entry *Entry, err error) {
-// 	entry, err = PrepareFile(file, name)
-// 	if err != nil {
-// 		return
-// 	}
-// 	err = entry.Store(roof)
-// 	return
-// }
-
+// ParseTags ...
 func ParseTags(s string) (cdb.StringArray, error) {
 	return strings.Split(strings.ToLower(s), ","), nil
-}
-
-type entryStored struct {
-	*Entry
-	Err string `json:"error,omitempty"`
-}
-
-func newStoredEntry(entry *Entry, err error) entryStored {
-	var es string
-	if err != nil {
-		es = err.Error()
-	} else {
-		es = ""
-	}
-	return entryStored{entry, es}
 }
 
 // Delete ...
@@ -382,4 +343,17 @@ func Delete(roof, id string) error {
 		return err
 	}
 	return nil
+}
+
+// GetURL ...
+func GetURL(scheme, suffix string) string {
+	spath := path.Join("/", ViewName, suffix)
+	stageHost := config.Current.StageHost
+	if stageHost == "" {
+		return spath
+	}
+	if scheme == "" {
+		scheme = "http"
+	}
+	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
 }

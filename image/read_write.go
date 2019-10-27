@@ -33,7 +33,9 @@ type Image struct {
 
 // Open ...
 func Open(rs io.ReadSeeker) (*Image, error) {
-	m, format, err := image.Decode(rs)
+
+	cw := new(CountWriter)
+	m, format, err := image.Decode(io.TeeReader(rs, cw))
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +45,7 @@ func Open(rs io.ReadSeeker) (*Image, error) {
 	if mt, ok := mtypes[format]; ok {
 		attr.Mime = mt
 	}
+	attr.Size = Size(cw.Len())
 	if format == formatJPEG {
 		jr, err := jpegquality.New(rs)
 		if err != nil {

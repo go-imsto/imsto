@@ -9,12 +9,13 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.0
 	github.com/crowdmob/goamz v0.0.0-20150128194925-3a06871fe9fc
 	github.com/getsentry/raven-go v0.2.0
-	github.com/go-imsto/imagid v0.0.1
-	github.com/go-imsto/imsto-client v0.0.1
+	github.com/go-imsto/imagid v0.0.2
+	github.com/go-imsto/imsto-client v0.1.4
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.1.1
+	github.com/liut/baseconv v0.0.1
 	github.com/liut/jpegquality v0.0.0-20191002165442-bae201ebadd1
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pkg/errors v0.8.1 // indirect

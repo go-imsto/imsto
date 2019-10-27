@@ -23,12 +23,11 @@ func Bind(req *http.Request, obj interface{}) error {
 }
 
 type uploadSchema struct {
-	APIKey   string `form:"api_key"`
-	Token    string `form:"token"`
-	Roof     string `form:"roof"`
-	User     int    `form:"user"`
-	Modified uint64 `form:"file_ts"`
-	Tags     string `form:"tags"`
+	APIKey string `form:"api_key"`
+	Token  string `form:"token"`
+	Roof   string `form:"roof"`
+	User   int    `form:"user"`
+	Tags   string `form:"tags"`
 }
 
 type tokenSchema struct {
