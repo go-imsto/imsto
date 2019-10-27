@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	"image/jpeg"
 	_ "image/png"
 	"io"
 	"log"
@@ -27,9 +26,10 @@ const (
 
 // WaterOption ...
 type WaterOption struct {
-	Pos                 Position
-	Opacity             Opacity
-	Filename, Copyright string
+	Pos      Position
+	Opacity  Opacity
+	Filename string
+	WriteOption
 }
 
 // GetPoint ...
@@ -88,7 +88,7 @@ func (g *grayMask) At(x, y int) color.Color {
 }
 
 // WatermarkImage add a watermark and copyright into a image with position and opacity
-func WatermarkImage(img, water, cpm image.Image, pos Position, opacity Opacity) (image.Image, error) {
+func WatermarkImage(img, water image.Image, pos Position, opacity Opacity) (image.Image, error) {
 	sm := img.Bounds().Max
 	wm := water.Bounds().Max
 	offset := GetPoint(sm, wm, pos)
@@ -106,21 +106,13 @@ func WatermarkImage(img, water, cpm image.Image, pos Position, opacity Opacity) 
 
 	draw.DrawMask(m, wb.Add(offset), water, image.ZP, newGrayMask(water.Bounds(), opacity), image.ZP, draw.Over)
 
-	if cpm != nil {
-		// log.Print("draw copyright")
-		cb := cpm.Bounds()
-		c_offset := image.Pt(int(float64(b.Dx())*0.382-float64(cb.Dx())/2), int(b.Dy()-wb.Dy()-10))
-		// log.Printf("copyright offset %s", c_offset)
-		draw.DrawMask(m, cb.Add(c_offset), cpm, image.ZP, newGrayMask(cb, 40), image.ZP, draw.Over)
-	}
-
 	return m, nil
 }
 
 // Watermark ...
-func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) error {
+func Watermark(r, wr io.Reader, w io.Writer, wo WaterOption) error {
 
-	im, _, err := image.Decode(r)
+	im, format, err := image.Decode(r)
 	if err != nil {
 		log.Printf("Watermark: decode src error: %s", err)
 		return err
@@ -132,24 +124,20 @@ func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) 
 		return err
 	}
 
-	// if cr == nil {
-	// 	log.Print("copyright is nil")
-	// }
-
-	var cp image.Image
-	cp, _, err = image.Decode(cr)
-	if err != nil {
-		log.Printf("decode copyright error: %s", err)
-	}
-
-	m, err := WatermarkImage(im, water, cp, pos, opacity)
+	m, err := WatermarkImage(im, water, wo.Pos, wo.Opacity)
 	if err != nil {
 		return err
 	}
-	err = jpeg.Encode(w, m, &jpeg.Options{Quality: MinJPEGQuality})
 
+	opt := wo.WriteOption
+	if opt.Format != "" {
+		opt.Format = Ext2Format(opt.Format)
+	} else {
+		opt.Format = format
+	}
+
+	err = SaveTo(w, m, opt)
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 
@@ -157,7 +145,7 @@ func Watermark(r, wr, cr io.Reader, w io.Writer, pos Position, opacity Opacity) 
 }
 
 func WatermarkFile(src, dest string, wo WaterOption) (err error) {
-	var in, wr, cr, out *os.File
+	var in, wr, out *os.File
 	in, err = os.Open(src)
 	if err != nil {
 		return
@@ -172,16 +160,6 @@ func WatermarkFile(src, dest string, wo WaterOption) (err error) {
 
 	// log.Printf("copyright: %s", wo.Copyright)
 
-	cr = nil
-	if wo.Copyright != "" {
-		cr, err = os.Open(wo.Copyright)
-		if err != nil {
-			log.Printf("open copyright file failed: %s", err)
-			return
-		}
-		defer cr.Close()
-	}
-
 	dir := path.Dir(dest)
 	err = os.MkdirAll(dir, os.FileMode(0755))
 	if err != nil {
@@ -195,7 +173,7 @@ func WatermarkFile(src, dest string, wo WaterOption) (err error) {
 	}
 	defer out.Close()
 
-	err = Watermark(in, wr, cr, out, wo.Pos, wo.Opacity)
+	err = Watermark(in, wr, out, wo)
 
 	return
 }

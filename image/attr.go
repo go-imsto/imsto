@@ -91,18 +91,33 @@ func (a Attr) Value() (driver.Value, error) {
 }
 
 // NewAttr ...
-func NewAttr(w, h uint, ext string) *Attr {
+func NewAttr(w, h uint, f string) *Attr {
 	a := &Attr{
 		Width:  Dimension(w),
 		Height: Dimension(h),
-		Ext:    getExt(ext),
+		Ext:    Format2Ext(f),
 	}
 	return a
 }
 
-func getExt(f string) string {
+// Format2Ext ...
+func Format2Ext(f string) string {
 	if f == "jpeg" {
 		return ".jpg"
 	}
 	return "." + f
+}
+
+// Ext2Format ...
+func Ext2Format(s string) string {
+	if s == "" {
+		return s
+	}
+	if s[0] == '.' {
+		s = s[1:]
+	}
+	if s == "jpg" {
+		return "jpeg"
+	}
+	return s
 }
