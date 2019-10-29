@@ -12,8 +12,7 @@ import (
 	zlog "github.com/go-imsto/imsto/log"
 
 	_ "github.com/go-imsto/imsto/storage/backend/file"
-	_ "github.com/go-imsto/imsto/storage/backend/qiniu"
-	_ "github.com/go-imsto/imsto/storage/backend/s3"
+	_ "github.com/go-imsto/imsto/storage/backend/s3c"
 )
 
 const (

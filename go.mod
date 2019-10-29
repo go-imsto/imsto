@@ -8,7 +8,6 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.0
 	github.com/chai2010/webp v1.1.0
-	github.com/crowdmob/goamz v0.0.0-20150128194925-3a06871fe9fc
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/aws4 v0.1.0
 	github.com/go-imsto/imagid v0.0.2
@@ -20,12 +19,10 @@ require (
 	github.com/liut/baseconv v0.0.1
 	github.com/liut/jpegquality v0.0.0-20191002165442-bae201ebadd1
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/qiniu/api.v7 v0.0.0-20190428091645-29aeaab9220c
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 	google.golang.org/grpc v1.23.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 )
