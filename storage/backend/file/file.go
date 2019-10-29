@@ -79,7 +79,7 @@ func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err err
 	return
 }
 
-func (l *locWagon) Del(id string) error {
+func (l *locWagon) Delete(id string) error {
 	name := path.Join(l.root, backend.ID2Path(id))
 	return os.Remove(name)
 }

@@ -128,7 +128,7 @@ func (g *gridfsConn) Put(key string, data []byte, meta JsonKV) (sev JsonKV, err 
 	return
 }
 
-func (g *gridfsConn) Del(key string) error {
+func (g *gridfsConn) Delete(key string) error {
 	id := pathToId(key)
 	c := func(fs *mgo.GridFS) error {
 		return fs.Remove(id)

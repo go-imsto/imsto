@@ -126,6 +126,6 @@ func (c *s3Conn) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error
 	return
 }
 
-func (c *s3Conn) Del(id string) error {
+func (c *s3Conn) Delete(id string) error {
 	return c.b.Del(backend.ID2Path(id))
 }
