@@ -228,11 +228,11 @@ func (bu *bucketWrap) Exists(id string) (bool, error) {
 	return fi.Fsize > 0, nil
 }
 
-func (bu *bucketWrap) Del(id string) error {
-	return bu.Delete(bu.id2key(id))
+func (bu *bucketWrap) Delete(id string) error {
+	return bu.DeleteMulti(bu.id2key(id))
 }
 
-func (bu *bucketWrap) Delete(keys ...string) (err error) {
+func (bu *bucketWrap) DeleteMulti(keys ...string) (err error) {
 	deleteOps := make([]string, 0, len(keys))
 	for _, key := range keys {
 		deleteOps = append(deleteOps, storage.URIDelete(bu.Name, key))

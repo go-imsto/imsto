@@ -24,7 +24,7 @@ type Wagoner interface {
 	Get(id string) ([]byte, error)
 	Put(id string, data []byte, meta JsonKV) (JsonKV, error)
 	Exists(id string) (bool, error)
-	Del(id string) error
+	Delete(id string) error
 }
 
 var engines = make(map[string]engine)
