@@ -21,8 +21,8 @@ type Attr struct {
 	Quality Quality   `json:"quality,omitempty"` // Original quality
 	Size    Size      `json:"size,omitempty"`    // Original size
 	Ext     string    `json:"ext"`               // file extension include dot
-	Mime    string    `json:"mime,omitempty"`
-	Name    string    `json:"name,omitempty"` // Deprecated
+	Mime    string    `json:"mime,omitempty"`    // content type
+	Name    string    `json:"name,omitempty"`    // Deprecated
 }
 
 // ToMap ...

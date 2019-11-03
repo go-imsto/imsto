@@ -34,15 +34,14 @@ func (z Sizes) Has(v uint) bool {
 
 // Config ...
 type Config struct {
-	MaxFileSize      uint              `envconfig:"MAX_FILESIZE" default:"2097152"`
+	MaxFileSize      uint              `envconfig:"MAX_FILESIZE" default:"2097152"` // 2MB
 	MaxWidth         uint              `envconfig:"MAX_WIDTH" default:"1600"`
 	MaxHeight        uint              `envconfig:"MAX_HEIGHT" default:"1600"`
 	MinWidth         uint              `envconfig:"MIN_WIDTH" default:"50"`
 	MinHeight        uint              `envconfig:"MIN_HEIGHT" default:"50"`
 	MaxQuality       uint8             `envconfig:"MAX_QUALITY" default:"88"`
 	CacheRoot        string            `envconfig:"CACHE_ROOT" default:"/opt/imsto/cache/"`
-	TempRoot         string            `envconfig:"TEMP_ROOT" default:"/tmp/"`
-	StageHost        string            `envconfig:"STAGE_HOST"`
+	StageHost        string            `envconfig:"STAGE_HOST"`     // stage.example.org
 	WatermarkFile    string            `envconfig:"WATERMARK_FILE"` // /opt/imsto/watermark.png
 	WatermarkOpacity uint8             `envconfig:"WATERMARK_OPACITY" default:"30"`
 	SupportSizes     Sizes             `envconfig:"SUPPORT_SIZE" default:"60,120,256"`

@@ -31,7 +31,7 @@ func TestS3(t *testing.T) {
 	id := "test001.txt"
 	text := "hello world"
 
-	meta := JsonKV{"mime": "text/plain"}
+	meta := Meta{"mime": "text/plain"}
 	_, err = s3.Put(id, []byte(text), meta)
 	if err != nil {
 		t.Fatalf("put %s err %s", id, err)

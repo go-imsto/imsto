@@ -6,13 +6,16 @@ import (
 	"fmt"
 )
 
-type JsonKV map[string]interface{}
+// Meta JSON KV for sql
+type Meta map[string]interface{}
 
-func (m JsonKV) IsEmpty() bool {
+// IsEmpty ...
+func (m Meta) IsEmpty() bool {
 	return len(m) == 0
 }
 
-func (m *JsonKV) Merge(other JsonKV) {
+// Merge ...
+func (m *Meta) Merge(other Meta) {
 	meta := *m
 	for k, v := range other {
 		meta[k] = v
@@ -20,33 +23,38 @@ func (m *JsonKV) Merge(other JsonKV) {
 	*m = meta
 }
 
-func (meta JsonKV) Get(key string) (v interface{}, ok bool) {
-	v, ok = meta[key]
+// Get ...
+func (m Meta) Get(key string) (v interface{}, ok bool) {
+	v, ok = m[key]
 	return
 }
 
-func (meta JsonKV) Set(k string, v interface{}) {
-	if meta == nil {
-		meta = JsonKV{}
+// Set ...
+func (m Meta) Set(k string, v interface{}) {
+	if m == nil {
+		m = Meta{}
 	}
-	meta[k] = v
+	m[k] = v
 }
 
-func (m JsonKV) Unset(k string) {
+// Unset ...
+func (m Meta) Unset(k string) {
 	delete(m, k)
 }
 
-func (meta JsonKV) Filter(keys ...string) (out JsonKV) {
-	out = JsonKV{}
+// Filter ...
+func (m Meta) Filter(keys ...string) (out Meta) {
+	out = Meta{}
 	for _, k := range keys {
-		if v, ok := meta[k]; ok {
+		if v, ok := m[k]; ok {
 			out[k] = v
 		}
 	}
 	return
 }
 
-func (m *JsonKV) Scan(b interface{}) error {
+// Scan ...
+func (m *Meta) Scan(b interface{}) error {
 	if b == nil {
 		*m = nil
 		return nil
@@ -54,7 +62,8 @@ func (m *JsonKV) Scan(b interface{}) error {
 	return json.Unmarshal(b.([]byte), m)
 }
 
-func (m JsonKV) Value() (driver.Value, error) {
+// Value ...
+func (m Meta) Value() (driver.Value, error) {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, err
@@ -62,9 +71,10 @@ func (m JsonKV) Value() (driver.Value, error) {
 	return string(b), nil
 }
 
-func (z JsonKV) ToMaps(h map[string][]string) {
+// ToMaps ...
+func (m Meta) ToMaps(h map[string][]string) {
 	h = make(map[string][]string)
-	for k, v := range z {
+	for k, v := range m {
 		h[k] = []string{fmt.Sprint(v)}
 	}
 	return

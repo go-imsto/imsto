@@ -11,8 +11,11 @@ import (
 	"github.com/go-imsto/imsto/storage/backend"
 )
 
+// Wagoner ...
 type Wagoner = backend.Wagoner
-type JsonKV = backend.JsonKV
+
+// Meta ...
+type Meta = backend.Meta
 
 // local storage wagon
 type locWagon struct {
@@ -54,7 +57,7 @@ func (l *locWagon) Get(id string) (data []byte, err error) {
 	return
 }
 
-func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error) {
+func (l *locWagon) Put(id string, data []byte, meta Meta) (sev Meta, err error) {
 	key := backend.ID2Path(id)
 	name := path.Join(l.root, key)
 	dir := path.Dir(name)
@@ -63,7 +66,7 @@ func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err err
 		return
 	}
 	err = ioutil.WriteFile(name, data, os.FileMode(0644))
-	// sev = JsonKV{"root": l.root}
+	// sev = Meta{"root": l.root}
 	if err != nil {
 		logger().Warnw("write file fail", "name", name, "id", id, "err", err)
 		return
@@ -74,7 +77,7 @@ func (l *locWagon) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err err
 		logger().Warnw("saveMeta fail", "metaFile", metaFile, "id", id, "err", err)
 		return
 	}
-	sev = JsonKV{"engine": "file", "key": key}
+	sev = Meta{"engine": "file", "key": key}
 	logger().Infow("save meta OK", "sev", sev, "name", name)
 	return
 }

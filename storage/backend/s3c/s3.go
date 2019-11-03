@@ -21,8 +21,8 @@ import (
 // Wagoner ...
 type Wagoner = backend.Wagoner
 
-// JsonKV ...
-type JsonKV = backend.JsonKV
+// Meta ...
+type Meta = backend.Meta
 
 const (
 	emptySum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -161,7 +161,7 @@ func (c *s3Conn) Get(id string) (data []byte, err error) {
 	return
 }
 
-func metaToMaps(h JsonKV) (m map[string][]string) {
+func metaToMaps(h Meta) (m map[string][]string) {
 	m = make(map[string][]string)
 	for k, v := range h {
 		if k == "name" {
@@ -175,7 +175,7 @@ func metaToMaps(h JsonKV) (m map[string][]string) {
 }
 
 // Put ...
-func (c *s3Conn) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error) {
+func (c *s3Conn) Put(id string, data []byte, meta Meta) (sev Meta, err error) {
 	key := c.id2key(id)
 	uri := c.getURL(key)
 	var req *http.Request
@@ -208,7 +208,7 @@ func (c *s3Conn) Put(id string, data []byte, meta JsonKV) (sev JsonKV, err error
 		return
 	}
 
-	sev = JsonKV{"engine": "s3", "bucket": c.name, "key": key, "host": c.endpoint}
+	sev = Meta{"engine": "s3", "bucket": c.name, "key": key, "host": c.endpoint}
 	logger().Infow("s3 Put done", "id", id)
 
 	return

@@ -29,7 +29,7 @@ type MetaWrapper interface {
 	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
 	Count(filter MetaFilter) (int, error)
 	Ready(entry *Entry) error
-	SetDone(id string, sev cdb.JsonKV) error
+	SetDone(id string, sev cdb.Meta) error
 	Save(entry *Entry, isUpdate bool) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id string) (*Entry, error)
@@ -311,7 +311,7 @@ func (mw *MetaWrap) Ready(entry *Entry) error {
 	})
 }
 
-func (mw *MetaWrap) SetDone(id string, sev cdb.JsonKV) error {
+func (mw *MetaWrap) SetDone(id string, sev cdb.Meta) error {
 	qs := func(tx *sql.Tx) (err error) {
 		var ret int
 		err = tx.QueryRow("SELECT entry_set_done($1, $2)", id, sev).Scan(&ret)
