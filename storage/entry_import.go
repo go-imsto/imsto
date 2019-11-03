@@ -10,7 +10,7 @@ import (
 	"github.com/go-imsto/imsto/storage/types"
 )
 
-func NewEntryConvert(id, name, path string, size uint32, meta, sev types.JsonKV, hashes, ids []string,
+func NewEntryConvert(id, name, path string, size uint32, meta, sev types.Meta, hashes, ids []string,
 	created time.Time) (entry *Entry, err error) {
 
 	if id == "" {

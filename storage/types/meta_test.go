@@ -5,10 +5,10 @@ import (
 )
 
 func TestMeta(t *testing.T) {
-	var meta = JsonKV{
+	var meta = Meta{
 		"a": 1,
 	}
-	other := JsonKV{
+	other := Meta{
 		"a": 2,
 		"b": 1,
 	}
@@ -41,7 +41,7 @@ func TestMeta(t *testing.T) {
 }
 
 func TestMetaFilter(t *testing.T) {
-	var meta = JsonKV{"a": 2, "b": 5, "c": "x"}
+	var meta = Meta{"a": 2, "b": 5, "c": "x"}
 	out := meta.Filter("a", "c")
 
 	if v, ok := out["a"]; ok && v.(int) == 2 {

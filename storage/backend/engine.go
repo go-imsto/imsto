@@ -7,7 +7,8 @@ import (
 	"strings"
 )
 
-type JsonKV = types.JsonKV
+// Meta ...
+type Meta = types.Meta
 
 type FarmFunc func(string) (Wagoner, error)
 
@@ -22,7 +23,7 @@ const (
 
 type Wagoner interface {
 	Get(id string) ([]byte, error)
-	Put(id string, data []byte, meta JsonKV) (JsonKV, error)
+	Put(id string, data []byte, meta Meta) (Meta, error)
 	Exists(id string) (bool, error)
 	Delete(id string) error
 }

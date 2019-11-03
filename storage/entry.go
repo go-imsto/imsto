@@ -34,7 +34,7 @@ type mapItem struct {
 	Roofs   StringArray `json:"roofs,omitempty"`
 	Status  uint8       `json:"-"`
 	Created *time.Time  `json:"created,omitempty"`
-	sev     cdb.JsonKV
+	sev     cdb.Meta
 }
 
 func (e *mapItem) roof() string {
@@ -61,8 +61,8 @@ type Entry struct {
 
 	Err string `json:"err,omitempty"`
 
-	exif cdb.JsonKV
-	sev  cdb.JsonKV
+	exif cdb.Meta
+	sev  cdb.Meta
 
 	b  []byte
 	h  string
@@ -307,7 +307,7 @@ func PullBlob(key string, roof string) (data []byte, err error) {
 }
 
 // PushTo ...
-func (e *Entry) PushTo(roof string) (sev cdb.JsonKV, err error) {
+func (e *Entry) PushTo(roof string) (sev cdb.Meta, err error) {
 	key := e.Path
 	blob := e.b
 	meta := e.Meta
