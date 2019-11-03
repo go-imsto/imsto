@@ -41,8 +41,8 @@ type Image struct {
 	m image.Image
 	*Attr
 	Format string
-	r      io.Reader
-	n      int
+	rs     io.ReadSeeker
+	rn     int // read length
 }
 
 // Open ...
@@ -71,8 +71,8 @@ func Open(rs io.ReadSeeker) (*Image, error) {
 		m:      m,
 		Attr:   attr,
 		Format: format,
-		r:      rs,
-		n:      cw.Len(),
+		rs:     rs,
+		rn:     cw.Len(),
 	}, nil
 }
 
@@ -90,11 +90,18 @@ func (im *Image) SaveTo(w io.Writer, opt WriteOption) error {
 	}
 	var buf bytes.Buffer
 	n, err := SaveTo(&buf, im.m, opt)
-	if n > im.n {
-		_, err = io.Copy(w, im.r)
-	} else {
-		_, err = io.Copy(w, &buf)
+	if err != nil {
+		return err
 	}
+	var nn int64
+	if n > im.rn {
+		log.Printf("saved %d, im size %d", n, im.rn)
+		im.rs.Seek(0, 0)
+		nn, err = io.Copy(w, im.rs)
+	} else {
+		nn, err = io.Copy(w, &buf)
+	}
+	log.Printf("copied %d bytes", nn)
 	return err
 }
 

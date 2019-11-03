@@ -122,6 +122,8 @@ func (e *Entry) Trek(roof string) (err error) {
 		logger().Infow("im.SaveTo fail", "id", e.Id, "err", err)
 		return
 	}
+	logger().Infow("im.SaveTo OK", "id", e.Id, "size", buf.Len())
+
 	e.b = buf.Bytes()
 
 	size := len(e.b)

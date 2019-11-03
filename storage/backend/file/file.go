@@ -77,7 +77,7 @@ func (l *locWagon) Put(id string, data []byte, meta Meta) (sev Meta, err error) 
 		logger().Warnw("saveMeta fail", "metaFile", metaFile, "id", id, "err", err)
 		return
 	}
-	sev = Meta{"engine": "file", "key": key}
+	sev = Meta{"engine": "file", "key": key, "size": len(data)}
 	logger().Infow("save meta OK", "sev", sev, "name", name)
 	return
 }
