@@ -44,6 +44,13 @@ func TestS3(t *testing.T) {
 	}
 	t.Logf("exists %s, %v", id, ok)
 
+	var data []ListItem
+	data, err = s3.List(ListSpec{Prefix: "imsto", Limit: 5})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("data %v", data)
+
 	err = s3.Delete(id)
 	if err != nil {
 		t.Fatal(err)

@@ -5,6 +5,7 @@ import (
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage/types"
 	"strings"
+	"time"
 )
 
 // Meta ...
@@ -21,9 +22,27 @@ const (
 	minIDLength = 8
 )
 
+// ListSpec ...
+type ListSpec struct {
+	Delimiter string `json:"delimiter"`
+	Marker    string `json:"marker"`
+	Limit     int    `json:"limit"`
+	Prefix    string `json:"prefix"`
+}
+
+// ListItem ...
+type ListItem struct {
+	Key          string     `json:"key,omitempty" xml:"Key"`
+	ETag         string     `json:"etag,omitempty" xml:"ETag"`
+	Size         uint32     `json:"size,omitempty" xml:"Size"`
+	LastModified *time.Time `json:"modified,omitempty" xml:"LastModified"`
+}
+
+// Wagoner ...
 type Wagoner interface {
 	Get(id string) ([]byte, error)
 	Put(id string, data []byte, meta Meta) (Meta, error)
+	List(spec ListSpec) ([]ListItem, error)
 	Exists(id string) (bool, error)
 	Delete(id string) error
 }

@@ -14,6 +14,12 @@ import (
 // Wagoner ...
 type Wagoner = backend.Wagoner
 
+// ListSpec ...
+type ListSpec = backend.ListSpec
+
+// ListItem ...
+type ListItem = backend.ListItem
+
 // Meta ...
 type Meta = backend.Meta
 
@@ -48,6 +54,11 @@ func (l *locWagon) Exists(id string) (exist bool, err error) {
 		exist = false
 	}
 	exist = true
+	return
+}
+
+func (l *locWagon) List(ls ListSpec) (items []ListItem, err error) {
+	// TODO:
 	return
 }
 
