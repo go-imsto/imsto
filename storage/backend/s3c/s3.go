@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -40,7 +39,6 @@ type s3Conn struct {
 	name     string // bucket
 	endpoint string
 	region   string
-	prefix   string
 	ac       *aws4.Client
 	uri      string
 }
@@ -64,10 +62,9 @@ func init() {
 		Region    string            `envconfig:"REGION"`                  // only one region for now
 		Bucket    string            `envconfig:"BUCKET"`                  // default bucket
 		Protocol  string            `envconfig:"PROTOCOL" default:"http"` // example: https
-		Prefix    string            `envconfig:"PREFIX" default:"imsto/"` // example: imsto/
-		Buckets   map[string]string `envconfig:"BUCKETS"`                 // [roof]bucket
-		Endpoints map[string]string `envconfig:"ENDPOINTS"`               // [roof]endpoint
-		URIs      map[string]string `envconfig:"URIS"`                    // [roof]uri URI of frontend or CDN
+		Buckets   map[string]string `envconfig:"BUCKETS"`                 // [roof]bucket of special roof
+		Endpoints map[string]string `envconfig:"ENDPOINTS"`               // [roof]endpoint of special roof
+		URIs      map[string]string `envconfig:"URIS"`                    // [roof]uri URI of CDN for bucket
 	}
 	envconfig.MustProcess("aws_s3", &conf)
 
@@ -81,18 +78,17 @@ func init() {
 			name:     name,
 			endpoint: endpoint,
 			region:   conf.Region,
-			prefix:   conf.Prefix,
 			ac:       ac,
 			uri:      conf.URIs[roof],
 		}
 	}
 	if len(buckets) == 0 {
 		if conf.Bucket != "" && conf.Region != "" {
-			dft = &s3Conn{name: conf.Bucket, region: conf.Region, prefix: conf.Prefix, ac: ac}
+			dft = &s3Conn{name: conf.Bucket, region: conf.Region, ac: ac}
 		}
 	}
 
-	logger().Infow("init done ", "buckets", buckets)
+	logger().Infow("s3 init done ", "buckets", buckets)
 
 	backend.RegisterEngine("s3", s3Dial)
 }
@@ -131,7 +127,7 @@ func (c *s3Conn) Exists(k Key) (exist bool, err error) {
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
 	if err != nil {
-		logger().Infow("exists fail", "id", k.ID, "err", err)
+		logger().Infow("exists fail", "key", k, "err", err)
 		return
 	}
 	exist = resp.StatusCode == 200
@@ -150,7 +146,7 @@ func (c *s3Conn) Get(k Key) (data []byte, err error) {
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
 	if err != nil {
-		logger().Infow("get fail", "id", k.ID, "err", err)
+		logger().Infow("get fail", "key", k, "err", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -186,6 +182,7 @@ func (c *s3Conn) Put(k Key, data []byte, meta Meta) (sev Meta, err error) {
 	if err != nil {
 		return
 	}
+	logger().Infow("putting", "key", k, "size", len(data), "meta", meta, "uri", uri)
 	mime, _ := meta.Get("mime")
 
 	h := sha256.New()
@@ -193,16 +190,14 @@ func (c *s3Conn) Put(k Key, data []byte, meta Meta) (sev Meta, err error) {
 	req.Header.Set("x-amz-content-sha256", fmt.Sprintf("%x", h.Sum(nil)))
 	req.Header.Set("content-type", fmt.Sprint(mime))
 	req.Header.Set("content-length", fmt.Sprint(len(data)))
-	log.Printf("s3 Put %s: %s %s size %d\n", c.name, k, meta, len(data))
 
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
 	if err != nil {
-		logger().Infow("put fail", "id", k.ID, "meta", meta, "err", err)
+		logger().Infow("put fail", "key", k, "meta", meta, "err", err)
 		return
 	}
 	defer resp.Body.Close()
-	logger().Infow("put ", "header", req.Header, "err", err)
 
 	var buf []byte
 	buf, err = ioutil.ReadAll(resp.Body)
@@ -216,18 +211,21 @@ func (c *s3Conn) Put(k Key, data []byte, meta Meta) (sev Meta, err error) {
 	if c.uri != "" {
 		sev["uri"] = c.uri
 	}
-	logger().Infow("s3 Put done", "id", k.ID)
+	logger().Infow("Put OK", "sev", sev)
 
 	return
 }
 
 // Delete ...
 func (c *s3Conn) Delete(k Key) (err error) {
+	uri := c.getURL(k.Path())
 	var req *http.Request
-	req, err = http.NewRequest("DELETE", c.getURL(k.Path()), nil)
+	req, err = http.NewRequest("DELETE", uri, nil)
 	if err != nil {
 		return
 	}
+	logger().Infow("deleting", "key", k, "uri", uri)
+
 	req.Header.Set("x-amz-content-sha256", emptySum)
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
@@ -235,10 +233,10 @@ func (c *s3Conn) Delete(k Key) (err error) {
 		return
 	}
 	if resp.StatusCode != 200 && resp.StatusCode != 204 {
-		logger().Infow("delete fail", "id", k.ID, "code", resp.StatusCode)
+		logger().Infow("delete fail", "key", k, "code", resp.StatusCode)
 		err = ErrRequest
 		return
 	}
-	logger().Infow("s3 Delete done", "id", k.ID)
+	logger().Infow("Delete OK", "key", k)
 	return
 }

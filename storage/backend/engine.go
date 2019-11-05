@@ -41,8 +41,8 @@ type ListItem struct {
 
 // Key ...
 type Key struct {
-	ID  string
 	Cat string
+	ID  string
 }
 
 func (k *Key) String() string {
