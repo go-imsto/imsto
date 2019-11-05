@@ -8,7 +8,7 @@ import (
 )
 
 var cmdRPC = &Command{
-	UsageLine: "rpc -addr :8969 -whiteList=\"127.0.0.1\"",
+	UsageLine: "rpc [-addr :8969] [-tls]",
 	Short:     "serve RPC service",
 	Long: `
 serve RPC service

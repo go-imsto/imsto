@@ -60,6 +60,13 @@ func decRPCServer(s *grpc.Server) *grpc.Server {
 	return s
 }
 
+// RPC ...
+type RPC interface {
+	Serve()
+	Stop()
+	http.Handler
+}
+
 // server ...
 type server struct {
 	Addr string
@@ -68,7 +75,7 @@ type server struct {
 }
 
 // NewServer ...
-func NewServer(addr string, isTLS bool) *server {
+func NewServer(addr string, isTLS bool) RPC {
 	s := &server{
 		Addr: addr,
 		TLS:  isTLS,

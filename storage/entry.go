@@ -285,6 +285,11 @@ func (e *Entry) roof() string {
 	return ""
 }
 
+// StoredMeta ...
+func (e *Entry) StoredMeta() cdb.Meta {
+	return e.sev
+}
+
 func newStorePath(id imagid.IID, ext string) string {
 	r := id.String()
 	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
@@ -301,7 +306,7 @@ func PullBlob(key string, roof string) (data []byte, err error) {
 		return
 	}
 	// var data []byte
-	data, err = em.Get(key)
+	data, err = em.Get(backend.Key{ID: key, Cat: CatStore})
 	if err != nil {
 		logger().Warnw("get fail", "roof", roof, "key", key, "err", err)
 	}
@@ -322,7 +327,7 @@ func (e *Entry) PushTo(roof string) (sev cdb.Meta, err error) {
 		logger().Warnw("farmEngine fail", "roof", roof, "key", key, "err", err)
 		return
 	}
-	sev, err = em.Put(key, blob, meta.ToMap())
+	sev, err = em.Put(backend.Key{ID: key, Cat: CatStore}, blob, meta.ToMap())
 	return
 }
 

@@ -66,7 +66,7 @@ func (ri *rpcImage) loadImageOutput(entry *storage.Entry, sizeOp string) (*pb.Im
 	spath := "orig/" + entry.Path
 	if sizeOp != "" {
 		spath = sizeOp + "/" + entry.Path
-		_, oerr := storage.LoadPath(storage.ViewName + "/" + spath)
+		_, oerr := storage.LoadPath(storage.CatView + "/" + spath)
 		if oerr != nil {
 			reportError(oerr, nil)
 			return nil, oerr
@@ -75,7 +75,7 @@ func (ri *rpcImage) loadImageOutput(entry *storage.Entry, sizeOp string) (*pb.Im
 
 	return &pb.ImageOutput{
 		Path: entry.Path,
-		Uri:  "/" + storage.ViewName + "/" + spath,
+		Uri:  "/" + storage.CatView + "/" + spath,
 		Host: config.Current.StageHost,
 		ID:   uint64(entry.Id),
 		Meta: &pb.ImageMeta{
