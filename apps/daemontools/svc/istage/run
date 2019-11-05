@@ -1,6 +1,0 @@
-#!/bin/sh
-PATH=/opt/local/sbin:/opt/local/bin:/usr/local/bin:/usr/sbin:/usr/bin:/bin
-[ -e /var/log/imsto ] || mkdir /var/log/imsto
-chown nobody /var/log/imsto
-echo starting imsto stage...
-exec setuidgid nobody /usr/local/bin/imsto stage

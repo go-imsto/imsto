@@ -1,0 +1,19 @@
+[Unit]
+Description=image storage
+After=network.target
+After=syslog.target
+
+[Service]
+User=nobody
+PIDFile=/var/run/nobody/imsto-tiring.pid
+EnvironmentFile=-/etc/default/user/imsto
+WorkingDirectory=/opt/imsto
+ExecStart=/opt/imsto/bin/imsto tiring
+Type=simple
+Restart=on-failure
+ExecStop=/bin/kill -s TERM $MAINPID
+RestartSec=5
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target
