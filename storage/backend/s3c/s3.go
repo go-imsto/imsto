@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path"
 
 	"github.com/kelseyhightower/envconfig"
 
@@ -26,6 +25,9 @@ type ListSpec = backend.ListSpec
 
 // ListItem ...
 type ListItem = backend.ListItem
+
+// Key ...
+type Key = backend.Key
 
 // Meta ...
 type Meta = backend.Meta
@@ -65,7 +67,7 @@ func init() {
 		Prefix    string            `envconfig:"PREFIX" default:"imsto/"` // example: imsto/
 		Buckets   map[string]string `envconfig:"BUCKETS"`                 // [roof]bucket
 		Endpoints map[string]string `envconfig:"ENDPOINTS"`               // [roof]endpoint
-		URIs      map[string]string `envconfig:"URIS"`                    // [roof]uri
+		URIs      map[string]string `envconfig:"URIS"`                    // [roof]uri URI of frontend or CDN
 	}
 	envconfig.MustProcess("aws_s3", &conf)
 
@@ -105,10 +107,6 @@ func s3Dial(roof string) (Wagoner, error) {
 	return nil, ErrBucketName
 }
 
-func (c *s3Conn) id2key(id string) string {
-	return path.Join(c.prefix, backend.ID2Path(id))
-}
-
 func (c *s3Conn) getURL(key string) (uri string) {
 	if len(c.endpoint) > 0 {
 		uri = protocol + "://" + c.endpoint + "/" + c.name
@@ -123,9 +121,9 @@ func (c *s3Conn) getURL(key string) (uri string) {
 }
 
 // Exists ...
-func (c *s3Conn) Exists(id string) (exist bool, err error) {
+func (c *s3Conn) Exists(k Key) (exist bool, err error) {
 	var req *http.Request
-	req, err = http.NewRequest("HEAD", c.getURL(c.id2key(id)), nil)
+	req, err = http.NewRequest("HEAD", c.getURL(k.Path()), nil)
 	if err != nil {
 		return
 	}
@@ -133,7 +131,7 @@ func (c *s3Conn) Exists(id string) (exist bool, err error) {
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
 	if err != nil {
-		logger().Infow("exists fail", "id", id, "err", err)
+		logger().Infow("exists fail", "id", k.ID, "err", err)
 		return
 	}
 	exist = resp.StatusCode == 200
@@ -141,9 +139,9 @@ func (c *s3Conn) Exists(id string) (exist bool, err error) {
 }
 
 // Get ...
-func (c *s3Conn) Get(id string) (data []byte, err error) {
+func (c *s3Conn) Get(k Key) (data []byte, err error) {
 	var req *http.Request
-	req, err = http.NewRequest("GET", c.getURL(c.id2key(id)), nil)
+	req, err = http.NewRequest("GET", c.getURL(k.Path()), nil)
 	if err != nil {
 		return
 	}
@@ -152,7 +150,7 @@ func (c *s3Conn) Get(id string) (data []byte, err error) {
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
 	if err != nil {
-		logger().Infow("get fail", "id", id, "err", err)
+		logger().Infow("get fail", "id", k.ID, "err", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -181,26 +179,26 @@ func metaToMaps(h Meta) (m map[string][]string) {
 }
 
 // Put ...
-func (c *s3Conn) Put(id string, data []byte, meta Meta) (sev Meta, err error) {
-	key := c.id2key(id)
-	uri := c.getURL(key)
+func (c *s3Conn) Put(k Key, data []byte, meta Meta) (sev Meta, err error) {
+	uri := c.getURL(k.Path())
 	var req *http.Request
 	req, err = http.NewRequest("PUT", uri, bytes.NewReader(data))
 	if err != nil {
 		return
 	}
+	mime, _ := meta.Get("mime")
 
 	h := sha256.New()
 	h.Write(data)
 	req.Header.Set("x-amz-content-sha256", fmt.Sprintf("%x", h.Sum(nil)))
-	req.Header.Set("content-type", fmt.Sprint(meta.Get("mime")))
+	req.Header.Set("content-type", fmt.Sprint(mime))
 	req.Header.Set("content-length", fmt.Sprint(len(data)))
-	log.Printf("s3 Put %s: %s %s size %d\n", c.name, key, meta, len(data))
+	log.Printf("s3 Put %s: %s %s size %d\n", c.name, k, meta, len(data))
 
 	var resp *http.Response
 	resp, err = c.ac.Do(req)
 	if err != nil {
-		logger().Infow("put fail", "id", id, "meta", meta, "err", err)
+		logger().Infow("put fail", "id", k.ID, "meta", meta, "err", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -214,16 +212,19 @@ func (c *s3Conn) Put(id string, data []byte, meta Meta) (sev Meta, err error) {
 		return
 	}
 
-	sev = Meta{"engine": "s3", "bucket": c.name, "key": key, "host": c.endpoint}
-	logger().Infow("s3 Put done", "id", id)
+	sev = Meta{"engine": "s3", "bucket": c.name, "key": k, "endpoint": c.endpoint}
+	if c.uri != "" {
+		sev["uri"] = c.uri
+	}
+	logger().Infow("s3 Put done", "id", k.ID)
 
 	return
 }
 
 // Delete ...
-func (c *s3Conn) Delete(id string) (err error) {
+func (c *s3Conn) Delete(k Key) (err error) {
 	var req *http.Request
-	req, err = http.NewRequest("DELETE", c.getURL(c.id2key(id)), nil)
+	req, err = http.NewRequest("DELETE", c.getURL(k.Path()), nil)
 	if err != nil {
 		return
 	}
@@ -234,10 +235,10 @@ func (c *s3Conn) Delete(id string) (err error) {
 		return
 	}
 	if resp.StatusCode != 200 && resp.StatusCode != 204 {
-		logger().Infow("delete fail", "id", id, "code", resp.StatusCode)
+		logger().Infow("delete fail", "id", k.ID, "code", resp.StatusCode)
 		err = ErrRequest
 		return
 	}
-	logger().Infow("s3 Delete done", "id", id)
+	logger().Infow("s3 Delete done", "id", k.ID)
 	return
 }

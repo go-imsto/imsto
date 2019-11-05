@@ -17,9 +17,11 @@ import (
 	cdb "github.com/go-imsto/imsto/storage/types"
 )
 
+// consts Cate of Key
 const (
-	// ViewName ...
-	ViewName = "show"
+	CatView  = "show"
+	CatStore = "stores"
+	CatThumb = "thumb"
 )
 
 // errors
@@ -348,7 +350,7 @@ func Delete(roof, id string) error {
 
 // GetURL ...
 func GetURL(scheme, suffix string) string {
-	spath := path.Join("/", ViewName, suffix)
+	spath := path.Join("/", CatView, suffix)
 	stageHost := config.Current.StageHost
 	if stageHost == "" {
 		return spath

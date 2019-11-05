@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage/types"
+	"path"
 	"strings"
 	"time"
 )
@@ -38,13 +39,28 @@ type ListItem struct {
 	LastModified *time.Time `json:"modified,omitempty" xml:"LastModified"`
 }
 
+// Key ...
+type Key struct {
+	ID  string
+	Cat string
+}
+
+func (k *Key) String() string {
+	return k.Cat + "/" + k.ID
+}
+
+// Path ...
+func (k Key) Path() string {
+	return path.Join(k.Cat, ID2Path(k.ID))
+}
+
 // Wagoner ...
 type Wagoner interface {
-	Get(id string) ([]byte, error)
-	Put(id string, data []byte, meta Meta) (Meta, error)
+	Get(k Key) ([]byte, error)
+	Put(k Key, data []byte, meta Meta) (Meta, error)
 	List(spec ListSpec) ([]ListItem, error)
-	Exists(id string) (bool, error)
-	Delete(id string) error
+	Exists(k Key) (bool, error)
+	Delete(k Key) error
 }
 
 var engines = make(map[string]engine)

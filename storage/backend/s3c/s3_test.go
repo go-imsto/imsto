@@ -28,7 +28,7 @@ func TestS3(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	id := "test001.txt"
+	id := Key{ID: "test001.txt", Cat: "imsto"}
 	text := "hello world"
 
 	meta := Meta{"mime": "text/plain"}
