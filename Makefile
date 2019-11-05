@@ -61,6 +61,12 @@ test-storage:
 	@$(WITH_ENV) go test -v -cover -coverprofile tests/cover_storage.out ./storage
 	@$(WITH_ENV) go tool cover -html=tests/cover_storage.out -o tests/cover_storage.out.html
 
+test-rpc:
+	$(VET) ./rpc
+	mkdir -p tests
+	@$(WITH_ENV) go test -v -cover -coverprofile tests/cover_rpc.out ./rpc
+	@$(WITH_ENV) go tool cover -html=tests/cover_rpc.out -o tests/cover_rpc.out.html
+
 
 docker-db-build:
 	echo "Building database image"

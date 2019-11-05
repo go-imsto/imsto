@@ -88,10 +88,6 @@ func TestImage(t *testing.T) {
 	assert.NotNil(t, res)
 	t.Logf("res %v", res)
 
-	// _, err = getClient().Store(context.Background(), &pb.ImageInput{ApiKey: "not found"})
-	// assert.Error(t, ErrPasswordIncorrect, err)
-	// _, err = getClient().Store(context.Background(), &pb.ImageInput{ApiKey: apiKey, Roof: "invalid"})
-	// assert.Error(t, ErrPasswordIncorrect, err)
 }
 
 func TestFetch(t *testing.T) {
