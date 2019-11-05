@@ -189,11 +189,12 @@ func (c *s3Conn) Put(id string, data []byte, meta Meta) (sev Meta, err error) {
 	if err != nil {
 		return
 	}
+	mime, _ := meta.Get("mime")
 
 	h := sha256.New()
 	h.Write(data)
 	req.Header.Set("x-amz-content-sha256", fmt.Sprintf("%x", h.Sum(nil)))
-	req.Header.Set("content-type", fmt.Sprint(meta.Get("mime")))
+	req.Header.Set("content-type", fmt.Sprint(mime))
 	req.Header.Set("content-length", fmt.Sprint(len(data)))
 	log.Printf("s3 Put %s: %s %s size %d\n", c.name, key, meta, len(data))
 
