@@ -1,31 +1,16 @@
 # Installation
 
 ## Dependencies
+
+### Database
+
 * PostgreSQL 9.4+
 
-### C lib
+### Go (>= 1.12)
 
-1. libjpeg-turbo (recommend) or jpeg
-2. png (option in plan)
-
-### Go lib
-
-- go version >= 1.11
-
+- go get github.com/ddollar/forego
 
 ## Installation
-
-### prepare C libraries
-   - osx:
-     1. get `libjpeg-turbo-1.4.2.dmg` from http://sourceforge.net/projects/libjpeg-turbo/
-     2. mount and install
-     or `sudo port install libjpeg-turbo`
-   - gentoo:
-     - `emerge libjpeg-turbo`
-   - debian:
-     - `apt-get install libturbojpeg1`
-   - alpine:
-     - `apk add libjpeg-turbo-dev`
 
 ### build
 
@@ -47,19 +32,18 @@ forego run ./imsto auth -name demo -save
 ~~~
 
 ### Configuration
-- `mkdir /etc/imsto`
-- `vim /etc/imsto/imsto.ini`, see also: `demo-config`
-- `mkdir /var/log/imsto`
+- `cp .env.example .env`
+- `vim .env`
 
 ### Launch tiring service
 ~~~
-./imsto tiring
+foreog run ./imsto tiring
 ~~~
 
 
 ### Launch stage service
 ~~~
-./imsto stage
+foreog run ./imsto stage
 ~~~
 
 ## Change nginx config
@@ -67,20 +51,28 @@ forego run ./imsto auth -name demo -save
 - add imsto blocks into locations
 
 ~~~
-	location ~* ^/(thumb|t2|t3)/(.+\.(?:gif|jpe?g|png))$ {
-		alias /opt/imsto/cache/thumb/$2;
+
+	location ~* "^/(show|view)/(\w+)/([a-z0-9]{2})/?([a-z0-9]{2})/?([a-z0-9]{4,36})\.(gif|jpe?g|png|webp)$" {
+		alias /opt/imsto/cache/thumb/$2/$3/$4/$5.$6;
 		error_page 404 = @imsto_stage;
+		expires 1d;
 	}
 
+	# frontend for view
 	location @imsto_stage {
 		proxy_pass   http://localhost:8968;
 		proxy_set_header   X-Real-IP        $remote_addr;
 		proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
 	}
 
+	# backend for management
 	location /imsto/ {
 		proxy_pass   http://localhost:8964;
-		proxy_set_header   X-Real-IP        $remote_addr;
-		proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection $http_connection;
+        proxy_set_header   X-Scheme $scheme;
+        proxy_set_header   X-Real-IP        $remote_addr;
+        proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
 	}
+
 ~~~
