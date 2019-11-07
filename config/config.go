@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -50,6 +51,11 @@ type Config struct {
 	Sections         map[string]string `envconfig:"SECTIONS"` // [roof]label
 	Engines          map[string]string `envconfig:"ENGINES"`  // [roof]engine
 	Buckets          map[string]string `envconfig:"BUCKETS"`  // [roof]bucket
+	WhiteList        []string          `envconfig:"WHITELIST"`
+	ReadTimeout      time.Duration     `envconfig:"READ_TIMEOUT" default:"10s"`
+	TiringListen     string            `envconfig:"TIRING_LISTEN" default:":6967"`
+	StageListen      string            `envconfig:"STAGE_LISTEN" default:":6968"`
+	RPCListen        string            `envconfig:"RPC_LISTEN" default:":6969"`
 }
 
 // vars
