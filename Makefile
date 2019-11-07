@@ -77,6 +77,7 @@ docker-db-build:
 
 docker-build:
 	echo "Building docker image"
-	docker build -t $(ORIG)/$(NAME):$(TAG) .
+	docker build --rm -t $(ORIG)/$(NAME):$(TAG) .
 	docker tag $(ORIG)/$(NAME):$(TAG) $(ORIG)/$(NAME):latest
+	docker save -o $(ORIG)_$(NAME).tar $(ORIG)/$(NAME):$(TAG) $(ORIG)/$(NAME)-db:latest && gzip -9f $(ORIG)_$(NAME).tar
 .PHONY: $@
