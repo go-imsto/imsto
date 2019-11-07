@@ -61,6 +61,7 @@ var commands = []*Command{
 	cmdStage,
 	cmdView,
 	cmdTest,
+	cmdBundle,
 }
 
 func setExitStatus(n int) {

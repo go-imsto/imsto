@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/web"
 )
 
 var cmdTiring = &Command{
-	UsageLine: "tiring -port 8964 -whiteList=\"127.0.0.1\"",
+	UsageLine: "tiring -l :8967",
 	Short:     "serve tiring http service",
 	Long: `
 serve tiring http service
@@ -21,29 +18,23 @@ serve tiring http service
 }
 
 var (
-	mport           = cmdTiring.Flag.Int("port", 8964, "tcp listen port")
-	mReadTimeout    = cmdTiring.Flag.Int("readTimeout", 3, "connection read timeout in seconds")
-	whiteListOption = cmdTiring.Flag.String("whiteList", "", "comma separated Ip addresses having write permission. No limit if empty.")
-	whiteList       []string
+	maddr string
 )
 
 func init() {
 	cmdTiring.Run = runTiring
+	cmdTiring.Flag.StringVar(&maddr, "l", config.Current.TiringListen, "tcp listen addr")
 }
 
 func runTiring(args []string) bool {
 
-	if *whiteListOption != "" {
-		whiteList = strings.Split(*whiteListOption, ",")
-	}
-
-	str := fmt.Sprintf("Start Tiring service %s at port %d", config.Version, *mport)
+	str := fmt.Sprintf("Start Tiring service %s at addr %s", config.Version, maddr)
 	fmt.Println(str)
 	log.Print(str)
 	srv := &http.Server{
-		Addr:        ":" + strconv.Itoa(*mport),
+		Addr:        maddr,
 		Handler:     web.Handler(),
-		ReadTimeout: time.Duration(*mReadTimeout) * time.Second,
+		ReadTimeout: config.Current.ReadTimeout,
 	}
 	err := srv.ListenAndServe()
 	if err != nil {
