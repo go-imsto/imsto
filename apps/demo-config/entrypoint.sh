@@ -102,7 +102,7 @@ if [ "$1" = 'start' ]; then
 		-o "-c listen_addresses='${PG_LISTEN:-localhost}'" \
 		-w -t 2 start
 
-	sleep 2
+	sleep 4
 
 	if [[ ! -s htdocs/api_key.js ]]; then
 		echo "add demo api_key"
