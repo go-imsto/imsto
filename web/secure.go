@@ -15,8 +15,9 @@ func secure(f http.HandlerFunc) http.Handler {
 		}
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err == nil {
-			for _, ip := range config.Current.WhiteList {
-				if ip == host {
+			ip := net.ParseIP(host)
+			for _, ipn := range config.Current.WhiteList {
+				if ipn.Contains(ip) {
 					f(w, r)
 					return
 				}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"net"
 	"os"
 	"path"
 	"time"
@@ -34,6 +35,19 @@ func (z Sizes) Has(v uint) bool {
 	return false
 }
 
+// IPNet ...
+type IPNet struct{ net.IPNet }
+
+// Decode ...
+func (z *IPNet) Decode(value string) error {
+	_, ipn, err := net.ParseCIDR(value)
+	if err != nil {
+		return err
+	}
+	*z = IPNet{*ipn}
+	return nil
+}
+
 // Config ...
 type Config struct {
 	MaxFileSize      uint              `envconfig:"MAX_FILESIZE" default:"2097152"` // 2MB
@@ -51,11 +65,11 @@ type Config struct {
 	Sections         map[string]string `envconfig:"SECTIONS"` // [roof]label
 	Engines          map[string]string `envconfig:"ENGINES"`  // [roof]engine
 	Buckets          map[string]string `envconfig:"BUCKETS"`  // [roof]bucket
-	WhiteList        []string          `envconfig:"WHITELIST"`
+	WhiteList        []IPNet           `envconfig:"WHITELIST"`
 	ReadTimeout      time.Duration     `envconfig:"READ_TIMEOUT" default:"10s"`
-	TiringListen     string            `envconfig:"TIRING_LISTEN" default:":6967"`
-	StageListen      string            `envconfig:"STAGE_LISTEN" default:":6968"`
-	RPCListen        string            `envconfig:"RPC_LISTEN" default:":6969"`
+	TiringListen     string            `envconfig:"TIRING_LISTEN" default:":8967"`
+	StageListen      string            `envconfig:"STAGE_LISTEN" default:":8968"`
+	RPCListen        string            `envconfig:"RPC_LISTEN" default:":8969"`
 }
 
 // vars
