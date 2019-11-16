@@ -42,7 +42,7 @@ func (c *s3Conn) List(ls ListSpec) (items []ListItem, err error) {
 
 	req.URL.RawQuery = q.Encode()
 
-	logger().Infow("req", "url", req.URL)
+	logger().Infow("listing", "url", req.URL)
 	req.Header.Set("x-amz-content-sha256", emptySum)
 	var resp *http.Response
 	resp, err = c.ac.Do(req)

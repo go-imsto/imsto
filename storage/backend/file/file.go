@@ -107,6 +107,7 @@ func checkLocalDir(dir string) string {
 	if err := os.Mkdir(dir, 0755); err == nil {
 		return dir
 	}
+	logger().Warnw("mkdir fail", "dir", dir)
 	return ""
 }
 

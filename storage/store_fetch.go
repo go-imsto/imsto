@@ -38,13 +38,13 @@ func Fetch(in FetchInput) (entry *Entry, err error) {
 	}
 
 	defer res.Body.Close()
+	logger().Infow("fetched", "code", res.StatusCode, "len", res.ContentLength, "content-type", res.Header.Get("Content-Type"))
 
 	var data []byte
 	data, err = ioutil.ReadAll(res.Body)
 	if err != nil {
 		return
 	}
-	logger().Infow("fetched body", "len", len(data))
 	// Check the response
 	if res.StatusCode != 200 {
 		err = fmt.Errorf("status code %d: %s", res.StatusCode, res.Status)

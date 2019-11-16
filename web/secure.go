@@ -3,30 +3,21 @@ package web
 import (
 	"net"
 	"net/http"
-	"os"
-	"strings"
+
+	"github.com/go-imsto/imsto/config"
 )
 
-var (
-	whiteList = []string{}
-)
-
-func init() {
-	if str, ok := os.LookupEnv("IMSTO_WHITE_LIST"); ok && len(str) > 0 {
-		whiteList = strings.Split(str, ",")
-	}
-}
-
-func secure(whiteList []string, f http.HandlerFunc) http.Handler {
+func secure(f http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(whiteList) == 0 {
+		if len(config.Current.WhiteList) == 0 {
 			f(w, r)
 			return
 		}
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err == nil {
-			for _, ip := range whiteList {
-				if ip == host {
+			ip := net.ParseIP(host)
+			for _, ipn := range config.Current.WhiteList {
+				if ipn.Contains(ip) {
 					f(w, r)
 					return
 				}

@@ -25,8 +25,8 @@ func Handler() http.Handler {
 
 	mux.Post("/imsto/token", storage.CheckAPIKey(http.HandlerFunc(tokenHandler)))
 
-	mux.Post("/imsto/:roof", storage.CheckAPIKey(secure(whiteList, storedHandler)))
-	mux.Del("/imsto/:roof/:id", storage.CheckAPIKey(secure(whiteList, deleteHandler)))
+	mux.Post("/imsto/:roof", storage.CheckAPIKey(secure(storedHandler)))
+	mux.Del("/imsto/:roof/:id", storage.CheckAPIKey(secure(deleteHandler)))
 	mux.Get("/imsto/:roof/id", http.HandlerFunc(GetOrHeadHandler))
 	mux.Get("/imsto/:roof/metas/count", http.HandlerFunc(countHandler))
 	mux.Get("/imsto/:roof/metas", http.HandlerFunc(browseHandler))
