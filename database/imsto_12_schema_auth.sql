@@ -5,7 +5,6 @@ BEGIN;
 set search_path = imsto, public;
 
 
-
 CREATE TABLE apps (
 	id serial,
 	api_ver smallint NOT NULL DEFAULT 0,

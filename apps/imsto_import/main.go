@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage"
@@ -46,44 +45,25 @@ func usage() {
 func init() {
 	flag.StringVar(&cfgDir, "conf", "/etc/imsto", "app conf dir")
 	flag.StringVar(&roof, "s", "", "config section name")
-	flag.StringVar(&idir, "dir", "", "Import the whole folder recursively if specified.")
 	flag.StringVar(&arch, "archive", "", "Import the whole files in archive.zip if specified.")
 	flag.StringVar(&match, "match", "*.jpg", "pattens of files to import, e.g., *.jpg, *.png, works together with -dir")
 	flag.BoolVar(&include_parent, "iip", false, "is include parent dir name?")
-	flag.BoolVar(&readydone, "ready", false, "pop prepared entry and set it done")
 	flag.BoolVar(&dirAsTag, "dt", false, "check file's directory as tag[s]")
 	flag.StringVar(&tags, "tag", "", "give one or more tags")
 	flag.IntVar(&author, "author", 0, "give a author_id")
 
 	flag.Parse()
-	if cfgDir != "" {
-		config.SetRoot(cfgDir)
-	}
-
-	config.AtLoaded(func() error {
-		return config.SetLogFile("import")
-	})
-	err := config.Load()
-	if err != nil {
-		log.Print("config load error: ", err)
-		os.Exit(1)
-	}
 
 }
 
 func main() {
-	if roof == "" || config.Root() == "" {
+	if roof == "" {
 		usage()
 		return
 	}
 
 	if !config.HasSection(roof) {
 		fmt.Printf("roof [%s] not found\n", roof)
-		return
-	}
-
-	if readydone {
-		_ready_done()
 		return
 	}
 
@@ -150,7 +130,8 @@ func _store_zip(zipfile string) bool {
 			log.Print(err)
 			return false
 		}
-		entry, err := storage.PrepareReader(bytes.NewReader(buf), name, uint64(f.FileInfo().ModTime().Unix()))
+		rc.Close()
+		entry, err := storage.PrepareReader(bytes.NewReader(buf), name)
 		if err != nil {
 			log.Print(err)
 			continue
@@ -160,14 +141,13 @@ func _store_zip(zipfile string) bool {
 			entry.Author = storage.Author(author)
 		}
 
-		entry.Store(roof)
+		err = <-entry.Store(roof)
 		if err != nil {
 			log.Print(err)
 			continue
 		}
 
 		_out_entry(entry, name, err)
-		rc.Close()
 
 	}
 	return true
@@ -226,28 +206,11 @@ func _store_file(file, roof, tag string) {
 		entry.Author = storage.Author(author)
 	}
 
-	err = entry.Store(roof)
+	err = <-entry.Store(roof)
 	if err != nil {
 		log.Printf("store file error: %s", err)
 	}
 	_out_entry(entry, name, err)
-	if !entry.IsDone() {
-		go func() {
-			// log.Printf("enter go %d", time.Now().Nanosecond())
-			for {
-				// log.Printf("go for %d", time.Now().Nanosecond())
-				select {
-				case <-entry.Done:
-					log.Print("entry done!!")
-					return
-				case <-time.After(9 * time.Second):
-					log.Print("timeout")
-					return
-				}
-			}
-		}()
-		<-entry.Done
-	}
 }
 
 func _out_entry(entry *storage.Entry, name string, err error) {
@@ -267,13 +230,4 @@ func _shrink_name(fname string) string {
 	}
 	return fname
 
-}
-
-func _ready_done() {
-	entry, err := storage.PopReadyDone()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("entry: %s\n", entry.Path)
 }

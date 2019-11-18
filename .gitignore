@@ -26,6 +26,7 @@ _testmain.go
 
 dist/
 /imsto
+/imsto_import
 cache/
 tests/
 .env

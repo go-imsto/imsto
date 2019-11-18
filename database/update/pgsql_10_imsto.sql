@@ -75,3 +75,5 @@ END;
 ALTER FUNCTION tag_add(text, text, text[]) RENAME TO tag_map;
 ALTER FUNCTION tag_remove(text, text, text[]) RENAME TO tag_unmap;
 
+ALTER DOMAIN entry_id RENAME TO entry_xid;
+

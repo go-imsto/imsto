@@ -95,7 +95,8 @@
 					}
 
 					$("#rsp-status").empty();
-					var url_prefix = res.meta.url_prefix ? res.meta.url_prefix.replace('http:', location.protocol) : "/thumb/"; // test only, 正式环境需要修改
+					// var url_prefix = res.meta.url_prefix ? res.meta.url_prefix.replace('http:', location.protocol) : "/thumb/"; // test only, 正式环境需要修改
+					var url_prefix = res.meta.stageHost ? '//'+res.meta.stageHost+'/show/' : '/show/'
 					$("#image-list").empty();
 
 					$.each(res.data, function(i, item){//console.log(item);

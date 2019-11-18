@@ -41,49 +41,8 @@ END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
 
--- 初始化 mapping 表
-
-CREATE OR REPLACE FUNCTION mapping_tables_init()
-RETURNS int AS
-$$
-DECLARE
-	basestr text;
-	count int;
-	suffix text;
-	tbname text;
-BEGIN
-
-	count := 0;
-	basestr := '0123456789abcdefghijklmnopqrstuvwxyz';
--- 创建 表
-FOR i IN 1..36 LOOP
-	-- some computations here
-	suffix := substr(basestr, i, 1);
-	tbname := 'mapping_' || suffix;
-
-	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE
-		schemaname = 'imsto' AND tablename = tbname) THEN
-	RAISE NOTICE 'tb is %', tbname;
-
-	EXECUTE 'CREATE TABLE imsto.' || tbname || '
-	(
-		LIKE imsto.map_template INCLUDING ALL ,
-		CHECK (id LIKE ' || quote_literal(suffix||'%') || ')
-	)
-	INHERITS (imsto.map_template)
-	WITHOUT OIDS ;';
-	count := count + 1;
-	END IF;
-END LOOP;
-
-RETURN count;
-END;
-$$
-LANGUAGE 'plpgsql' VOLATILE;
-
-
 -- 保存 hash 记录
-CREATE OR REPLACE FUNCTION hash_save(a_hashed text, a_item_id text, a_path text)
+CREATE OR REPLACE FUNCTION hash_save(a_hashed text, a_item_id text, a_path text, a_size int)
 
 RETURNS int AS
 $$
@@ -110,10 +69,10 @@ BEGIN
 		RETURN -1;
 	END IF;
 
-	EXECUTE 'INSERT INTO '||tbname||' (hashed, item_id, path) VALUES (
-		$1, $2, $3
+	EXECUTE 'INSERT INTO '||tbname||' (hashed, item_id, path, size) VALUES (
+		$1, $2, $3, $4
 	)'
-	USING a_hashed, a_item_id, a_path;
+	USING a_hashed, a_item_id, a_path, a_size;
 
 RETURN 1;
 END;
@@ -125,7 +84,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 CREATE OR REPLACE FUNCTION hash_insert_trigger()
 RETURNS TRIGGER AS $$
 BEGIN
-	PERFORM hash_save(NEW.hashed, NEW.item_id, NEW.path);
+	PERFORM hash_save(NEW.hashed, NEW.item_id, NEW.path, NEW.size);
 	RETURN NULL;
 END;
 $$
@@ -149,8 +108,18 @@ DECLARE
 	i_roofs text[];
 BEGIN
 
-	suffix := substr(a_id, 1, 1);
-	tbname := 'imsto.mapping_'||suffix;
+	suffix := substr(a_id, 1, 2);
+	tbname := 'mapping_'||suffix;
+	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE
+		schemaname = 'imsto' AND tablename = tbname) THEN
+		EXECUTE 'CREATE TABLE imsto.' || tbname || '
+		(
+			LIKE imsto.map_template INCLUDING ALL ,
+			CHECK (id LIKE ' || quote_literal(suffix||'%') || ')
+		)
+		INHERITS (imsto.map_template)
+		WITHOUT OIDS ;';
+	END IF;
 	i_roofs := ('{' || a_roof || '}')::text[];
 
 	EXECUTE 'SELECT roofs FROM '||tbname||' WHERE id = $1 LIMIT 1'
@@ -184,7 +153,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 -- 保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION entry_save (a_roof text,
 	a_id text, a_path text, a_name text, a_size int, a_meta jsonb, a_sev jsonb
-	, a_hashes text[], a_ids text[]
+	, a_hashes jsonb, a_ids text[]
 	, a_appid int, a_author int, a_tags text[])
 
 RETURNS int AS
@@ -215,9 +184,10 @@ BEGIN
 	END IF;
 
 	-- save entry hashes
-	FOR m_v IN SELECT UNNEST(a_hashes) AS value LOOP
-		PERFORM hash_save(m_v, a_id, a_path);
-	END LOOP;
+	PERFORM hash_save((a_hashes->>'hash')::text, a_id, a_path, (a_hashes->>'size')::int);
+	IF a_hashes ? 'hash2' AND a_hashes ? 'size2' THEN
+		PERFORM hash_save((a_hashes->>'hash2')::text, a_id, a_path, (a_hashes->>'size2')::int);
+	END IF;
 
 	-- save entry map
 	FOR m_v IN SELECT UNNEST(a_ids) AS value LOOP
@@ -244,7 +214,7 @@ LANGUAGE 'plpgsql' VOLATILE;
 -- 预先保存某条完整 entry 信息
 CREATE OR REPLACE FUNCTION entry_ready (a_roof text,
 	a_id text, a_path text, a_meta json
-	, a_hashes text[], a_ids text[]
+	, a_hashes json, a_ids text[]
 	, a_appid smallint, a_author int, a_tags text[])
 
 RETURNS int AS
@@ -304,8 +274,12 @@ DECLARE
 	rec RECORD;
 	s text;
 BEGIN
-	tb_meta := 'meta_' || a_roof;
 
+	tb_map := 'mapping_' || substr(a_id, 1, 2);
+	RAISE NOTICE 'delete mapping: %.%', tb_map, a_id;
+	EXECUTE 'DELETE FROM '||tb_map||' WHERE id = $1' USING a_id;
+
+	tb_meta := 'meta_' || a_roof;
 	EXECUTE 'SELECT * FROM '||tb_meta||' WHERE id = $1 LIMIT 1'
 	INTO rec
 	USING a_id;
@@ -322,23 +296,20 @@ BEGIN
 	END IF;
 
 	-- delete hashes
-	FOR s IN SELECT UNNEST(rec.hashes) AS value LOOP
-		tb_hash := 'hash_' || substr(s, 1, 1);
-		RAISE NOTICE 'delete hashed: %.% ', tb_hash, s;
-		EXECUTE 'DELETE FROM '||tb_hash||' WHERE hashed = $1' USING s;
-	END LOOP;
+	EXECUTE 'DELETE FROM hash_' || substr(rec.hashes->>'hash', 1, 1)||' WHERE hashed = $1' USING rec.hashes->>'hash';
+	IF rec.hashes ? 'hash2' AND rec.hashes ? 'size2' THEN
+		EXECUTE 'DELETE FROM hash_' || substr(rec.hashes->>'hash2', 1, 1)||' WHERE hashed = $1' USING rec.hashes->>'hash2';
+	END IF;
 
 	-- delete mapping
 	FOR s IN SELECT UNNEST(rec.ids) AS value LOOP
-		tb_map := 'mapping_' || substr(s, 1, 1);
-		RAISE NOTICE 'delete hashed: %.%', tb_map, s;
+		tb_map := 'mapping_' || substr(s, 1, 2);
+		RAISE NOTICE 'delete mapping: %.%', tb_map, s;
 		EXECUTE 'DELETE FROM '||tb_map||' WHERE id = $1' USING s;
 	END LOOP;
 
 	EXECUTE 'DELETE FROM '||tb_meta||' WHERE id = $1'
 	USING a_id;
-
-	-- TODO: delete mapping and hash
 
 	RETURN 1;
 
@@ -461,7 +432,6 @@ END;
 
 SET search_path = imsto;
 SELECT hash_tables_init();
-SELECT mapping_tables_init();
 
 
 

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -265,27 +264,6 @@ func Dump(key, roof, file string) error {
 	}
 	logger().Infow("pulled", "roof", roof, "bytes", len(data))
 	return SaveFile(file, data)
-}
-
-// PopReadyDone ...
-func PopReadyDone() (entry *Entry, err error) {
-	entry, err = popPrepared()
-	if err != nil {
-		return
-	}
-	logger().Infow("poped", "path", entry.Path)
-
-	var data []byte
-	data, err = ioutil.ReadFile(entry.origFullname())
-	if err != nil {
-		return
-	}
-	err = entry.fill(data)
-	if err != nil {
-		return
-	}
-	err = entry._save(entry.roof())
-	return
 }
 
 // PrepareReader ...

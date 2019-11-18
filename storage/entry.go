@@ -50,7 +50,7 @@ type Entry struct {
 	Size    uint32      `json:"size"`
 	Path    string      `json:"path"`
 	Status  uint8       `json:"-"`
-	Hashes  StringArray `json:"hashes,omitempty"`
+	Hashes  cdb.Meta    `json:"hashes,omitempty"`
 	IDs     StringArray `json:"-"`
 	Roofs   StringArray `json:"roofs,omitempty"`
 	Tags    StringArray `json:"tags,omitempty"`
@@ -69,9 +69,7 @@ type Entry struct {
 	im *iimg.Image
 
 	_treked bool
-	ret     int       // db saved result
-	Done    chan bool `json:"-"`
-	ready   int
+	ret     int // db saved result
 }
 
 const (
@@ -93,12 +91,9 @@ func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 		return
 	}
 	e.Size = w.Len()
-	// e.im.Name = name
 	e.Meta = e.im.Attr
-	id, hash := w.Hash()
-	e.Id = imagid.IID(id)
-	e.h = hash
-	e.Path = e.Id.String() + e.im.Attr.Ext
+
+	e.h = w.String()
 	e.Tags = StringArray{}
 	return
 }
@@ -122,7 +117,7 @@ func (e *Entry) Trek(roof string) (err error) {
 		logger().Infow("im.SaveTo fail", "id", e.Id, "err", err)
 		return
 	}
-	logger().Infow("im.SaveTo OK", "id", e.Id, "size", buf.Len())
+	logger().Infow("im.SaveTo OK", "id", e.Id, "size", buf.Len(), "name", e.Name)
 
 	e.b = buf.Bytes()
 
@@ -132,15 +127,14 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	hashes := cdb.StringArray{e.h}
+	hashes := cdb.Meta{"hash": e.h, "size": e.Size}
 	ids := cdb.StringArray{e.Id.String()}
-	id2, hash2 := hash.SumContent(e.b)
+	hash2 := hash.SumContent(e.b)
 	if hash2 != e.h {
 		logger().Infow("hashed", "hash1", e.h, "hash2", hash2)
-		hashes = append(hashes, hash2)
+		hashes["hash2"] = hash2
+		hashes["size2"] = size
 
-		ids = append(ids, IID(id2).String())
-		e.Id = IID(id2) // 使用新的 Id 作为主键
 		e.h = hash2
 		e.Size = uint32(size)
 		e.Meta = e.im.Attr
@@ -152,46 +146,50 @@ func (e *Entry) Trek(roof string) (err error) {
 	return
 }
 
-func (e *Entry) IsDone() bool {
-	return e.ready != 1
-}
-
 // Store ...
 func (e *Entry) Store(roof string) (ch chan error) {
 	ch = make(chan error, 1)
-	// TODO:
+	// TODO: refactory
 	mw := NewMetaWrapper(roof)
-	eh, _err := mw.GetHash(e.h)
-	if _err != nil { // ok, not exsits
-		logger().Infow("check hash fail", "h", e.h, "err", _err)
-	} else if eh != nil && eh.id != "" {
-		if _id, _err := imagid.ParseID(eh.id); _err == nil {
-			e.Id = _id
-			_ne, _err := mw.GetMeta(_id.String())
-			if _err == nil { // path, mime, size, sev, status, created
-				if StringSlice(_ne.Roofs).Contains(roof) {
-					e.Name = _ne.Name
-					e.Path = _ne.Path
-					e.Size = _ne.Size
-					e.Meta = _ne.Meta
-					// e.sev = _ne.sev
-					e.Created = _ne.Created
-					e.Roofs = _ne.Roofs
-					e.reset()
-					e._treked = true
-					mw.Save(e, true)
+	if eh, err := mw.GetHash(e.h); err == nil {
+		logger().Infow("exist hash", "eh", eh)
 
-					logger().Infow("exist entry", "id", e.Id, "path", e.Path)
-					close(ch)
-					return
-				}
-
-				log.Printf("[%s]%s not in %s, so resubmit it", roof, e.Id, _ne.Roofs)
-
-			} else {
-				log.Printf("get entry error: %s", _err)
-			}
+		e.Id = eh.ID
+		e.Path = eh.Path
+		_ne, _err := mw.GetMapping(eh.ID.String())
+		if _err != nil {
+			logger().Warnw("exist mapping is invalid", "ne", _ne, "err", _err)
+			ch <- _err
+			return
 		}
+
+		e.Name = _ne.Name
+		// e.Path = _ne.Path
+		e.Size = _ne.Size
+		e.Created = *_ne.Created
+		e.Roofs = _ne.Roofs
+		e.sev = _ne.sev
+		e.reset()
+		e._treked = true
+
+		if err = mw.Save(e, true); err != nil {
+			logger().Warnw("mw.Save fail", "entry", e, "err", err)
+			ch <- err
+			return
+		}
+		logger().Infow("exist entry", "id", e.Id, "path", e.Path)
+		close(ch)
+		return
+	}
+
+	if e.Id == 0 || e.Path == "" {
+		id, err := mw.NextID() // generate new ID
+		if err != nil {
+			logger().Infow("gen ID fail", "name", e.Name, "len", e.Size)
+			return
+		}
+		e.Id = imagid.IID(id)
+		e.Path = e.Id.String() + e.im.Attr.Ext
 	}
 
 	if err := e.Trek(roof); err != nil {
@@ -214,7 +212,6 @@ func (e *Entry) Store(roof string) (ch chan error) {
 		ch <- err
 		return
 	}
-	e.ready = 1
 
 	go func() {
 		if err := e._save(roof); err != nil {
@@ -249,24 +246,9 @@ func (e *Entry) _save(roof string) (err error) {
 		// }
 		return
 	}
-	e.ready = -1
+
 	log.Printf("%s set done ok", e.Id)
 	return
-}
-
-func (e *Entry) fill(data []byte) error {
-	if size := len(data); size != int(e.Size) {
-		return fmt.Errorf("invliad size: %d (%d)", size, e.Size)
-	}
-
-	_, m := hash.SumContent(data)
-
-	if !StringSlice(e.Hashes).Contains(m) {
-		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)
-	}
-
-	e.b = data
-	return nil
 }
 
 func (e *Entry) reset() {
@@ -288,13 +270,6 @@ func (e *Entry) roof() string {
 // StoredMeta ...
 func (e *Entry) StoredMeta() cdb.Meta {
 	return e.sev
-}
-
-func newStorePath(id imagid.IID, ext string) string {
-	r := id.String()
-	p := r[0:2] + "/" + r[2:4] + "/" + r[4:] + ext
-
-	return p
 }
 
 // PullBlob pull blob from engine with key path

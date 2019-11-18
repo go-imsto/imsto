@@ -24,16 +24,23 @@ const (
 	maxArgs         = 10
 )
 
+// HashEntry ...
+type HashEntry struct {
+	ID   IID    `json:"id"`
+	Path string `json:"path"`
+}
+
 // MetaWrapper ...
 type MetaWrapper interface {
 	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
 	Count(filter MetaFilter) (int, error)
+	NextID() (uint64, error)
 	Ready(entry *Entry) error
 	SetDone(id string, sev cdb.Meta) error
 	Save(entry *Entry, isUpdate bool) error
 	BatchSave(entries []*Entry) error
 	GetMeta(id string) (*Entry, error)
-	GetHash(hash string) (*ehash, error)
+	GetHash(hash string) (*HashEntry, error)
 	GetMapping(id string) (*mapItem, error)
 	Delete(id string) error
 	MapTags(id string, tags string) error
@@ -154,6 +161,7 @@ func buildWhere(filter MetaFilter) (where string, args []interface{}) {
 	return
 }
 
+// Count ...
 func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	db := mw.getDb()
 	table := mw.table()
@@ -258,6 +266,12 @@ func _bindRow(rs rowScanner) (*Entry, error) {
 	e.Roofs = cdb.StringArray{roof}
 
 	return &e, nil
+}
+
+// NextID ...
+func (mw *MetaWrap) NextID() (nid uint64, err error) {
+	err = mw.getDb().QueryRow("SELECT shard_1.id_generator() as id").Scan(&nid)
+	return
 }
 
 func (mw *MetaWrap) GetMeta(id string) (entry *Entry, err error) {
@@ -381,16 +395,11 @@ func (mw *MetaWrap) BatchSave(entries []*Entry) error {
 	return mw.withTxQuery(qs)
 }
 
-type ehash struct {
-	hash, path, id string
-}
-
-func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
+func (mw *MetaWrap) GetHash(hash string) (he *HashEntry, err error) {
 	db := mw.getDb()
-	var e = ehash{hash: hash}
-	q := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1 LIMIT 1"
-	row := db.QueryRow(q, hash)
-	err := row.Scan(&e.id, &e.path)
+	he = new(HashEntry)
+	q := "SELECT item_id, path FROM " + tableHash(hash) + " WHERE hashed = $1"
+	err = db.QueryRow(q, hash).Scan(&he.ID, &he.Path)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger().Infow("row not found", "hash", hash)
@@ -398,9 +407,8 @@ func (mw *MetaWrap) GetHash(hash string) (*ehash, error) {
 			logger().Warnw("get hash fail", "hash", hash)
 		}
 
-		return nil, err
 	}
-	return &e, nil
+	return
 }
 
 func (mw *MetaWrap) GetMapping(id string) (*mapItem, error) {
@@ -479,5 +487,5 @@ func tableHash(s string) string {
 }
 
 func tableMap(s string) string {
-	return prefixMapTable + s[:1]
+	return prefixMapTable + s[:2]
 }

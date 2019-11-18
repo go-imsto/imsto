@@ -145,7 +145,8 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 
 	m["total"] = t
 
-	m["url_prefix"] = getURL(r, "") + "/"
+	m["stageHost"] = config.Current.StageHost
+	m["urlPrefix"] = getURL(r, "") + "/"
 	m["version"] = config.Version
 	writeJsonQuiet(w, r, newApiRes(m, a))
 }
@@ -285,8 +286,8 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	// log.Print(entries[0].Path)
 	meta := newApiMeta(true)
 
-	meta["stage_host"] = config.Current.StageHost
-	meta["url_prefix"] = getURL(r, "") + "/"
+	meta["stageHost"] = config.Current.StageHost
+	meta["urlPrefix"] = getURL(r, "") + "/"
 	meta["version"] = config.Version
 
 	writeJsonQuiet(w, r, newApiRes(meta, entries))
