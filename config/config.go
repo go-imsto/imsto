@@ -57,7 +57,7 @@ type Config struct {
 	MinHeight        uint              `envconfig:"MIN_HEIGHT" default:"50"`
 	MaxQuality       uint8             `envconfig:"MAX_QUALITY" default:"88"`
 	CacheRoot        string            `envconfig:"CACHE_ROOT" default:"/opt/imsto/cache/"`
-	LocalRoot        string            `envconfig:"LOCAL_ROOT" default:"/var/lib/imsto/stores/"`
+	LocalRoot        string            `envconfig:"LOCAL_ROOT" default:"/var/lib/imsto/"`
 	StageHost        string            `envconfig:"STAGE_HOST"`     // stage.example.org
 	WatermarkFile    string            `envconfig:"WATERMARK_FILE"` // /opt/imsto/watermark.png
 	WatermarkOpacity uint8             `envconfig:"WATERMARK_OPACITY" default:"30"`

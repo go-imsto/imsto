@@ -10,7 +10,7 @@ GRANT ALL ON SCHEMA imsto TO imsto;
 
 set search_path = imsto, public;
 
-CREATE DOMAIN entry_id AS TEXT
+CREATE DOMAIN entry_xid AS TEXT
 CHECK(
 	VALUE ~ '^[a-z0-9]{9,36}$'
 );
@@ -24,7 +24,7 @@ CHECK (
 -- all file hash values
 CREATE TABLE hash_template (
 	hashed varCHAR(40) NOT NULL  ,
-	item_id entry_id NOT NULL ,
+	item_id entry_xid NOT NULL ,
 	-- prefix varCHAR(10) NOT NULL DEFAULT '' ,
 	path entry_path NOT NULL ,
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +33,7 @@ CREATE TABLE hash_template (
 
 -- mapping for id and storage engine item
 CREATE TABLE map_template (
-	id entry_id NOT NULL, -- id = base_convert(hash,16,36), hash = crc64Sum
+	id entry_xid NOT NULL,
 	name varCHAR(120) NOT NULL DEFAULT '',
 	path entry_path NOT NULL ,
 	size int NOT NULL DEFAULT 0 CHECK (size >= 0),
@@ -46,7 +46,7 @@ CREATE TABLE map_template (
 
 -- meta browsable
 CREATE TABLE meta_template (
-	id entry_id NOT NULL,
+	id entry_xid NOT NULL,
 	path entry_path NOT NULL ,
 	name varCHAR(120) NOT NULL DEFAULT '',
 	roof varCHAR(12) NOT NULL DEFAULT '',
@@ -66,11 +66,6 @@ CREATE TABLE meta_template (
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;
 CREATE INDEX idx_meta_size ON meta_template (size) ;
 CREATE INDEX idx_meta_tags ON meta_template (tags) ;
-
-CREATE TABLE meta_common
-(
-	LIKE meta_template INCLUDING ALL
-) WITHOUT OIDS;
 
 CREATE TABLE meta__deleted
 (

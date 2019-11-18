@@ -13,7 +13,7 @@ import (
 
 // consts
 const (
-	name  = "stores"
+	store = "stores"
 	thumb = "thumb"
 )
 
@@ -46,6 +46,7 @@ func locDial(roof string) (Wagoner, error) {
 	if dir == "" {
 		return nil, errors.New("config local_root is empty")
 	}
+	logger().Debugw("locDial", "dir", dir)
 
 	l := &locWagon{
 		root: dir,
@@ -54,8 +55,7 @@ func locDial(roof string) (Wagoner, error) {
 }
 
 func (l *locWagon) Exists(k Key) (exist bool, err error) {
-	name := path.Join(l.root, k.Path())
-	_, err = os.Stat(name)
+	_, err = os.Stat(path.Join(l.root, k.Path()))
 	if os.IsNotExist(err) {
 		exist = false
 	}
@@ -69,8 +69,7 @@ func (l *locWagon) List(ls ListSpec) (items []ListItem, err error) {
 }
 
 func (l *locWagon) Get(k Key) (data []byte, err error) {
-	name := path.Join(l.root, k.Path())
-	data, err = ioutil.ReadFile(name)
+	data, err = ioutil.ReadFile(path.Join(l.root, k.Path()))
 	return
 }
 
@@ -104,11 +103,11 @@ func (l *locWagon) Delete(k Key) error {
 }
 
 func checkLocalDir(dir string) string {
-	if err := os.Mkdir(dir, 0755); err == nil {
-		return dir
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger().Warnw("mkdir fail", "dir", dir, "err", err)
+		return ""
 	}
-	logger().Warnw("mkdir fail", "dir", dir)
-	return ""
+	return dir
 }
 
 func saveMeta(filename string, meta interface{}) error {

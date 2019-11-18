@@ -41,47 +41,6 @@ END;
 $$
 LANGUAGE 'plpgsql' VOLATILE;
 
--- 初始化 mapping 表
-
-CREATE OR REPLACE FUNCTION mapping_tables_init()
-RETURNS int AS
-$$
-DECLARE
-	basestr text;
-	count int;
-	suffix text;
-	tbname text;
-BEGIN
-
-	count := 0;
-	basestr := '0123456789abcdefghijklmnopqrstuvwxyz';
--- 创建 表
-FOR i IN 1..36 LOOP
-	-- some computations here
-	suffix := substr(basestr, i, 1);
-	tbname := 'mapping_' || suffix;
-
-	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE
-		schemaname = 'imsto' AND tablename = tbname) THEN
-	RAISE NOTICE 'tb is %', tbname;
-
-	EXECUTE 'CREATE TABLE imsto.' || tbname || '
-	(
-		LIKE imsto.map_template INCLUDING ALL ,
-		CHECK (id LIKE ' || quote_literal(suffix||'%') || ')
-	)
-	INHERITS (imsto.map_template)
-	WITHOUT OIDS ;';
-	count := count + 1;
-	END IF;
-END LOOP;
-
-RETURN count;
-END;
-$$
-LANGUAGE 'plpgsql' VOLATILE;
-
-
 -- 保存 hash 记录
 CREATE OR REPLACE FUNCTION hash_save(a_hashed text, a_item_id text, a_path text)
 
@@ -149,8 +108,18 @@ DECLARE
 	i_roofs text[];
 BEGIN
 
-	suffix := substr(a_id, 1, 1);
-	tbname := 'imsto.mapping_'||suffix;
+	suffix := substr(a_id, 1, 2);
+	tbname := 'mapping_'||suffix;
+	IF NOT EXISTS(SELECT tablename FROM pg_catalog.pg_tables WHERE
+		schemaname = 'imsto' AND tablename = tbname) THEN
+		EXECUTE 'CREATE TABLE imsto.' || tbname || '
+		(
+			LIKE imsto.map_template INCLUDING ALL ,
+			CHECK (id LIKE ' || quote_literal(suffix||'%') || ')
+		)
+		INHERITS (imsto.map_template)
+		WITHOUT OIDS ;';
+	END IF;
 	i_roofs := ('{' || a_roof || '}')::text[];
 
 	EXECUTE 'SELECT roofs FROM '||tbname||' WHERE id = $1 LIMIT 1'
@@ -330,7 +299,7 @@ BEGIN
 
 	-- delete mapping
 	FOR s IN SELECT UNNEST(rec.ids) AS value LOOP
-		tb_map := 'mapping_' || substr(s, 1, 1);
+		tb_map := 'mapping_' || substr(s, 1, 2);
 		RAISE NOTICE 'delete hashed: %.%', tb_map, s;
 		EXECUTE 'DELETE FROM '||tb_map||' WHERE id = $1' USING s;
 	END LOOP;
@@ -461,7 +430,6 @@ END;
 
 SET search_path = imsto;
 SELECT hash_tables_init();
-SELECT mapping_tables_init();
 
 
 

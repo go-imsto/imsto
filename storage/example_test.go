@@ -33,11 +33,13 @@ func TestMain(m *testing.M) {
 
 	zlog.Set(sugar)
 
+	InitMetaTables()
 	m.Run()
 }
 
 // TestEntry ...
 func TestEntry(t *testing.T) {
+	roof := "demo"
 
 	// rd := base64.NewDecoder(base64.StdEncoding, strings.NewReader(jpegData))
 	buf, err := base64.StdEncoding.DecodeString(jpegData)
@@ -53,23 +55,41 @@ func TestEntry(t *testing.T) {
 	assert.Equal(t, jpegHeight, entry.im.Height)
 	assert.Equal(t, int(jpegQuality), int(entry.im.Quality))
 
+	assert.NotEmpty(t, entry.h)
+
+	ch := entry.Store(roof)
+	err = <-ch
+	assert.NoError(t, err)
+
 	var (
 		_hash = "709e291268aea5f67a3397679b6fd9cd"
-		_id   = "1kvyfwpt4u9l9"
 	)
 
+	assert.Equal(t, _hash, entry.h)
+	assert.NotEmpty(t, entry.Id)
 	IID := entry.Id
 
-	if entry.h != _hash {
-		t.Fatalf("unexpected result from HashContent:\n+ %v\n- %v", entry.h, _hash)
-	}
-	if IID.String() != _id {
-		t.Fatalf("unexpected result from HashContent:\n+ %v\n- %v", IID, _id)
-	}
+	filter := MetaFilter{}
+	mw := NewMetaWrapper(roof)
+	he, err := mw.GetHash(entry.h)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, he.ID)
+	assert.NotEmpty(t, he.Path)
 
-	ch := entry.Store("demo")
+	count, err := mw.Count(filter)
+	assert.NoError(t, err)
+	assert.NotZero(t, count)
 
-	<-ch
+	arr, err := mw.Browse(5, 0, map[string]int{}, filter)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, arr)
+
+	ch = entry.Store(roof)
+	err = <-ch
+	assert.NoError(t, err)
+
+	err = Delete(roof, IID.String())
+	assert.NoError(t, err)
 }
 
 const (
