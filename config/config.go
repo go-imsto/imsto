@@ -116,6 +116,14 @@ func init() {
 	}
 }
 
+// HasSection ...
+func HasSection(roof string) bool {
+	if _, ok := Current.Sections[roof]; ok {
+		return true
+	}
+	return false
+}
+
 // GetSections return administrable sections
 func GetSections() map[string]string {
 	return Current.Sections
