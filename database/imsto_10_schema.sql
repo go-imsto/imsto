@@ -25,8 +25,8 @@ CHECK (
 CREATE TABLE hash_template (
 	hashed varCHAR(40) NOT NULL  ,
 	item_id entry_xid NOT NULL ,
-	-- prefix varCHAR(10) NOT NULL DEFAULT '' ,
 	path entry_path NOT NULL ,
+	size int NOT NULL CHECK (size > 0),
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (hashed)
 ) WITHOUT OIDS;
@@ -51,7 +51,7 @@ CREATE TABLE meta_template (
 	name varCHAR(120) NOT NULL DEFAULT '',
 	roof varCHAR(12) NOT NULL DEFAULT '',
 	meta jsonb NOT NULL DEFAULT '{}'::jsonb,
-	hashes varCHAR(40)[],
+	hashes jsonb NOT NULL DEFAULT '{}'::jsonb,
 	ids varCHAR(38)[],
 	size int NOT NULL DEFAULT 0,
 	sev jsonb NOT NULL DEFAULT '{}'::jsonb,

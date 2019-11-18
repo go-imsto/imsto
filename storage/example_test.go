@@ -62,7 +62,7 @@ func TestEntry(t *testing.T) {
 	assert.NoError(t, err)
 
 	var (
-		_hash = "709e291268aea5f67a3397679b6fd9cd"
+		_hash = "709e291268aea5f67a3397679b6fd9cd160a"
 	)
 
 	assert.Equal(t, _hash, entry.h)

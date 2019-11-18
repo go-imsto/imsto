@@ -6,7 +6,6 @@ require (
 	github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40
 	github.com/certifi/gocertifi v0.0.0-20191021191039-0944d244cd40 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.0
 	github.com/chai2010/webp v1.1.0
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/aws4 v0.1.0

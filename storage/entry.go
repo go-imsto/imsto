@@ -50,7 +50,7 @@ type Entry struct {
 	Size    uint32      `json:"size"`
 	Path    string      `json:"path"`
 	Status  uint8       `json:"-"`
-	Hashes  StringArray `json:"hashes,omitempty"`
+	Hashes  cdb.Meta    `json:"hashes,omitempty"`
 	IDs     StringArray `json:"-"`
 	Roofs   StringArray `json:"roofs,omitempty"`
 	Tags    StringArray `json:"tags,omitempty"`
@@ -69,9 +69,7 @@ type Entry struct {
 	im *iimg.Image
 
 	_treked bool
-	ret     int       // db saved result
-	Done    chan bool `json:"-"`
-	ready   int
+	ret     int // db saved result
 }
 
 const (
@@ -94,9 +92,8 @@ func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 	}
 	e.Size = w.Len()
 	e.Meta = e.im.Attr
-	_, hash := w.Hash()
 
-	e.h = hash
+	e.h = w.String()
 	e.Tags = StringArray{}
 	return
 }
@@ -130,12 +127,13 @@ func (e *Entry) Trek(roof string) (err error) {
 		return
 	}
 
-	hashes := cdb.StringArray{e.h}
+	hashes := cdb.Meta{"hash": e.h, "size": e.Size}
 	ids := cdb.StringArray{e.Id.String()}
-	_, hash2 := hash.SumContent(e.b)
+	hash2 := hash.SumContent(e.b)
 	if hash2 != e.h {
 		logger().Infow("hashed", "hash1", e.h, "hash2", hash2)
-		hashes = append(hashes, hash2)
+		hashes["hash2"] = hash2
+		hashes["size2"] = size
 
 		e.h = hash2
 		e.Size = uint32(size)
@@ -146,10 +144,6 @@ func (e *Entry) Trek(roof string) (err error) {
 	e.IDs = ids
 
 	return
-}
-
-func (e *Entry) IsDone() bool {
-	return e.ready != 1
 }
 
 // Store ...
@@ -168,6 +162,7 @@ func (e *Entry) Store(roof string) (ch chan error) {
 			ch <- _err
 			return
 		}
+
 		e.Name = _ne.Name
 		// e.Path = _ne.Path
 		e.Size = _ne.Size
@@ -176,19 +171,26 @@ func (e *Entry) Store(roof string) (ch chan error) {
 		e.sev = _ne.sev
 		e.reset()
 		e._treked = true
-		mw.Save(e, true)
+
+		if err = mw.Save(e, true); err != nil {
+			logger().Warnw("mw.Save fail", "entry", e, "err", err)
+			ch <- err
+			return
+		}
 		logger().Infow("exist entry", "id", e.Id, "path", e.Path)
 		close(ch)
 		return
 	}
 
-	id, err := mw.NextID() // generate new ID
-	if err != nil {
-		logger().Infow("gen ID fail", "name", e.Name, "len", e.Size)
-		return
+	if e.Id == 0 || e.Path == "" {
+		id, err := mw.NextID() // generate new ID
+		if err != nil {
+			logger().Infow("gen ID fail", "name", e.Name, "len", e.Size)
+			return
+		}
+		e.Id = imagid.IID(id)
+		e.Path = e.Id.String() + e.im.Attr.Ext
 	}
-	e.Id = imagid.IID(id)
-	e.Path = e.Id.String() + e.im.Attr.Ext
 
 	if err := e.Trek(roof); err != nil {
 		ch <- err
@@ -210,7 +212,6 @@ func (e *Entry) Store(roof string) (ch chan error) {
 		ch <- err
 		return
 	}
-	e.ready = 1
 
 	go func() {
 		if err := e._save(roof); err != nil {
@@ -245,24 +246,9 @@ func (e *Entry) _save(roof string) (err error) {
 		// }
 		return
 	}
-	e.ready = -1
+
 	log.Printf("%s set done ok", e.Id)
 	return
-}
-
-func (e *Entry) fill(data []byte) error {
-	if size := len(data); size != int(e.Size) {
-		return fmt.Errorf("invliad size: %d (%d)", size, e.Size)
-	}
-
-	_, m := hash.SumContent(data)
-
-	if !StringSlice(e.Hashes).Contains(m) {
-		return fmt.Errorf("invalid hash: %s (%s)", m, e.Hashes)
-	}
-
-	e.b = data
-	return nil
 }
 
 func (e *Entry) reset() {
