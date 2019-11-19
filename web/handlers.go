@@ -1,7 +1,6 @@
 package web
 
 import (
-	"io"
 	"log"
 	"math"
 	"net/http"
@@ -57,8 +56,8 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// log.Print(item)
 
-	c := func(file io.ReadSeeker) {
-		http.ServeContent(w, r, item.Name(), item.Modified(), file)
+	c := func(file storage.File) {
+		http.ServeContent(w, r, file.Name(), file.Modified(), file)
 	}
 	err = item.Walk(c)
 	if err != nil {

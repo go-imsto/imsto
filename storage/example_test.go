@@ -93,8 +93,8 @@ func TestEntry(t *testing.T) {
 }
 
 const (
-	t_salt  = "abcd"
-	t_value = "test"
+	tSalt  = "abcd"
+	tValue = "test"
 )
 
 func TestApiToken(t *testing.T) {
@@ -103,18 +103,18 @@ func TestApiToken(t *testing.T) {
 		appid = AppID(0)
 		vc    = valueCate(0)
 	)
-	token, err := newToken(ver, appid, []byte(t_salt))
+	token, err := newToken(ver, appid, []byte(tSalt))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	token.SetValue([]byte(t_value), vc)
+	token.SetValue([]byte(tValue), vc)
 	// t.Logf("api token bins: %x", token.Binary())
 	str := token.String()
 	t.Logf("api token strs: %s", str)
 	t.Logf("api token hash: %x, stamp: %d, value: %s", token.hash, token.stamp, token.GetValue())
 
-	token, err = newToken(ver, appid, []byte(t_salt))
+	token, err = newToken(ver, appid, []byte(tSalt))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestApiToken(t *testing.T) {
 	value := string(token.GetValue())
 	t.Logf("token value: %s", value)
 
-	if value != t_value {
-		t.Fatalf("unexpected result from BaseConvert:\n+ %v\n- %v", value, t_value)
+	if value != tValue {
+		t.Fatalf("unexpected result from BaseConvert:\n+ %v\n- %v", value, tValue)
 	}
 }

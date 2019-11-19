@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	_ "image/png"
 	"io"
 	"log"
 	"os"
@@ -147,6 +146,7 @@ func Watermark(r, wr io.Reader, w io.Writer, wo WaterOption) error {
 	return nil
 }
 
+// WatermarkFile ...
 func WatermarkFile(src, dest string, wo WaterOption) (err error) {
 	var in, wr, out *os.File
 	in, err = os.Open(src)

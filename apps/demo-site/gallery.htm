@@ -107,7 +107,7 @@
 						}
 						var _li = $("<li></li>").attr("id", "li_iid" + item.id).appendTo("#image-list"),
 							_a = $("<a></a>").attr("href", url_prefix + 'orig/' + item.path).attr("title", title+" ( "+alt+" )").attr('rel','box'),
-							_img = $("<img/>").attr("src", url_prefix + 's120/' + item.path).attr('alt',alt).attr("class", ""),
+							_img = $("<img/>").attr("src", url_prefix + 'w120/' + item.path).attr("srcset", url_prefix + 'w240/' + item.path + " 2x").attr('alt',alt).attr("class", ""),
 							_txt = $("<span></span>").attr("class", "lbl").attr("title",item.size).text(format_size(item.size)),
 							_btn = $("<span></span>").attr("class", "btn btn_delete ui-corner-all ui-icon ui-icon-trash").attr("title", "删除")
 								.click(function(){

@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io"
 	"mime"
 	"os"
 	"path"
@@ -59,8 +58,8 @@ func testApp(args []string) bool {
 			fmt.Println("Err: ", err)
 			return false
 		}
-		c := func(file io.ReadSeeker) {
-			fmt.Printf("file: %s, size: %d, mod: %s\n", item.Name(), item.Size(), item.Modified())
+		c := func(file storage.File) {
+			fmt.Printf("file: %s, size: %d, mod: %s\n", file.Name(), file.Size(), file.Modified())
 		}
 		err = item.Walk(c)
 		if err != nil {

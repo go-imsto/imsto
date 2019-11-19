@@ -18,6 +18,7 @@ type rpcImage struct{}
 func (ri *rpcImage) Fetch(ctx context.Context, in *pb.FetchInput) (*pb.ImageOutput, error) {
 	app, err := storage.LoadApp(in.ApiKey)
 	if err != nil {
+		logger().Infow("load app fail", "key", in.ApiKey, "err", err)
 		reportError(err, nil)
 		return nil, err
 	}
@@ -30,6 +31,7 @@ func (ri *rpcImage) Fetch(ctx context.Context, in *pb.FetchInput) (*pb.ImageOutp
 		UserID:  int(in.UserID),
 	})
 	if err != nil {
+		logger().Infow("fetch fail", "roof", in.Roof, "uri", in.Uri, "err", err)
 		reportError(err, nil)
 		return nil, err
 	}
@@ -66,10 +68,10 @@ func (ri *rpcImage) loadImageOutput(entry *storage.Entry, sizeOp string) (*pb.Im
 	spath := "orig/" + entry.Path
 	if sizeOp != "" {
 		spath = sizeOp + "/" + entry.Path
-		_, oerr := storage.LoadPath(storage.CatView + "/" + spath)
-		if oerr != nil {
-			reportError(oerr, nil)
-			return nil, oerr
+		_, err := storage.LoadPath(storage.CatView + "/" + spath)
+		if err != nil {
+			reportError(err, nil)
+			return nil, err
 		}
 	}
 
@@ -77,7 +79,7 @@ func (ri *rpcImage) loadImageOutput(entry *storage.Entry, sizeOp string) (*pb.Im
 		Path: entry.Path,
 		Uri:  "/" + storage.CatView + "/" + spath,
 		Host: config.Current.StageHost,
-		ID:   uint64(entry.Id),
+		ID:   entry.Id.String(),
 		Meta: &pb.ImageMeta{
 			Width:   int32(entry.Meta.Width),
 			Height:  int32(entry.Meta.Height),

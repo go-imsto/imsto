@@ -70,7 +70,7 @@ func (a *App) load() error {
 	}
 
 	if !rows.Next() {
-		return fmt.Errorf("not found or disabled")
+		return fmt.Errorf("api_key not found or disabled")
 	}
 
 	return rows.Scan(&a.Id, &a.Name, &a.Version, &a.ApiSalt, &a.Disabled, &a.Created)

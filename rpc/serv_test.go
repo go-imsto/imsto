@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net"
+	// "net/http"
 	"os"
 	"testing"
 	"time"
@@ -30,22 +31,21 @@ func TestMain(m *testing.M) {
 	defer lgr.Sync() // flushes buffer, if any
 	sugar := lgr.Sugar()
 	zlog.Set(sugar)
-	s := grpc.NewServer()
-	decRPCServer(s)
+	svr := &server{}
 
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		logger().Fatalw("error listen")
 	}
 	tAddr = lis.Addr().String()
-	logger().Debugw("listen", "addr", tAddr)
+	logger().Debugw("listen", "addr", tAddr, "grpc.version", grpc.Version)
 
-	if v, ok := os.LookupEnv("IMSTO_APIKEY"); ok {
+	if v, ok := os.LookupEnv("IMSTO_TEST_APIKEY"); ok {
 		apiKey = v
 	}
 
 	go func() {
-		if err := s.Serve(lis); err != nil {
+		if err := svr.serve(lis); err != nil {
 			logger().Fatalw("error in Serve", "err", err)
 		}
 	}()

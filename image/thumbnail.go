@@ -150,6 +150,7 @@ func Thumbnail(r io.Reader, w io.Writer, topt ThumbOption) error {
 	return nil
 }
 
+// ThumbnailFile ...
 func ThumbnailFile(src, dest string, topt ThumbOption) (err error) {
 	var in *os.File
 	in, err = os.Open(src)

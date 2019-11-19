@@ -1,4 +1,4 @@
-FROM lcgc/postgresql:9.5.4
+FROM lcgc/postgresql:9.6.13
 
 ENV DB_NAME=imsto DB_USER=imsto
 

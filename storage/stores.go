@@ -48,6 +48,44 @@ func NewHttpError(code int, text string) *HttpError {
 	return &HttpError{Code: code, Text: text}
 }
 
+// File ...
+type File interface {
+	io.Reader
+	io.Seeker
+
+	Name() string
+	Size() int64
+	Modified() time.Time
+}
+
+// WalkFunc ..
+type WalkFunc func(f File)
+
+// Walker ...
+type Walker interface {
+	Walk(c WalkFunc) error
+}
+
+type file struct {
+	dst      string
+	name     string
+	length   int64
+	modified time.Time
+	*os.File
+}
+
+func (f *file) Name() string {
+	return f.name
+}
+
+func (f *file) Size() int64 {
+	return f.length
+}
+
+func (f *file) Modified() time.Time {
+	return f.modified
+}
+
 // temporary item for http read
 type outItem struct {
 	p        *imagio.Param
@@ -64,16 +102,21 @@ type outItem struct {
 	origFile string
 }
 
-func (o *outItem) Walk(c func(file io.ReadSeeker)) error {
-	file, err := os.Open(o.dst)
+func (o *outItem) Walk(c WalkFunc) error {
+	fp, err := os.Open(o.dst)
 	if err != nil {
 		return err
 	}
-	if file == nil {
+	if fp == nil {
 		return fmt.Errorf("Fatal error: open %s failed", o.p.Path)
 	}
-	defer file.Close()
-	c(file)
+	defer fp.Close()
+	c(&file{
+		File:     fp,
+		name:     o.name,
+		length:   o.length,
+		modified: o.modified,
+	})
 	return nil
 }
 
@@ -190,35 +233,22 @@ func (o *outItem) thumbnail() (err error) {
 	return
 }
 
-func (o *outItem) Name() string {
-	return o.p.Name
-}
-
-func (o *outItem) Size() int64 {
-	return o.length
-}
-
-func (o *outItem) Modified() time.Time {
-	return o.modified
-}
-
 // storedPath ...
 func storedPath(r string) string {
 	return imagio.StoredPath(r)
 }
 
 // LoadPath ...
-func LoadPath(u string) (oi *outItem, err error) {
+func LoadPath(u string) (Walker, error) {
 	// log.Printf("load: %s", url)
-	var p *imagio.Param
-	p, err = imagio.ParseFromPath(u)
+	p, err := imagio.ParseFromPath(u)
 	if err != nil {
 		logger().Infow("bad url", "url", u, "err", err)
-		return
+		return nil, err
 	}
 	logger().Debugw("parsed", "param", p)
 	root := path.Join(config.Current.CacheRoot, "thumb")
-	oi = &outItem{
+	oi := &outItem{
 		p:        p,
 		id:       p.ID,
 		src:      p.Path,
@@ -237,20 +267,20 @@ func LoadPath(u string) (oi *outItem, err error) {
 	err = ReadyDir(oi.origFile)
 	if err != nil {
 		logger().Infow("ready dir fail", "err", err)
-		return
+		return nil, err
 	}
 
 	oi.lock, err = NewFLock(oi.origFile + ".lock")
 	if err != nil {
 		logger().Infow("create lock fail", "err", err)
-		return
+		return nil, err
 	}
 	err = oi.prepare()
 	if err != nil {
 		logger().Warnw("prepare fail", "param", oi.p, "err", err)
-		return
+		return nil, err
 	}
-	return
+	return oi, nil
 }
 
 // Dump ...

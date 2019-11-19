@@ -7,9 +7,10 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/getsentry/raven-go"
+	"github.com/soheilhy/cmux"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
@@ -54,17 +55,10 @@ func tlsTc() credentials.TransportCredentials {
 	return c
 }
 
-func decRPCServer(s *grpc.Server) *grpc.Server {
-	pb.RegisterImageSvcServer(s, &rpcImage{})
-	healthgrpc.RegisterHealthServer(s, health.NewServer())
-	return s
-}
-
 // RPC ...
 type RPC interface {
 	Serve()
 	Stop()
-	http.Handler
 }
 
 // server ...
@@ -84,13 +78,6 @@ func NewServer(addr string, isTLS bool) RPC {
 	var tags = map[string]string{"service": "imsto-rpc", "ver": config.Version}
 	raven.SetTagsContext(tags)
 
-	var opts []grpc.ServerOption
-	opts = append(opts, grpc.MaxRecvMsgSize(int(defaultMaxMessageSize)))
-	if s.TLS {
-		opts = append(opts, grpc.Creds(tlsTc()))
-	}
-
-	s.rs = decRPCServer(grpc.NewServer(opts...))
 	return s
 }
 
@@ -101,19 +88,48 @@ func (s *server) Serve() {
 	if err != nil {
 		logger().Fatalw("error listen", "addr", s.Addr)
 	}
-	if err := http.Serve(lis, s); err != nil {
-		logger().Fatalw("error in Serve", "err", err)
-	}
-
+	s.serve(lis)
 }
 
-func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-		s.rs.ServeHTTP(w, r)
-	} else {
-		w.WriteHeader(http.StatusNoContent)
+func (s *server) serve(lis net.Listener) error {
+	cm := cmux.New(lis)
+	// grpcL := cm.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+	grpcL := cm.Match(cmux.HTTP2())
+	httpL := cm.Match(cmux.HTTP1Fast())
+
+	g := new(errgroup.Group)
+	g.Go(func() error { return s.grpcServe(grpcL) })
+	g.Go(func() error { return s.httpServe(httpL) })
+	g.Go(func() error { return cm.Serve() })
+
+	logger().Infow("start cmux wait")
+	return g.Wait()
+}
+
+func (s *server) grpcServe(l net.Listener) error {
+	var opts []grpc.ServerOption
+	opts = append(opts, grpc.MaxRecvMsgSize(int(defaultMaxMessageSize)))
+	if s.TLS {
+		opts = append(opts, grpc.Creds(tlsTc()))
 	}
 
+	s.rs = grpc.NewServer(opts...)
+
+	pb.RegisterImageSvcServer(s.rs, &rpcImage{})
+	healthgrpc.RegisterHealthServer(s.rs, health.NewServer())
+
+	logger().Infow("start grpcServe", "grpc.ver", grpc.Version)
+	return s.rs.Serve(l)
+}
+
+func (s *server) httpServe(l net.Listener) error {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	hs := &http.Server{Handler: mux}
+	return hs.Serve(l)
 }
 
 func (s *server) Stop() {
