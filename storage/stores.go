@@ -131,11 +131,14 @@ func (o *outItem) prepare() (err error) {
 	}
 
 	var roof string
+	logger().Infow("prepare", "orig", o.origFile)
 	if fi, fe := os.Stat(o.origFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
+		logger().Infow("get mapping", "id", o.id)
 		mw := NewMetaWrapper(o.roof)
 		var entry *mapItem
 		entry, err = mw.GetMapping(o.id.String())
 		if err != nil {
+			logger().Infow("get mapping fail", "id", o.id, "err", err)
 			err = NewHttpError(404, err.Error())
 			return
 		}
@@ -150,9 +153,14 @@ func (o *outItem) prepare() (err error) {
 			}
 		}
 
-		err = Dump(entry.Path, roof, o.origFile)
+		var data []byte
+		data, err = entry.pullWith(roof)
 		if err != nil {
-			return NewHttpError(404, err.Error())
+			return NewHttpError(500, err.Error())
+		}
+		err = SaveFile(o.origFile, data)
+		if err != nil {
+			return NewHttpError(500, err.Error())
 		}
 		if fi, fe := os.Stat(o.origFile); fe != nil {
 			if os.IsNotExist(fe) || fi.Size() == 0 {
@@ -247,7 +255,7 @@ func LoadPath(u string) (Walker, error) {
 		return nil, err
 	}
 	logger().Debugw("parsed", "param", p)
-	root := path.Join(config.Current.CacheRoot, "thumb")
+	root := path.Join(config.Current.CacheRoot, CatThumb)
 	oi := &outItem{
 		p:        p,
 		id:       p.ID,
@@ -281,19 +289,6 @@ func LoadPath(u string) (Walker, error) {
 		return nil, err
 	}
 	return oi, nil
-}
-
-// Dump ...
-func Dump(key, roof, file string) error {
-	logger().Infow("pulling", "roof", roof, "path", key)
-
-	data, err := PullBlob(key, roof)
-	if err != nil {
-		logger().Warnw("pull fail", "roof", roof, "err", err)
-		return err
-	}
-	logger().Infow("pulled", "roof", roof, "bytes", len(data))
-	return SaveFile(file, data)
 }
 
 // PrepareReader ...
@@ -356,15 +351,12 @@ func Delete(roof, id string) error {
 	return nil
 }
 
-// GetURL ...
-func GetURL(scheme, suffix string) string {
+// GetURI ...
+func GetURI(suffix string) string {
 	spath := path.Join("/", CatView, suffix)
 	stageHost := config.Current.StageHost
 	if stageHost == "" {
 		return spath
 	}
-	if scheme == "" {
-		scheme = "http"
-	}
-	return fmt.Sprintf("%s://%s%s", scheme, stageHost, spath)
+	return fmt.Sprintf("//%s%s", stageHost, spath)
 }

@@ -88,6 +88,13 @@ func TestEntry(t *testing.T) {
 	err = <-ch
 	assert.NoError(t, err)
 
+	var wk Walker
+	wk, err = LoadPath(entry.URI("w60"))
+	assert.NoError(t, err)
+	wk.Walk(func(f File) {
+		t.Log(f.Name())
+	})
+
 	err = Delete(roof, IID.String())
 	assert.NoError(t, err)
 }

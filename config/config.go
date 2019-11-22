@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -18,9 +19,6 @@ type Section struct { // example: {demo,file,Demo,/var/lib/imsto/,demo.imsto.org
 	Root   string `json:"root,omitempty"`
 	Host   string `json:"host,omitempty"` // stage host
 }
-
-// Sections ...
-type Sections map[string]Section
 
 // Sizes ...
 type Sizes []uint
@@ -62,9 +60,8 @@ type Config struct {
 	WatermarkFile    string            `envconfig:"WATERMARK_FILE"` // /opt/imsto/watermark.png
 	WatermarkOpacity uint8             `envconfig:"WATERMARK_OPACITY" default:"30"`
 	SupportSizes     Sizes             `envconfig:"SUPPORT_SIZE" default:"60,120,256"`
-	Sections         map[string]string `envconfig:"SECTIONS"` // [roof]label
 	Engines          map[string]string `envconfig:"ENGINES"`  // [roof]engine
-	Buckets          map[string]string `envconfig:"BUCKETS"`  // [roof]bucket
+	Prefixes         map[string]string `envconfig:"PREFIXES"` // [roof]prefix
 	WhiteList        []IPNet           `envconfig:"WHITELIST"`
 	ReadTimeout      time.Duration     `envconfig:"READ_TIMEOUT" default:"10s"`
 	TiringListen     string            `envconfig:"TIRING_LISTEN" default:":8967"`
@@ -118,7 +115,7 @@ func init() {
 
 // HasSection ...
 func HasSection(roof string) bool {
-	if _, ok := Current.Sections[roof]; ok {
+	if _, ok := Current.Engines[roof]; ok {
 		return true
 	}
 	return false
@@ -126,7 +123,11 @@ func HasSection(roof string) bool {
 
 // GetSections return administrable sections
 func GetSections() map[string]string {
-	return Current.Sections
+	var sections = map[string]string{}
+	for k := range Current.Engines {
+		sections[k] = strings.ToTitle(k)
+	}
+	return sections
 }
 
 // GetEngine ...
@@ -135,6 +136,14 @@ func GetEngine(roof string) string {
 		return v
 	}
 	return ""
+}
+
+// GetPrefix ...
+func GetPrefix(roof string) string {
+	if s, ok := Current.Prefixes[roof]; ok && len(s) > 0 {
+		return s
+	}
+	return roof
 }
 
 // EnvOr ...

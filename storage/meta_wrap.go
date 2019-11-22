@@ -415,8 +415,8 @@ func (mw *MetaWrap) GetMapping(id string) (*mapItem, error) {
 	db := mw.getDb()
 	sql := "SELECT name, path, size, sev, status, created, roofs FROM " + tableMap(id) + " WHERE id = $1 LIMIT 1"
 	row := db.QueryRow(sql, id)
-	IID, _ := imagid.ParseID(id)
-	var e = mapItem{ID: IID}
+	iID, _ := imagid.ParseID(id)
+	var e = mapItem{ID: iID}
 	err := row.Scan(&e.Name, &e.Path, &e.Size, &e.sev, &e.Status, &e.Created, &e.Roofs)
 	if err != nil {
 		logger().Infow("GetMapping fail", "roof", mw.roof, "id", id, "err", err)

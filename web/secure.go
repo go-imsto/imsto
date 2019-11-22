@@ -24,6 +24,6 @@ func secure(f http.HandlerFunc) http.Handler {
 			}
 		}
 		w.WriteHeader(http.StatusForbidden)
-		writeJsonQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
+		writeJSONQuiet(w, r, map[string]interface{}{"error": "No write permisson from " + host})
 	})
 }

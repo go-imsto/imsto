@@ -272,19 +272,41 @@ func (e *Entry) StoredMeta() cdb.Meta {
 	return e.sev
 }
 
-// PullBlob pull blob from engine with key path
-func PullBlob(key string, roof string) (data []byte, err error) {
+// URI ..
+func (e *Entry) URI(sizeOp string) string {
+	return GetURI(sizeOp + "/" + e.Path)
+}
+
+func getItemCat(roof string) string {
+	if cat := config.GetPrefix(roof); cat != "" {
+		return cat
+	}
+	return CatStore
+}
+
+// pullWith pull blob from engine with key path
+func (e *mapItem) pullWith(roof string) (data []byte, err error) {
+	logger().Infow("pulling", "roof", roof, "path", e.Path)
 	var em backend.Wagoner
 	em, err = backend.FarmEngine(roof)
 	if err != nil {
 		logger().Warnw("farmEngine fail", "roof", roof, "err", err)
 		return
 	}
+	cat := getItemCat(roof)
+	if v, ok := e.sev.Get("cat"); ok {
+		if s, ok2 := v.(string); ok2 {
+			cat = s
+		}
+	}
 	// var data []byte
-	data, err = em.Get(backend.Key{ID: key, Cat: CatStore})
+	key := backend.Key{ID: e.Path, Cat: cat}
+	data, err = em.Get(key)
 	if err != nil {
 		logger().Warnw("get fail", "roof", roof, "key", key, "err", err)
+		return
 	}
+	logger().Infow("pulled", "roof", roof, "bytes", len(data))
 	return
 }
 
@@ -302,7 +324,8 @@ func (e *Entry) PushTo(roof string) (sev cdb.Meta, err error) {
 		logger().Warnw("farmEngine fail", "roof", roof, "key", key, "err", err)
 		return
 	}
-	sev, err = em.Put(backend.Key{ID: key, Cat: CatStore}, blob, meta.ToMap())
+
+	sev, err = em.Put(backend.Key{ID: key, Cat: getItemCat(roof)}, blob, meta.ToMap())
 	return
 }
 

@@ -14,7 +14,7 @@ VET=go vet -vettool=$(which shadow) -atomic -bool -copylocks -nilfunc -printf -r
 
 main:
 	echo "Building $(NAME)"
-	go build -ldflags "$(LDFLAGS)" .
+	go build -v -ldflags "$(LDFLAGS)" .
 
 dep:
 	go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow

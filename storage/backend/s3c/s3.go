@@ -207,7 +207,7 @@ func (c *s3Conn) Put(k Key, data []byte, meta Meta) (sev Meta, err error) {
 		return
 	}
 
-	sev = Meta{"engine": "s3", "bucket": c.name, "key": k, "endpoint": c.endpoint}
+	sev = Meta{"engine": "s3", "bucket": c.name, "cat": k.Cat, "endpoint": c.endpoint}
 	if c.uri != "" {
 		sev["uri"] = c.uri
 	}

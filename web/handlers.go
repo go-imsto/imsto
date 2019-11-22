@@ -35,21 +35,26 @@ func Handler() http.Handler {
 	return mux
 }
 
+// StageHandler ...
 func StageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("X-Server", "IMSTO STAGE")
 
 	item, err := storage.LoadPath(r.URL.Path)
 
 	if err != nil {
-		logger().Warnw("loadPath fail", "ref", r.Referer(), "err", err)
+		logger().Warnw("loadPath fail", "uri", r.URL.Path, "ref", r.Referer(), "err", err)
 		if he, ok := err.(*storage.HttpError); ok {
 			if he.Code == 302 {
 				logger().Infow("redirect", "path", he.Path)
 				http.Redirect(w, r, he.Path, he.Code)
 				return
 			}
+			w.WriteHeader(he.Code)
+			writeJSONError(w, r, err)
+			return
 		}
-		writeJsonError(w, r, err)
+		w.WriteHeader(400)
+		writeJSONError(w, r, err)
 
 		return
 	}
@@ -62,7 +67,8 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 	err = item.Walk(c)
 	if err != nil {
 		logger().Warnw("item walk fail", "item", item, "err", err)
-		writeJsonError(w, r, err)
+		w.WriteHeader(500)
+		writeJSONError(w, r, err)
 		return
 	}
 }
@@ -70,7 +76,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 func roofsHandler(w http.ResponseWriter, r *http.Request) {
 	m := newApiMeta(true)
 	// m["roofs"] = config.Sections()
-	writeJsonQuiet(w, r, newApiRes(m, config.GetSections()))
+	writeJSONQuiet(w, r, newApiRes(m, config.GetSections()))
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +130,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
@@ -132,7 +138,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
@@ -147,7 +153,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	m["stageHost"] = config.Current.StageHost
 	m["urlPrefix"] = getURL(r, "") + "/"
 	m["version"] = config.Version
-	writeJsonQuiet(w, r, newApiRes(m, a))
+	writeJSONQuiet(w, r, newApiRes(m, a))
 }
 
 func countHandler(w http.ResponseWriter, r *http.Request) {
@@ -160,22 +166,23 @@ func countHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
 	m := newApiMeta(true)
 	m["total"] = t
 	m["version"] = config.Version
-	writeJsonQuiet(w, r, newApiRes(m, nil))
+	writeJSONQuiet(w, r, newApiRes(m, nil))
 }
 
+// GetOrHeadHandler ...
 func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := imagid.ParseID(r.URL.Query().Get(":id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
@@ -185,7 +192,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
@@ -197,27 +204,24 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 	meta := newApiMeta(true)
 	obj := struct {
 		*storage.Entry
-		OrigUrl string `json:"orig_url,omitempty"`
+		OrigURL string `json:"orig_url,omitempty"`
 	}{
 		Entry:   entry,
-		OrigUrl: url,
+		OrigURL: url,
 	}
-	writeJsonQuiet(w, r, newApiRes(meta, obj))
+	writeJSONQuiet(w, r, newApiRes(meta, obj))
 }
 
 func getURL(r *http.Request, size string) string {
-	scheme := r.URL.Scheme
-	if strings.HasPrefix(r.Header.Get("X-Scheme"), "https") {
-		scheme = "https"
-	}
-	return storage.GetURL(scheme, size)
+	return storage.GetURI(size)
 }
 
 func storedHandler(w http.ResponseWriter, r *http.Request) {
 	var us uploadSchema
 	err := Bind(r, &us)
 	if err != nil {
-		writeJsonError(w, r, err)
+		w.WriteHeader(400)
+		writeJSONError(w, r, err)
 		return
 	}
 	if us.Roof == "" {
@@ -225,7 +229,8 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err = r.ParseMultipartForm(storage.DefaultMaxMemory); err != nil {
 		log.Print("multipart form parse error:", err)
-		writeJsonError(w, r, err)
+		w.WriteHeader(400)
+		writeJSONError(w, r, err)
 		return
 	}
 	app, appOK := storage.AppFromContext(r.Context())
@@ -236,7 +241,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = app.VerifyToken(us.Token)
 	if err != nil {
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
@@ -279,7 +284,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 	// log.Print(entries[0].Path)
@@ -289,7 +294,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	meta["urlPrefix"] = getURL(r, "") + "/"
 	meta["version"] = config.Version
 
-	writeJsonQuiet(w, r, newApiRes(meta, entries))
+	writeJSONQuiet(w, r, newApiRes(meta, entries))
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -297,18 +302,18 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 
 	meta := newApiMeta(true)
-	writeJsonQuiet(w, r, newApiRes(meta, nil))
+	writeJSONQuiet(w, r, newApiRes(meta, nil))
 }
 
 func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	var param tokenSchema
 	if err := Bind(r, &param); err != nil {
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 	app, appOK := storage.AppFromContext(r.Context())
@@ -321,13 +326,13 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 	token := app.RequestNewToken(param.User)
 	meta := newApiMeta(token != "")
 	meta["token"] = token
-	writeJsonQuiet(w, r, newApiRes(meta, nil))
+	writeJSONQuiet(w, r, newApiRes(meta, nil))
 }
 
 func ticketHandlerPost(w http.ResponseWriter, r *http.Request) {
 	var param ticketSchema
 	if err := Bind(r, &param); err != nil {
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 	app, appOK := storage.AppFromContext(r.Context())
@@ -339,19 +344,19 @@ func ticketHandlerPost(w http.ResponseWriter, r *http.Request) {
 
 	token, err := app.TicketRequestNew(param.Roof, param.Token, param.User, param.Prompt)
 	if err != nil {
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 	str := token.String()
 	meta := newApiMeta(str != "")
 	meta["token"] = str
-	writeJsonQuiet(w, r, newApiRes(meta, nil))
+	writeJSONQuiet(w, r, newApiRes(meta, nil))
 }
 
 func ticketHandlerGet(w http.ResponseWriter, r *http.Request) {
 	var param ticketSchema
 	if err := Bind(r, &param); err != nil {
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 	app, appOK := storage.AppFromContext(r.Context())
@@ -364,12 +369,12 @@ func ticketHandlerGet(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)
-		writeJsonError(w, r, err)
+		writeJSONError(w, r, err)
 		return
 	}
 	meta := newApiMeta(false)
 	meta["ok"] = true
 	meta["ticket"] = ticket
 
-	writeJsonQuiet(w, r, newApiRes(meta, nil))
+	writeJSONQuiet(w, r, newApiRes(meta, nil))
 }

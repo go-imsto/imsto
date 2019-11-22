@@ -63,13 +63,14 @@ func writeJson(w http.ResponseWriter, r *http.Request, obj interface{}) (err err
 }
 
 // wrapper for writeJson - just logs errors
-func writeJsonQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
+func writeJSONQuiet(w http.ResponseWriter, r *http.Request, obj interface{}) {
 	if err := writeJson(w, r, obj); err != nil {
 		logger().Warnw("error writing JSON %s: %s", obj, err.Error())
 	}
 }
 
-func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
+func writeJSONError(w http.ResponseWriter, r *http.Request, err error) {
+
 	if r.Method == "GET" || r.Method == "HEAD" {
 		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0")
 		w.Header().Set("Pragma", "no-cache")
@@ -78,5 +79,5 @@ func writeJsonError(w http.ResponseWriter, r *http.Request, err error) {
 	res := newApiRes(newApiMeta(false), nil)
 	res["error"] = newApiError(err)
 
-	writeJsonQuiet(w, r, res)
+	writeJSONQuiet(w, r, res)
 }
