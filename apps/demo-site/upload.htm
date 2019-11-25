@@ -227,7 +227,8 @@ $(document).ready(function(){
 
 	$.getJSON('/imsto/roofs', function(res){
 		// console.log(typeof res.roofs)
-		var roofs = res.data;
+		var roofs = {};
+		res.data.forEach(function(name, idx){roofs[name]=name.toUpperCase()});
 		$('#radios1').radioButtons({
 			data: roofs,
 			name: 'roof',
