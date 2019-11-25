@@ -61,6 +61,7 @@ CREATE TABLE meta_template (
 	status smallint NOT NULL DEFAULT 0, -- 0=valid,1=hidden
 	created timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	tags varCHAR(40)[] NOT NULL DEFAULT '{}',
+	UNIQUE (hashes),
 	PRIMARY KEY (id)
 ) WITHOUT OIDS;
 CREATE INDEX idx_meta_created ON meta_template (status, created) ;

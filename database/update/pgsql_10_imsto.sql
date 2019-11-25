@@ -77,3 +77,6 @@ ALTER FUNCTION tag_remove(text, text, text[]) RENAME TO tag_unmap;
 
 ALTER DOMAIN entry_id RENAME TO entry_xid;
 
+ALTER TABLE meta_template ADD UNIQUE (hashes);
+ALTER TABLE meta__prepared ADD UNIQUE (hashes);
+ALTER TABLE meta_demo ADD UNIQUE (hashes);
