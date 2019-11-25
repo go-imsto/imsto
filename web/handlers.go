@@ -75,11 +75,7 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 func roofsHandler(w http.ResponseWriter, r *http.Request) {
 	m := newApiMeta(true)
-	arr := []string{}
-	for k := range config.Current.Engines {
-		arr = append(arr, k)
-	}
-	writeJSONQuiet(w, r, newApiRes(m, arr))
+	writeJSONQuiet(w, r, newApiRes(m, config.Current.Roofs))
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {

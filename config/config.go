@@ -59,8 +59,9 @@ type Config struct {
 	WatermarkFile    string            `envconfig:"WATERMARK_FILE"` // /opt/imsto/watermark.png
 	WatermarkOpacity uint8             `envconfig:"WATERMARK_OPACITY" default:"30"`
 	SupportSizes     Sizes             `envconfig:"SUPPORT_SIZE" default:"60,120,256"`
-	Engines          map[string]string `envconfig:"ENGINES"`  // [roof]engine
-	Prefixes         map[string]string `envconfig:"PREFIXES"` // [roof]prefix
+	Roofs            []string          `envconfig:"ROOFS" default:"demo"` // roof1,roof2
+	Engines          map[string]string `envconfig:"ENGINES"`              // [roof]engine
+	Prefixes         map[string]string `envconfig:"PREFIXES"`             // [roof]prefix
 	WhiteList        []IPNet           `envconfig:"WHITELIST"`
 	ReadTimeout      time.Duration     `envconfig:"READ_TIMEOUT" default:"10s"`
 	TiringListen     string            `envconfig:"TIRING_LISTEN" default:":8967"`
@@ -72,7 +73,6 @@ type Config struct {
 var (
 	Version = "dev"
 	Name    = "imsto"
-	cfgDir  string
 
 	// Current ...
 	Current = new(Config)
@@ -81,11 +81,6 @@ var (
 // InDevelop ...
 func InDevelop() bool {
 	return "dev" == Version
-}
-
-// Root ...
-func Root() string {
-	return cfgDir
 }
 
 func init() {
