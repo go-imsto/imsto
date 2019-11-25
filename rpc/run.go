@@ -93,7 +93,6 @@ func (s *server) Serve() {
 
 func (s *server) serve(lis net.Listener) error {
 	cm := cmux.New(lis)
-	// grpcL := cm.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 	grpcL := cm.Match(cmux.HTTP2())
 	httpL := cm.Match(cmux.HTTP1Fast())
 

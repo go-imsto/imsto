@@ -75,8 +75,11 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 
 func roofsHandler(w http.ResponseWriter, r *http.Request) {
 	m := newApiMeta(true)
-	// m["roofs"] = config.Sections()
-	writeJSONQuiet(w, r, newApiRes(m, config.GetSections()))
+	arr := []string{}
+	for k := range config.Current.Engines {
+		arr = append(arr, k)
+	}
+	writeJSONQuiet(w, r, newApiRes(m, arr))
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +132,7 @@ func browseHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := mw.Count(filter)
 	if err != nil {
 		// w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("ERROR: %s", err)
+		logger().Infow("count fail", "uri", r.RequestURI, "roof", roof, "filter", filter, "err", err)
 		writeJSONError(w, r, err)
 		return
 	}

@@ -78,7 +78,7 @@ const (
 
 func InitMetaTables() {
 	db := getDb("common")
-	roofs := config.GetSections()
+	roofs := config.Current.Engines
 	logger().Infow("checking or create tables of metas", "roofs", len(roofs))
 	for k := range roofs {
 		_, err := db.Exec(fmt.Sprintf(metaCreateTmpl, k))
@@ -88,7 +88,11 @@ func InitMetaTables() {
 	}
 }
 
+// NewMetaWrapper ...
 func NewMetaWrapper(roof string) (mw MetaWrapper) {
+	if engine := config.GetEngine(roof); engine == "" {
+		panic(ErrEmptyRoof)
+	}
 	var ok bool
 	if mw, ok = metaWrappers[roof]; !ok {
 		mw = newMetaWrap(roof)
@@ -96,10 +100,6 @@ func NewMetaWrapper(roof string) (mw MetaWrapper) {
 	}
 
 	return mw
-}
-
-func (mw *MetaWrap) TableSuffix() string {
-	return mw.tableSuffix
 }
 
 func (mw *MetaWrap) table() string {
@@ -172,7 +172,7 @@ func (mw *MetaWrap) Count(filter MetaFilter) (t int, err error) {
 	rows, err := db.Query("SELECT COUNT(id) FROM "+table+where, args...)
 	// return &Row{rows: rows, err: err}
 	if err != nil {
-		logger().Warnw("query count fail", "err", err)
+		logger().Warnw("query count fail", "table", table, "err", err)
 		err = ErrDbError
 		return
 	}

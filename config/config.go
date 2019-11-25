@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -119,15 +118,6 @@ func HasSection(roof string) bool {
 		return true
 	}
 	return false
-}
-
-// GetSections return administrable sections
-func GetSections() map[string]string {
-	var sections = map[string]string{}
-	for k := range Current.Engines {
-		sections[k] = strings.ToTitle(k)
-	}
-	return sections
 }
 
 // GetEngine ...
