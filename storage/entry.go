@@ -150,6 +150,14 @@ func (e *Entry) Trek(roof string) (err error) {
 func (e *Entry) Store(roof string) (ch chan error) {
 	ch = make(chan error, 1)
 	// TODO: refactory
+	if len(roof) == 0 {
+		ch <- ErrEmptyRoof
+		return
+	}
+	if v := config.GetEngine(roof); len(v) == 0 {
+		ch <- ErrInvalidRoof
+		return
+	}
 	mw := NewMetaWrapper(roof)
 	if eh, err := mw.GetHash(e.h); err == nil {
 		logger().Infow("exist hash", "eh", eh)

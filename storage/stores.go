@@ -29,6 +29,7 @@ var (
 	ErrEmptyRoof   = errors.New("empty roof")
 	ErrEmptyID     = errors.New("empty id")
 	ErrZeroSize    = errors.New("zero size")
+	ErrInvalidRoof = errors.New("empty roof")
 )
 
 // HttpError ...
