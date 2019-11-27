@@ -24,3 +24,16 @@ docker run --name imsto --rm -p 8180:80 \
 
 > see more: INSTALL.md
 
+
+## Admin
+
+vim .env
+
+```
+STAFFIO_CLIENT_ID=
+STAFFIO_CLIENT_SECRET=
+STAFFIO_PREFIX=https://staffio.site
+
+```
+
+> forego start admin
