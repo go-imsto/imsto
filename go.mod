@@ -17,7 +17,9 @@ require (
 	github.com/lib/pq v1.1.1
 	github.com/liut/baseconv v0.0.1
 	github.com/liut/jpegquality v0.0.0-20191002165442-bae201ebadd1
+	github.com/liut/staffio-client v0.1.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/rakyll/statik v0.1.6
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72
 	github.com/stretchr/testify v1.4.0
@@ -25,5 +27,4 @@ require (
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/grpc v1.25.1
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

@@ -8,6 +8,7 @@ ORIG:=liut7
 NAME:=imsto
 ROOF:=github.com/go-imsto/$(NAME)
 SOURCES=$(shell find cmd config image rpc storage -type f \( -name "*.go" ! -name "*_test.go" \) -print )
+STATICS=$(shell find apps/static -type f \( -name "*.css" -o -name "*.js" -o -name "*.png" -o -name "*.gif" \) -print )
 TAG:=`git describe --tags --always`
 LDFLAGS:=-X $(ROOF)/config.Version=$(TAG)-$(DATE)
 VET=go vet -vettool=$(which shadow) -atomic -bool -copylocks -nilfunc -printf -rangeloops -unreachable -unsafeptr -unusedresult
@@ -49,6 +50,11 @@ package-macos: dist/darwin_amd64/$(NAME)
 package: package-linux package-macos
 	ls -l $(NAME)-*.tar.?z
 
+admin:
+	echo "Building $@"
+	mkdir -p dist/linux_amd64 && GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/linux_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
+	mkdir -p dist/darwin_amd64 && GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/darwin_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
+
 test-image:
 	$(VET) ./image
 	mkdir -p tests
@@ -66,6 +72,14 @@ test-rpc:
 	mkdir -p tests
 	@$(WITH_ENV) go test -v -cover -coverprofile tests/cover_rpc.out ./rpc
 	@$(WITH_ENV) go tool cover -html=tests/cover_rpc.out -o tests/cover_rpc.out.html
+
+generate:
+	go generate ./...
+
+statik: $(STATICS)
+	echo 'packing UI files into static'
+	statik -f -m -Z -src apps/static -dest ./web/admin
+.PHONY: statik
 
 
 docker-db-build:

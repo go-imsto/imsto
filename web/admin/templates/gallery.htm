@@ -3,18 +3,17 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title>imsto manage</title>
-	<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" charset="utf-8" />
-	<link rel="stylesheet" href="/css/base.css" type="text/css" media="screen" charset="utf-8">
-	<link rel="stylesheet" href="/css/images.css" type="text/css" media="screen" charset="utf-8">
-	<link rel="stylesheet" href="/css/colorbox.css" type="text/css" media="screen" charset="utf-8">
-	<link rel="stylesheet" href="/css/pager.css" type="text/css" media="screen" charset="utf-8">
-	<script src="//code.jquery.com/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="//code.jquery.com/ui/1.10.4/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/jquery.colorbox-min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/jquery.pager.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" href="/static/css/ui-lightness/jquery-ui.min.css" type="text/css" media="screen" charset="utf-8" />
+	<link rel="stylesheet" href="/static/css/base.css" type="text/css" media="screen" charset="utf-8">
+	<link rel="stylesheet" href="/static/css/images.css" type="text/css" media="screen" charset="utf-8">
+	<link rel="stylesheet" href="/static/css/colorbox.css" type="text/css" media="screen" charset="utf-8">
+	<link rel="stylesheet" href="/static/css/pager.css" type="text/css" media="screen" charset="utf-8">
+	<script src="/static/js/jquery-1.12.4.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/jquery-ui-1.11.4.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/jquery.colorbox-min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/jquery.pager.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
 
-	<script src="api_key.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 
 	function format_size (size) {
@@ -30,6 +29,7 @@
 		return size + ' bytes';
 	};
 
+	var api_key = '{{.APIKey}}';
 	var allow_delete = true, default_roof = 'demo', roof, page_size = 20;
 	var post_data = {roof:default_roof, sort_name:'created', sort_order:'desc', tags: ''};
 
@@ -162,7 +162,7 @@
 	<div id="head" class="ui-widget-content ui-corner-all">
 
 		<div><form method="post">
-		<a class="button" href="upload.htm">Upload</a>
+		<a class="button" href="upload">Upload</a>
 			<div id="radios1" class="button_box"></div>
 			<div id="radios2" class="button_box2"></div>
 			<div class="button_box">

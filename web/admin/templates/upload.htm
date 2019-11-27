@@ -3,17 +3,18 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<title>imsto upload</title>
-	<link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" type="text/css" media="screen" charset="utf-8" />
-	<link rel="stylesheet" href="/css/base.css" type="text/css" media="screen" charset="utf-8" />
-	<link rel="stylesheet" href="/css/upload.css" type="text/css" media="screen" charset="utf-8" />
-	<script src="//code.jquery.com/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="//code.jquery.com/ui/1.10.4/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
-	<script src="/js/jquery.imgupload.js" type="text/javascript" charset="utf-8"></script>
+	<link rel="stylesheet" href="/static/css/ui-lightness/jquery-ui.min.css" type="text/css" media="screen" charset="utf-8" />
+	<link rel="stylesheet" href="/static/css/base.css" type="text/css" media="screen" charset="utf-8" />
+	<link rel="stylesheet" href="/static/css/upload.css" type="text/css" media="screen" charset="utf-8" />
+	<script src="/static/js/jquery-1.12.4.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/jquery-ui-1.11.4.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/dust_func.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/static/js/jquery.imgupload.js" type="text/javascript" charset="utf-8"></script>
 
-	<script src="api_key.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 //<![CDATA[
+
+var api_key = '{{.APIKey}}';
 var dropbox, preview, message, url_stored = '/imsto/';
 var roof = 'demo', userid = 0, token = '', default_roof = 'demo';
 if (Dust) {Dust.dev = true;};
@@ -258,7 +259,7 @@ $(document).ready(function(){
 
 	<div class=" ui-widget-content ui-corner-all">
 		<div class="nav">
-			<a class="button" href="gallery.htm">Return to list</a>
+			<a class="button" href="gallery">Return to list</a>
 			<span id="radios1" class="button_box"></span>
 		</div>
 
