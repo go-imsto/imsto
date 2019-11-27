@@ -104,9 +104,9 @@ if [ "$1" = 'start' ]; then
 
 	sleep 4
 
-	if [[ ! -s htdocs/api_key.js ]]; then
+	if [[ ! -s .env ]]; then
 		echo "add demo api_key"
-		echo var api_key=\"$(imsto auth -name demo -save | grep 'key:' | awk '{print $2}')\"\; > htdocs/api_key.js
+		echo IMSTO_DEMO_API_KEY=\"$(imsto auth -name demo -save | grep 'key:' | awk '{print $2}')\"\; > .env
 	fi
 
 	chown -R nobody /var/lib/imsto

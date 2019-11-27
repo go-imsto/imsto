@@ -17,6 +17,7 @@ RUN go version && go env \
   && export LDFLAGS="-X ${ROOF}/cmd.Version=$(date '+%Y%m%d')" \
   && env \
   && GOOS=linux go install -ldflags "${LDFLAGS} -s -w" . \
+  && GOOS=linux go install -ldflags "${LDFLAGS} -s -w" ./apps/imsto-admin \
   && echo "build done"
 
 
@@ -34,9 +35,9 @@ ENV PGDATA=/var/lib/postgresql/data \
     IMSTO_MIN_HEIGHT=50 \
     IMSTO_MAX_QUALITY=88 \
     IMSTO_CACHE_ROOT=/var/lib/imsto/cache/ \
-    IMSTO_LOCAL_ROOT=/var/lib/imsto/stores \
+    IMSTO_LOCAL_ROOT=/var/lib/imsto \
     IMSTO_SUPPORT_SIZE="60,120,256" \
-    IMSTO_SECTIONS="demo:LocalDemo" \
+    IMSTO_ROOFS="demo" \
     IMSTO_ENGINES="demo:file" \
     IMSTO_STAGE_HOST=""
 
@@ -54,16 +55,15 @@ RUN cat /etc/apk/repositories \
   && mkdir -p /opt/imsto /var/lib/imsto/{stores,cache} /run/nginx \
   && cd /opt/imsto \
   && echo "bundle: imsto bundle" >> Procfile \
+  && echo "admin: imsto-admin" >> Procfile \
   && echo "nginx: nginx -g 'daemon off;'" >> Procfile \
   && chown nginx /run/nginx \
   && rm -rf /var/cache/apk/*
 
 ADD database/imsto_*.sql /docker-entrypoint-initdb.d/
-COPY --from=build /go/bin/forego /go/bin/imsto /usr/bin/
+COPY --from=build /go/bin/forego /go/bin/imsto /go/bin/imsto-admin /usr/bin/
 COPY --from=build /go/src/github.com/go-imsto/imsto/apps/demo-config/host.imsto.docker.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /go/src/github.com/go-imsto/imsto/apps/demo-config/entrypoint.sh /ep.sh
-COPY --from=build /go/src/github.com/go-imsto/imsto/apps/demo-site /opt/imsto/htdocs
-RUN rm /opt/imsto/htdocs/api_key.js
 
 EXPOSE 80
 
