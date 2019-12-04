@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"net/http"
 	"time"
 
@@ -20,6 +21,8 @@ var (
 )
 
 func main() {
+	var addr string
+	flag.StringVar(&addr, "l", ":8970", "listen addr")
 
 	var zlogger *zap.Logger
 	if config.InDevelop() {
@@ -51,7 +54,6 @@ func main() {
 	fs, _ := statikFs.New()
 	mux.Get("/static/", http.StripPrefix("/static/", http.FileServer(fs)))
 
-	addr := ":8970"
 	logger().Infow("listen admin", "addr", addr)
 	logger().Fatalw("listen fail", "err", http.ListenAndServe(":8970", mux))
 
