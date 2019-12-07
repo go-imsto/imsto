@@ -19,6 +19,7 @@ main:
 
 dep:
 	go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	go get github.com/liut/staticfiles
 
 vet:
 	echo "Checking ./..."
@@ -76,10 +77,10 @@ test-rpc:
 generate:
 	go generate ./...
 
-statik: $(STATICS)
+static: $(STATICS)
 	echo 'packing UI files into static'
-	statik -f -m -Z -src apps/static -dest ./web/admin
-.PHONY: statik
+	staticfiles --package static -o web/admin/static/files.go ./apps/static
+.PHONY: $@
 
 
 docker-db-build:

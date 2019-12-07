@@ -11,16 +11,18 @@ func logger() zlog.Logger {
 	return zlog.Get()
 }
 
-// RenderHTML ...
-func RenderHTML(name string, data interface{}, w http.ResponseWriter) (err error) {
-	var blob []byte
-	blob, err = Asset(name)
-	if err != nil {
-		logger().Warnw("load fail", "name", name, "err", err)
+//go:generate staticfiles --package view -o files.go ../templates
+//go:generate staticfiles --package static -o ../static/files.go ../../../apps/static
+
+// Render ...
+func Render(name string, data interface{}, w http.ResponseWriter) (err error) {
+	text := Data(name)
+	if len(text) == 0 {
+		logger().Infow("load template empty", "name", name)
 		return
 	}
 	var tpl *template.Template
-	tpl, err = template.New("default").Parse(string(blob))
+	tpl, err = template.New("default").Parse(text)
 	if err != nil {
 		logger().Warnw("parse template fail", "err", err)
 		return

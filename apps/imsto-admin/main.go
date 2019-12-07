@@ -7,12 +7,11 @@ import (
 
 	"github.com/bmizerany/pat"
 	staffio "github.com/liut/staffio-client"
-	statikFs "github.com/rakyll/statik/fs"
 	"go.uber.org/zap"
 
 	"github.com/go-imsto/imsto/config"
 	zlog "github.com/go-imsto/imsto/log"
-	_ "github.com/go-imsto/imsto/web/admin/statik"
+	"github.com/go-imsto/imsto/web/admin/static"
 	"github.com/go-imsto/imsto/web/admin/view"
 )
 
@@ -51,8 +50,7 @@ func main() {
 	mux.Get("/gallery", httpLogger(authF1(http.HandlerFunc(handlerGallery))))
 	mux.Get("/upload", httpLogger(authF1(http.HandlerFunc(handlerUpload))))
 
-	fs, _ := statikFs.New()
-	mux.Get("/static/", http.StripPrefix("/static/", http.FileServer(fs)))
+	mux.Get("/static/", http.StripPrefix("/static/", static.Server))
 
 	logger().Infow("listen admin", "addr", addr)
 	logger().Fatalw("listen fail", "err", http.ListenAndServe(":8970", mux))
@@ -64,16 +62,16 @@ func logger() zlog.Logger {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	view.RenderHTML("index.htm", nil, w)
+	view.Render("index.htm", nil, w)
 }
 
 func handlerGallery(w http.ResponseWriter, r *http.Request) {
-	view.RenderHTML("gallery.htm", map[string]string{"APIKey": apiKey}, w)
+	view.Render("gallery.htm", map[string]string{"APIKey": apiKey}, w)
 }
 
 func handlerUpload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/xhtml+xml")
-	view.RenderHTML("upload.htm", map[string]string{"APIKey": apiKey}, w)
+	view.Render("upload.htm", map[string]string{"APIKey": apiKey}, w)
 }
 
 func httpLogger(next http.Handler) http.Handler {
