@@ -47,6 +47,8 @@ func (z *IPNet) Decode(value string) error {
 
 // Config ...
 type Config struct {
+	DatabaseDSN      string            `envconfig:"META_DSN"`
+	SentryDSN        string            `envconfig:"SENTRY_DSN"`
 	MaxFileSize      uint              `envconfig:"MAX_FILESIZE" default:"2097152"` // 2MB
 	MaxWidth         uint              `envconfig:"MAX_WIDTH" default:"1600"`
 	MaxHeight        uint              `envconfig:"MAX_HEIGHT" default:"1600"`

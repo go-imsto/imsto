@@ -11,6 +11,7 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/getsentry/raven-go"
 	"go.uber.org/zap"
 
 	"github.com/go-imsto/imsto/config"
@@ -113,6 +114,10 @@ func Main() {
 	sugar := logger.Sugar()
 
 	zlog.Set(sugar)
+
+	if config.Current.SentryDSN != "" {
+		raven.SetDSN(config.Current.SentryDSN)
+	}
 
 	for _, cmd := range commands {
 		name := cmd.Name()
