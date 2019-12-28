@@ -46,8 +46,7 @@ $(document).ready(function(){
 			dropbox.removeAttr('dragenter');
 		},
 		imageCreated: function(img) {
-			//log(img);
-			var li = $('<li />').addClass('new').append(img);	//alert(li.html());
+			var li = $('<li />').addClass('new').append(img); // log(li);
 			li.append('<div class="left"><label class="lbl"></label><input type="text" name="tags" value="" placeholder="tags with comma separated"/></div>');
 			li.append($('<span class="btn" />').addClass('btn ui-corner-all ui-icon ui-icon-trash').attr('title','delete').click(function(){$(this).parent().fadeOut(function(){$(this).remove();});return false;}));
 			$("#image-pic-list").prepend(li);

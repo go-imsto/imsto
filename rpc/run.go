@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	defaultMaxMessageSize = 1 << 19 // 512K
+	defaultMaxMessageSize int = 1024 * 1024 * 3 // 3MB
 )
 
 func tlsTc() credentials.TransportCredentials {
@@ -107,7 +107,7 @@ func (s *server) serve(lis net.Listener) error {
 
 func (s *server) grpcServe(l net.Listener) error {
 	var opts []grpc.ServerOption
-	opts = append(opts, grpc.MaxRecvMsgSize(int(defaultMaxMessageSize)))
+	opts = append(opts, grpc.MaxRecvMsgSize(defaultMaxMessageSize))
 	if s.TLS {
 		opts = append(opts, grpc.Creds(tlsTc()))
 	}
