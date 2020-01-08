@@ -22,6 +22,7 @@ const (
 	prefixMapTable  = "mapping_"
 	prefixMetaTable = "meta_"
 	maxArgs         = 10
+	commonRoof      = "common"
 )
 
 // HashEntry ...
@@ -77,7 +78,7 @@ const (
 )
 
 func InitMetaTables() {
-	db := getDb("common")
+	db := getDb(commonRoof)
 	roofs := config.Current.Engines
 	logger().Infow("checking or create tables of metas", "roofs", len(roofs))
 	for k := range roofs {
@@ -90,7 +91,7 @@ func InitMetaTables() {
 
 // NewMetaWrapper ...
 func NewMetaWrapper(roof string) (mw MetaWrapper) {
-	if engine := config.GetEngine(roof); engine == "" {
+	if roof == "" {
 		panic(ErrEmptyRoof)
 	}
 	var ok bool
@@ -291,7 +292,7 @@ func (mw *MetaWrap) GetMeta(id string) (entry *Entry, err error) {
 }
 
 func popPrepared() (*Entry, error) {
-	mwr := NewMetaWrapper("common")
+	mwr := NewMetaWrapper(commonRoof)
 	mw := mwr.(*MetaWrap)
 
 	db := mw.getDb()

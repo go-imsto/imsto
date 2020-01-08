@@ -135,7 +135,7 @@ func (o *outItem) prepare() (err error) {
 	logger().Infow("prepare", "orig", o.origFile)
 	if fi, fe := os.Stat(o.origFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
 		logger().Infow("get mapping", "id", o.id)
-		mw := NewMetaWrapper(o.roof)
+		mw := NewMetaWrapper(commonRoof)
 		var entry *mapItem
 		entry, err = mw.GetMapping(o.id.String())
 		if err != nil {
