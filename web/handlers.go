@@ -245,24 +245,27 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tags, _ := storage.ParseTags(us.Tags)
-	entries := make(map[string][]*storage.Entry)
+	var entries []*storage.Entry
 	for k, fhs := range r.MultipartForm.File {
-		entries[k] = make([]*storage.Entry, len(fhs))
 		for i, fh := range fhs {
-			entries[k][i] = new(storage.Entry)
+			entry := new(storage.Entry)
+			entry.Key = k
 			log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
 			mime := fh.Header.Get("Content-Type")
 			file, fe := fh.Open()
 			if fe != nil {
-				entries[k][i].Err = fe.Error()
+				entry.Err = fe.Error()
+				entries = append(entries, entry)
+				continue
 			}
 
 			logger().Infow("post upload", "name", fh.Filename, "mime", mime, "size", fh.Size)
-
-			entry, ee := storage.PrepareReader(file, fh.Filename)
+			var ee error
+			entry, ee = storage.PrepareReader(file, fh.Filename)
 			if ee != nil {
 				logger().Infow("prepare upload fail", "name", fh.Filename)
-				entries[k][i].Err = ee.Error()
+				entry.Err = ee.Error()
+				entries = append(entries, entry)
 				continue
 			}
 			entry.AppId = app.Id
@@ -272,11 +275,13 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 			ee = <-entry.Store(us.Roof)
 			if ee != nil {
 				logger().Infow("stored fail", "i", i, "roof", us.Roof, "id", entry.Id, "err", ee)
-				entries[k][i].Err = ee.Error()
+				entry.Err = ee.Error()
+				entries = append(entries, entry)
 				continue
 			}
 			logger().Infow("stored", "i", i, "roof", us.Roof, "id", entry.Id, "path", entry.Path)
-			entries[k][i] = entry
+
+			entries = append(entries, entry)
 		}
 	}
 

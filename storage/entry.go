@@ -60,7 +60,8 @@ type Entry struct {
 	Author  Author      `json:"author,omitempty"`
 	Created time.Time   `json:"created,omitempty"`
 
-	Err string `json:"err,omitempty"`
+	Key string `json:"key,omitempty"`   // for upload response
+	Err string `json:"error,omitempty"` // for upload response
 
 	exif cdb.Meta
 	sev  cdb.Meta
