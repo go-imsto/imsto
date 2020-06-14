@@ -14,6 +14,7 @@ import (
 	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/imagio"
 	cdb "github.com/go-imsto/imsto/storage/types"
+	"github.com/go-imsto/imsto/utils"
 )
 
 // consts Cate of Key
@@ -95,7 +96,7 @@ type outItem struct {
 	dst      string
 	id       imagid.IID
 	isOrig   bool
-	lock     FLock
+	lock     utils.FLock
 	name     string
 	length   int64
 	modified time.Time
@@ -159,7 +160,7 @@ func (o *outItem) prepare() (err error) {
 		if err != nil {
 			return NewHttpError(500, err.Error())
 		}
-		err = SaveFile(o.origFile, data)
+		err = utils.SaveFile(o.origFile, data)
 		if err != nil {
 			return NewHttpError(500, err.Error())
 		}
@@ -273,13 +274,13 @@ func LoadPath(u string) (Walker, error) {
 		oi.dst = path.Join(oi.root, dstPath)
 	}
 
-	err = ReadyDir(oi.origFile)
+	err = utils.ReadyDir(oi.origFile)
 	if err != nil {
 		logger().Infow("ready dir fail", "err", err)
 		return nil, err
 	}
 
-	oi.lock, err = NewFLock(oi.origFile + ".lock")
+	oi.lock, err = utils.NewFLock(oi.origFile + ".lock")
 	if err != nil {
 		logger().Infow("create lock fail", "err", err)
 		return nil, err

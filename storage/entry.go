@@ -15,6 +15,7 @@ import (
 	"github.com/go-imsto/imsto/storage/backend"
 	"github.com/go-imsto/imsto/storage/hash"
 	cdb "github.com/go-imsto/imsto/storage/types"
+	"github.com/go-imsto/imsto/utils"
 )
 
 type IID = imagid.IID
@@ -210,7 +211,7 @@ func (e *Entry) Store(roof string) (ch chan error) {
 	thumbRoot := path.Join(config.Current.CacheRoot, "thumb")
 	filename := path.Join(thumbRoot, "orig", storedPath(e.Path))
 
-	if err := SaveFile(filename, e.b); err != nil {
+	if err := utils.SaveFile(filename, e.b); err != nil {
 		logger().Infow("entry save file fail", "filename", filename)
 		ch <- err
 		return

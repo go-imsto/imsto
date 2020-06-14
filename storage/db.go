@@ -3,12 +3,31 @@ package storage
 import (
 	"database/sql"
 	"os"
+	"sync"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // just ok
 )
+
+type Queryer interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+	Exec(query string, args ...interface{}) (sql.Result, error)
+}
+
+type DBer interface {
+	Queryer
+	Begin() (*sql.Tx, error)
+}
+
+type DBTxer interface {
+	Queryer
+	Rollback() error
+	Commit() error
+}
 
 var (
 	dbcpool map[string]*sql.DB
+	dbmu    sync.Mutex
 
 	dbDSN string
 )
@@ -33,6 +52,8 @@ func openDb(roof string) *sql.DB {
 }
 
 func getDb(roof string) *sql.DB {
+	dbmu.Lock()
+	defer dbmu.Unlock()
 	var db, ok = dbcpool[roof]
 	if !ok {
 		db = openDb(roof)
@@ -66,4 +87,12 @@ func withTxQuery(roof string, query func(tx *sql.Tx) error) error {
 	}
 	tx.Commit()
 	return nil
+}
+
+func envOr(key, dft string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return dft
+	}
+	return v
 }

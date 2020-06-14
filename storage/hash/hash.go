@@ -36,7 +36,7 @@ func (h *hasher) Write(b []byte) (n int, err error) {
 
 func (h *hasher) Bytes() []byte {
 	h1, h2 := h.mm3.Sum128()
-	return combine(h1, h2, h.n)
+	return combine(h1, h2, uint32(h.n))
 }
 
 func (h *hasher) String() string {
@@ -50,10 +50,10 @@ func (h *hasher) Len() uint32 {
 // SumContent ...
 func SumContent(data []byte) string {
 	h1, h2 := murmur3.Sum128(data)
-	return fmt.Sprintf("%x", combine(h1, h2, len(data)))
+	return fmt.Sprintf("%x", combine(h1, h2, uint32(len(data))))
 }
 
-func combine(h1, h2 uint64, t int) []byte {
+func combine(h1, h2 uint64, t uint32) []byte {
 	return []byte{
 		byte(h1 >> 56), byte(h1 >> 48), byte(h1 >> 40), byte(h1 >> 32),
 		byte(h1 >> 24), byte(h1 >> 16), byte(h1 >> 8), byte(h1),

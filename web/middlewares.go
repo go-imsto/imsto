@@ -1,10 +1,14 @@
-package storage
+package web
 
 import (
 	"context"
 	"log"
 	"net/http"
+
+	"github.com/go-imsto/imsto/storage"
 )
+
+type App = storage.App
 
 // consts
 const (
@@ -31,7 +35,7 @@ func CheckAPIKey(next http.Handler) http.Handler {
 			}
 		}
 
-		app, err := LoadApp(apiKey)
+		app, err := storage.LoadApp(apiKey)
 		if err != nil {
 			log.Printf("arg 'api_key=%s' is invalid: %s", apiKey, err.Error())
 			w.WriteHeader(http.StatusBadRequest)

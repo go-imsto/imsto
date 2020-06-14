@@ -19,13 +19,13 @@ func Handler() http.Handler {
 	mux := pat.New()
 	mux.Get("/imsto/roofs", http.HandlerFunc(roofsHandler))
 
-	mux.Post("/imsto/ticket", storage.CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
-	mux.Get("/imsto/ticket", storage.CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
+	mux.Post("/imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
+	mux.Get("/imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
 
-	mux.Post("/imsto/token", storage.CheckAPIKey(http.HandlerFunc(tokenHandler)))
+	mux.Post("/imsto/token", CheckAPIKey(http.HandlerFunc(tokenHandler)))
 
-	mux.Post("/imsto/:roof", storage.CheckAPIKey(secure(storedHandler)))
-	mux.Del("/imsto/:roof/:id", storage.CheckAPIKey(secure(deleteHandler)))
+	mux.Post("/imsto/:roof", CheckAPIKey(secure(storedHandler)))
+	mux.Del("/imsto/:roof/:id", CheckAPIKey(secure(deleteHandler)))
 	mux.Get("/imsto/:roof/id", http.HandlerFunc(GetOrHeadHandler))
 	mux.Get("/imsto/:roof/metas/count", http.HandlerFunc(countHandler))
 	mux.Get("/imsto/:roof/metas", http.HandlerFunc(browseHandler))
@@ -226,13 +226,13 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	if us.Roof == "" {
 		us.Roof = r.URL.Query().Get(":roof")
 	}
-	if err = r.ParseMultipartForm(storage.DefaultMaxMemory); err != nil {
+	if err = r.ParseMultipartForm(DefaultMaxMemory); err != nil {
 		log.Print("multipart form parse error:", err)
 		w.WriteHeader(400)
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
@@ -315,7 +315,7 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
@@ -334,7 +334,7 @@ func ticketHandlerPost(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
@@ -358,7 +358,7 @@ func ticketHandlerGet(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
