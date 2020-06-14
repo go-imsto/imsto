@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 
 	dbDSN = envOr("IMSTO_META_TEST_DSN", "dbname=imstotest user=imsto sslmode=disable")
 
-	db := getDb("")
+	db := getDb()
 	db.Exec("DROP SCHEMA IF EXISTS imsto CASCADE;")
 
 	schemas := []string{

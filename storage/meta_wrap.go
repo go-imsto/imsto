@@ -31,27 +31,6 @@ type HashEntry struct {
 	Path string `json:"path"`
 }
 
-// MetaWrapper ...
-type MetaWrapper interface {
-	Browse(limit, offset int, sort map[string]int, filter MetaFilter) ([]*Entry, error)
-	Count(filter MetaFilter) (int, error)
-	NextID() (uint64, error)
-	Ready(entry *Entry) error
-	SetDone(id string, sev cdb.Meta) error
-	Save(entry *Entry, isUpdate bool) error
-	BatchSave(entries []*Entry) error
-	GetMeta(id string) (*Entry, error)
-	GetHash(hash string) (*HashEntry, error)
-	GetMapping(id string) (*mapItem, error)
-	Delete(id string) error
-	MapTags(id string, tags string) error
-	UnmapTags(id string, tags string) error
-}
-
-type rowScanner interface {
-	Scan(...interface{}) error
-}
-
 // MetaWrap ...
 type MetaWrap struct {
 	roof string
@@ -78,7 +57,7 @@ const (
 )
 
 func InitMetaTables() {
-	db := getDb(commonRoof)
+	db := getDb()
 	roofs := config.Current.Engines
 	logger().Infow("checking or create tables of metas", "roofs", len(roofs))
 	for k := range roofs {
@@ -119,13 +98,6 @@ func isSortable(k string) bool {
 		}
 	}
 	return false
-}
-
-// MetaFilter ...
-type MetaFilter struct {
-	Tags   string
-	App    AppID
-	Author Author
 }
 
 func buildWhere(filter MetaFilter) (where string, args []interface{}) {
@@ -476,11 +448,11 @@ func (mw *MetaWrap) UnmapTags(id string, tags string) error {
 }
 
 func (mw *MetaWrap) withTxQuery(query func(tx *sql.Tx) error) error {
-	return withTxQuery(mw.roof, query)
+	return withTxQuery(query)
 }
 
 func (mw *MetaWrap) getDb() *sql.DB {
-	return getDb(mw.roof)
+	return getDb()
 }
 
 func tableHash(s string) string {
