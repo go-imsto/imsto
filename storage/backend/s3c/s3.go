@@ -68,7 +68,7 @@ func init() {
 	}
 	envconfig.MustProcess("aws_s3", &conf)
 
-	ac := &aws4.Client{Keys: &aws4.Keys{conf.AccessKey, conf.SecretKey}}
+	ac := &aws4.Client{Keys: &aws4.Keys{AccessKey: conf.AccessKey, SecretKey: conf.SecretKey}}
 	ac.Name = "s3"
 	ac.Region = conf.Region
 	for roof, name := range conf.Buckets {

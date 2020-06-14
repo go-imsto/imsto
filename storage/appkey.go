@@ -60,8 +60,7 @@ func LoadApp(api_key string) (app *App, err error) {
 
 func (a *App) load() error {
 
-	db := getDb("")
-	defer db.Close()
+	db := getDb()
 
 	sql := "SELECT id, name, api_ver, api_salt, disabled, created FROM apps WHERE api_key = $1 LIMIT 1"
 	rows, err := db.Query(sql, a.ApiKey)
@@ -90,7 +89,7 @@ func (a *App) Save() error {
 		}
 		return
 	}
-	return withTxQuery("", qs)
+	return withTxQuery(qs)
 }
 
 func (a *App) genToken() (*apiToken, error) {

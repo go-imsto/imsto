@@ -70,7 +70,6 @@ func (a *App) TicketRequestLoad(token, roof string, author int) (ticket *Ticket,
 
 func (t *Ticket) saveNew() error {
 	db := t.getDb()
-	defer db.Close()
 
 	var id int
 	sql := "INSERT INTO " + t.table + "(roof, app_id, author, prompt) VALUES($1, $2, $3, $4) RETURNING id"
@@ -91,7 +90,7 @@ func (t *Ticket) update() error {
 
 func (t *Ticket) load(id int) error {
 	db := t.getDb()
-	defer db.Close()
+
 	t.id = id
 	sql := "SELECT roof, app_id, author, prompt, img_id, img_path, done FROM " + t.table + " WHERE id = $1 LIMIT 1"
 	err := db.QueryRow(sql, id).Scan(&t.roof, &t.AppID, &t.Author, &t.Prompt, &t.ImgId, &t.ImgPath, &t.Done)
@@ -110,7 +109,7 @@ func loadTicket(sn string, id int) (t *Ticket, err error) {
 
 func (t *Ticket) bindEntry(entry *Entry) error {
 	db := t.getDb()
-	defer db.Close()
+
 	log.Printf("start binding %s", entry.Id)
 	// sql := "UPDATE " + t.table + " SET img_id=$1, img_path=$1, img_meta=$2, uploaded=$3, updated=$4 WHERE id = $5"
 	// sr, err := db.Exec(sql, entry.Id.String(), entry.Path, entry.Meta.Hstore(), true, entry.Created, t.id)
@@ -135,5 +134,5 @@ func (t *Ticket) GetId() int {
 }
 
 func (t *Ticket) getDb() *sql.DB {
-	return getDb(t.roof)
+	return getDb()
 }

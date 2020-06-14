@@ -19,13 +19,13 @@ func Handler() http.Handler {
 	mux := pat.New()
 	mux.Get("/imsto/roofs", http.HandlerFunc(roofsHandler))
 
-	mux.Post("/imsto/ticket", storage.CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
-	mux.Get("/imsto/ticket", storage.CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
+	mux.Post("/imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
+	mux.Get("/imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
 
-	mux.Post("/imsto/token", storage.CheckAPIKey(http.HandlerFunc(tokenHandler)))
+	mux.Post("/imsto/token", CheckAPIKey(http.HandlerFunc(tokenHandler)))
 
-	mux.Post("/imsto/:roof", storage.CheckAPIKey(secure(storedHandler)))
-	mux.Del("/imsto/:roof/:id", storage.CheckAPIKey(secure(deleteHandler)))
+	mux.Post("/imsto/:roof", CheckAPIKey(secure(storedHandler)))
+	mux.Del("/imsto/:roof/:id", CheckAPIKey(secure(deleteHandler)))
 	mux.Get("/imsto/:roof/id", http.HandlerFunc(GetOrHeadHandler))
 	mux.Get("/imsto/:roof/metas/count", http.HandlerFunc(countHandler))
 	mux.Get("/imsto/:roof/metas", http.HandlerFunc(browseHandler))
@@ -226,13 +226,13 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	if us.Roof == "" {
 		us.Roof = r.URL.Query().Get(":roof")
 	}
-	if err = r.ParseMultipartForm(storage.DefaultMaxMemory); err != nil {
+	if err = r.ParseMultipartForm(DefaultMaxMemory); err != nil {
 		log.Print("multipart form parse error:", err)
 		w.WriteHeader(400)
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
@@ -245,24 +245,27 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tags, _ := storage.ParseTags(us.Tags)
-	entries := make(map[string][]*storage.Entry)
+	var entries []*storage.Entry
 	for k, fhs := range r.MultipartForm.File {
-		entries[k] = make([]*storage.Entry, len(fhs))
 		for i, fh := range fhs {
-			entries[k][i] = new(storage.Entry)
+			entry := new(storage.Entry)
+			entry.Key = k
 			log.Printf("%d name: %s, ctype: %s", i, fh.Filename, fh.Header.Get("Content-Type"))
 			mime := fh.Header.Get("Content-Type")
 			file, fe := fh.Open()
 			if fe != nil {
-				entries[k][i].Err = fe.Error()
+				entry.Err = fe.Error()
+				entries = append(entries, entry)
+				continue
 			}
 
 			logger().Infow("post upload", "name", fh.Filename, "mime", mime, "size", fh.Size)
-
-			entry, ee := storage.PrepareReader(file, fh.Filename)
+			var ee error
+			entry, ee = storage.PrepareReader(file, fh.Filename)
 			if ee != nil {
 				logger().Infow("prepare upload fail", "name", fh.Filename)
-				entries[k][i].Err = ee.Error()
+				entry.Err = ee.Error()
+				entries = append(entries, entry)
 				continue
 			}
 			entry.AppId = app.Id
@@ -272,11 +275,13 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 			ee = <-entry.Store(us.Roof)
 			if ee != nil {
 				logger().Infow("stored fail", "i", i, "roof", us.Roof, "id", entry.Id, "err", ee)
-				entries[k][i].Err = ee.Error()
+				entry.Err = ee.Error()
+				entries = append(entries, entry)
 				continue
 			}
 			logger().Infow("stored", "i", i, "roof", us.Roof, "id", entry.Id, "path", entry.Path)
-			entries[k][i] = entry
+
+			entries = append(entries, entry)
 		}
 	}
 
@@ -315,7 +320,7 @@ func tokenHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
@@ -334,7 +339,7 @@ func ticketHandlerPost(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")
@@ -358,7 +363,7 @@ func ticketHandlerGet(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, err)
 		return
 	}
-	app, appOK := storage.AppFromContext(r.Context())
+	app, appOK := AppFromContext(r.Context())
 	if !appOK {
 		w.WriteHeader(400)
 		writeJson(w, r, "app error")

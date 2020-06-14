@@ -15,6 +15,7 @@ import (
 	"github.com/go-imsto/imsto/storage/backend"
 	"github.com/go-imsto/imsto/storage/hash"
 	cdb "github.com/go-imsto/imsto/storage/types"
+	"github.com/go-imsto/imsto/utils"
 )
 
 type IID = imagid.IID
@@ -59,7 +60,8 @@ type Entry struct {
 	Author  Author      `json:"author,omitempty"`
 	Created time.Time   `json:"created,omitempty"`
 
-	Err string `json:"err,omitempty"`
+	Key string `json:"key,omitempty"`   // for upload response
+	Err string `json:"error,omitempty"` // for upload response
 
 	exif cdb.Meta
 	sev  cdb.Meta
@@ -210,7 +212,7 @@ func (e *Entry) Store(roof string) (ch chan error) {
 	thumbRoot := path.Join(config.Current.CacheRoot, "thumb")
 	filename := path.Join(thumbRoot, "orig", storedPath(e.Path))
 
-	if err := SaveFile(filename, e.b); err != nil {
+	if err := utils.SaveFile(filename, e.b); err != nil {
 		logger().Infow("entry save file fail", "filename", filename)
 		ch <- err
 		return

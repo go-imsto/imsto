@@ -4,7 +4,7 @@
 
 BEGIN;
 
-CREATE SCHEMA imsto;
+CREATE SCHEMA IF NOT EXISTS imsto;
 COMMENT ON SCHEMA imsto IS '存储相关';
 GRANT ALL ON SCHEMA imsto TO imsto;
 

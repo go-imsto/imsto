@@ -1,4 +1,4 @@
-package storage
+package utils
 
 import (
 	"io/ioutil"
