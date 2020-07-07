@@ -16,7 +16,7 @@ require (
 	github.com/lib/pq v1.5.2
 	github.com/liut/baseconv v0.0.1
 	github.com/liut/jpegquality v0.0.0-20200606101153-6dd6284fded6
-	github.com/liut/staffio-client v0.1.6
+	github.com/liut/staffio-client v0.1.7
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72

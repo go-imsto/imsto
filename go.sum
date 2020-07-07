@@ -55,8 +55,8 @@ github.com/liut/jpegquality v0.0.0-20200606101153-6dd6284fded6 h1:sVsHqWyj9PsFBL
 github.com/liut/jpegquality v0.0.0-20200606101153-6dd6284fded6/go.mod h1:Xf7+nlHBcCJonDRXypZIL5GiDoODOHqVTC63jsgGcA0=
 github.com/liut/simpauth v0.1.7 h1:QZMND0BuW9le0OcmxMqCKPdp+tcv2j1yqnFp+uaQZQE=
 github.com/liut/simpauth v0.1.7/go.mod h1:/PRdSN5nPTVPvUK+xLKxWTSZeM81KBG6nWy0ojpam9U=
-github.com/liut/staffio-client v0.1.6 h1:H03zMBsWg6ttJpAVPbzJwAYzHDH0iMSN5F2Yp/uL8mg=
-github.com/liut/staffio-client v0.1.6/go.mod h1:6i/gr3N5urBijL5Eu1Z7VzAegjeEtYFYz10aDRUriH0=
+github.com/liut/staffio-client v0.1.7 h1:2lyzWF+wIdY1HXxNUfeZ2gePa52LZCg+iekije7OLDU=
+github.com/liut/staffio-client v0.1.7/go.mod h1:6i/gr3N5urBijL5Eu1Z7VzAegjeEtYFYz10aDRUriH0=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S/RLdc7JQKbRpFeM1dOBd8T9ki5s+AY8=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
