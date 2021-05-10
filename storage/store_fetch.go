@@ -34,6 +34,7 @@ func Fetch(in FetchInput) (entry *Entry, err error) {
 	var res *http.Response
 	res, err = http.DefaultClient.Do(req)
 	if err != nil {
+		logger().Warnw("fetch fail", "err", err)
 		return
 	}
 
