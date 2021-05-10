@@ -13,14 +13,16 @@ TAG:=`git describe --tags --always`
 LDFLAGS:=-X $(ROOF)/config.Version=$(TAG)-$(DATE)
 GO=$(shell which go)
 VET=$(GO) vet -all
+GOMOD=$(shell echo "$${GO111MODULE:-auto}")
+
 
 main:
 	echo "Building $(NAME)"
-	go build -v -ldflags "$(LDFLAGS)" .
+	CGO_ENABLED=1 GO111MODULE=$(GOMOD) $(GO) build -v -ldflags "$(LDFLAGS)" .
 
 dep:
-	go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
-	go get github.com/liut/staticfiles
+	GO111MODULE=$(GOMOD) $(GO) install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+	GO111MODULE=$(GOMOD) $(GO) get github.com/liut/staticfiles
 
 vet:
 	echo "Checking ./..."
@@ -33,12 +35,12 @@ clean:
 
 dist/linux_amd64/$(NAME): $(SOURCES)
 	echo "Building $(NAME) of linux"
-	mkdir -p dist/linux_amd64 && cd dist/linux_amd64 && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(LDFLAGS) -s -w" $(ROOF)
+	mkdir -p dist/linux_amd64 && cd dist/linux_amd64 && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS) -s -w" $(ROOF)
 	ls -l $@
 
 dist/darwin_amd64/$(NAME): $(SOURCES)
 	echo "Building $(NAME) of darwin"
-	mkdir -p dist/darwin_amd64 && cd dist/darwin_amd64 && CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 $(GO) build -ldflags "$(LDFLAGS) -w" $(ROOF)
+	mkdir -p dist/darwin_amd64 && cd dist/darwin_amd64 && CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS) -w" $(ROOF)
 	ls -l $@
 
 dist: vet dist/linux_amd64/$(NAME) dist/darwin_amd64/$(NAME)
@@ -54,8 +56,8 @@ package: package-linux package-macos
 
 admin:
 	echo "Building $@"
-	mkdir -p dist/linux_amd64 && GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(LDFLAGS)" -o dist/linux_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
-	mkdir -p dist/darwin_amd64 && GOOS=darwin GOARCH=amd64 $(GO) build -ldflags "$(LDFLAGS)" -o dist/darwin_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
+	mkdir -p dist/linux_amd64 && GOOS=linux GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS)" -o dist/linux_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
+	mkdir -p dist/darwin_amd64 && GOOS=darwin GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS)" -o dist/darwin_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
 
 test-image:
 	$(VET) ./image
@@ -76,7 +78,7 @@ test-rpc:
 	$(WITH_ENV) $(GO) tool cover -html=tests/cover_rpc.out -o tests/cover_rpc.out.html
 
 generate:
-	$(GO) generate ./...
+	GO111MODULE=$(GOMOD) $(GO) generate ./...
 
 static: $(STATICS)
 	echo 'packing UI files into static'
