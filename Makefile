@@ -26,7 +26,7 @@ dep:
 
 vet:
 	echo "Checking ./..."
-	$(WITH_ENV) $(VET) ./cmd/... ./config ./image/... ./rpc/... ./storage/... ./web/...
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(VET) ./cmd/... ./config ./image/... ./rpc/... ./storage/... ./web/...
 
 clean:
 	echo "Cleaning dist"
