@@ -281,9 +281,17 @@ func (mw *MetaWrap) Ready(entry *Entry) error {
 		var created time.Time
 		err := tx.QueryRow("SELECT created FROM meta__prepared WHERE id = $1", entry.Id).Scan(&created)
 		if err == nil {
+			logger().Infow("check prepared with id exist", "id", entry.Id, "created", created.Format(time.RFC3339))
 			return nil
 		}
-		logger().Infow("load prepared fail", "id", entry.Id, "err", err)
+		logger().Infow("check prepared with id not exist", "id", entry.Id, "err", err)
+
+		err = tx.QueryRow("SELECT created FROM meta__prepared WHERE hashes->>'hash' = $1", entry.GetHash()).Scan(&created)
+		if err == nil {
+			logger().Infow("check prepared with hash exist", "hash", entry.GetHash(), "created", created.Format(time.RFC3339))
+			return nil
+		}
+		logger().Infow("check prepared with hash not exist", "hash", entry.GetHash(), "err", err)
 
 		_, err = tx.Exec(`INSERT INTO meta__prepared (id, roof, path, name, size, meta, hashes, ids, app_id, author, tags)
 		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, entry.Id, mw.tableSuffix, entry.Path,

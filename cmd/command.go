@@ -88,7 +88,7 @@ func Main() {
 	flag.Usage = func() { usage(1) }
 	args := flag.Args()
 
-	if len(args) < 1 || args[0] == "help" {
+	if len(args) < 1 || args[0] == "help" || args[0] == "-h" {
 		if len(args) == 1 {
 			usage(0)
 		}

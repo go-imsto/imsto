@@ -78,6 +78,10 @@ const (
 	minSize = 43
 )
 
+func (e *Entry) GetHash() string {
+	return e.h
+}
+
 // NewEntryReader ...
 func NewEntryReader(rs io.ReadSeeker, name string) (e *Entry, err error) {
 	w := hash.New()

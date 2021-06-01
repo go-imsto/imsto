@@ -6,6 +6,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"time"
+)
+
+const (
+	userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+)
+
+var (
+	dfthc = &http.Client{
+		Timeout: 25 * time.Second,
+	}
 )
 
 // FetchInput ...
@@ -28,12 +39,14 @@ func Fetch(in FetchInput) (entry *Entry, err error) {
 	if len(in.Referer) > 0 {
 		req.Header.Set("Referer", in.Referer)
 	}
+	req.Header.Set("User-Agent", userAgent)
 
 	logger().Infow("fetching", "in", in, "name", name)
 
 	var res *http.Response
-	res, err = http.DefaultClient.Do(req)
+	res, err = dfthc.Do(req)
 	if err != nil {
+		logger().Warnw("fetch fail", "err", err)
 		return
 	}
 
