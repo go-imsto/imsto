@@ -60,22 +60,22 @@ admin:
 	mkdir -p dist/darwin_amd64 && GOOS=darwin GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS)" -o dist/darwin_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
 
 test-image:
-	$(VET) ./image
+	GO111MODULE=$(GOMOD) $(VET) ./image
 	mkdir -p tests
-	$(WITH_ENV) $(GO) test -v -cover -coverprofile tests/cover_image.out ./image
-	$(WITH_ENV) $(GO) tool cover -html=tests/cover_image.out -o tests/cover_image.out.html
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) test -v -cover -coverprofile tests/cover_image.out ./image
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) tool cover -html=tests/cover_image.out -o tests/cover_image.out.html
 
 test-storage:
-	$(VET) ./storage
+	GO111MODULE=$(GOMOD) $(VET) ./storage
 	mkdir -p tests
-	$(WITH_ENV) $(GO) test -v -cover -coverprofile tests/cover_storage.out ./storage
-	$(WITH_ENV) $(GO) tool cover -html=tests/cover_storage.out -o tests/cover_storage.out.html
+	$(WITH_ENV) GO111MODULE=$(GOMOD) CGO_ENABLED=1 $(GO) test -v -cover -coverprofile tests/cover_storage.out ./storage
+	$(WITH_ENV) GO111MODULE=$(GOMOD) CGO_ENABLED=1 $(GO) tool cover -html=tests/cover_storage.out -o tests/cover_storage.out.html
 
 test-rpc:
-	$(VET) ./rpc
+	GO111MODULE=$(GOMOD) $(VET) ./rpc
 	mkdir -p tests
-	$(WITH_ENV) $(GO) test -v -cover -coverprofile tests/cover_rpc.out ./rpc
-	$(WITH_ENV) $(GO) tool cover -html=tests/cover_rpc.out -o tests/cover_rpc.out.html
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) test -v -cover -coverprofile tests/cover_rpc.out ./rpc
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) tool cover -html=tests/cover_rpc.out -o tests/cover_rpc.out.html
 
 generate:
 	GO111MODULE=$(GOMOD) $(GO) generate ./...
