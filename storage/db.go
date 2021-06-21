@@ -45,6 +45,7 @@ func init() {
 }
 
 func openDb() *sql.DB {
+	logger().Infow("openDb")
 	db, err := sql.Open("postgres", dbDSN)
 	if err != nil {
 		logger().Fatalw("open db fail", "err", err)
@@ -55,6 +56,10 @@ func openDb() *sql.DB {
 // Close database close, stop ping
 func Close() {
 	close(quitC)
+	if dbc != nil {
+		logger().Infow("closeDb")
+		dbc.Close()
+	}
 }
 
 func getDb() *sql.DB {
