@@ -12,7 +12,7 @@ require (
 	github.com/go-imsto/imsto-client v0.3.4
 	github.com/go-playground/form v3.1.4+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/lib/pq v1.10.1
+	github.com/lib/pq v1.10.2
 	github.com/liut/baseconv v0.0.1
 	github.com/liut/jpegquality v0.0.0-20200606101153-6dd6284fded6
 	github.com/liut/staffio-client v0.1.7
