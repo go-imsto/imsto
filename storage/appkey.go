@@ -67,6 +67,7 @@ func (a *App) load() error {
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	if !rows.Next() {
 		return fmt.Errorf("api_key not found or disabled")
