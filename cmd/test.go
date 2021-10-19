@@ -9,8 +9,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/go-imsto/imagid"
-	cimg "github.com/go-imsto/imsto/image"
+	cimg "github.com/go-imsto/imagi"
+	"github.com/go-imsto/imid"
 	"github.com/go-imsto/imsto/storage"
 )
 
@@ -35,7 +35,7 @@ func init() {
 
 func testApp(args []string) bool {
 	if *tiid != "" {
-		id, err := imagid.ParseID(*tiid)
+		id, err := imid.ParseID(*tiid)
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false

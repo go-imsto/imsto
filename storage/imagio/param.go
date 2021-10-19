@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-imsto/imagid"
+	"github.com/go-imsto/imid"
 )
 
 const (
@@ -24,14 +24,14 @@ type harg map[string]string
 
 // Param ...
 type Param struct {
-	ID     imagid.IID `json:"id"`
-	IsOrig bool       `json:"isOrig"`
-	Path   string     `json:"path"`
-	SizeOp string     `json:"size"`
-	Mop    string     `json:"mop,omitempty"`
-	Mode   string     `json:"mode"`
-	Ext    string     `json:"ext"`
-	Name   string     `json:"name,omitempty"`
+	ID     imid.IID `json:"id"`
+	IsOrig bool     `json:"isOrig"`
+	Path   string   `json:"path"`
+	SizeOp string   `json:"size"`
+	Mop    string   `json:"mop,omitempty"`
+	Mode   string   `json:"mode"`
+	Ext    string   `json:"ext"`
+	Name   string   `json:"name,omitempty"`
 
 	Width  uint `json:"width"`
 	Height uint `json:"height"`
@@ -55,8 +55,8 @@ func ParseFromPath(uri string) (p *Param, err error) {
 		return
 	}
 	idstr := m["t1"] + m["t2"] + m["t3"]
-	var id imagid.IID
-	id, err = imagid.ParseID(idstr)
+	var id imid.IID
+	id, err = imid.ParseID(idstr)
 	if err != nil {
 		log.Printf("invalid id: %s", err)
 		return
