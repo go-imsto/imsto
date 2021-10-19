@@ -9,16 +9,16 @@ import (
 	"path"
 	"time"
 
-	"github.com/go-imsto/imagid"
+	iimg "github.com/go-imsto/imagi"
+	"github.com/go-imsto/imid"
 	"github.com/go-imsto/imsto/config"
-	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/backend"
 	"github.com/go-imsto/imsto/storage/hash"
 	cdb "github.com/go-imsto/imsto/storage/types"
 	"github.com/go-imsto/imsto/utils"
 )
 
-type IID = imagid.IID
+type IID = imid.IID
 type AppID uint16
 
 type Author uint32
@@ -46,7 +46,7 @@ func (e *mapItem) roof() string {
 }
 
 type Entry struct {
-	Id      imagid.IID  `json:"id"`
+	Id      imid.IID    `json:"id"`
 	Name    string      `json:"name"`
 	Size    uint32      `json:"size"`
 	Path    string      `json:"path"`
@@ -202,7 +202,7 @@ func (e *Entry) Store(roof string) (ch chan error) {
 			logger().Infow("gen ID fail", "name", e.Name, "len", e.Size)
 			return
 		}
-		e.Id = imagid.IID(id)
+		e.Id = imid.IID(id)
 		e.Path = e.Id.String() + e.im.Attr.Ext
 	}
 
@@ -359,17 +359,17 @@ func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err er
 	maxHeight := iimg.Dimension(config.Current.MaxHeight)
 	if ia.Width > maxWidth || ia.Height > maxHeight {
 		logger().Infow("dimension warning", "maxWidth", maxWidth, "maxHeight", maxHeight, "ia", ia)
-		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, ia.Name)
+		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, ia.Ext)
 		return
 	}
 
 	minWidth := iimg.Dimension(config.Current.MinWidth)
 	minHeight := iimg.Dimension(config.Current.MinHeight)
 	if ia.Width < minWidth || ia.Height < minHeight {
-		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, ia.Name)
+		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, ia.Ext)
 		return
 	}
 
-	wopt = &iimg.WriteOption{Quality: maxQuality, StripAll: true}
+	wopt = &iimg.WriteOption{Quality: maxQuality}
 	return
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
-	iimg "github.com/go-imsto/imsto/image"
+	iimg "github.com/go-imsto/imagi"
 	zlog "github.com/go-imsto/imsto/log"
 
 	_ "github.com/go-imsto/imsto/storage/backend/file" // test

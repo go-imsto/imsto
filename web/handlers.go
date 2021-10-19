@@ -9,7 +9,7 @@ import (
 
 	"github.com/bmizerany/pat"
 
-	"github.com/go-imsto/imagid"
+	"github.com/go-imsto/imid"
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage"
 )
@@ -177,7 +177,7 @@ func countHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetOrHeadHandler ...
 func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := imagid.ParseID(r.URL.Query().Get(":id"))
+	id, err := imid.ParseID(r.URL.Query().Get(":id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)

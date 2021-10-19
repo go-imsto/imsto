@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-imsto/imagid"
+	iimg "github.com/go-imsto/imagi"
+	"github.com/go-imsto/imid"
 	"github.com/go-imsto/imsto/config"
-	iimg "github.com/go-imsto/imsto/image"
 	"github.com/go-imsto/imsto/storage/imagio"
 	cdb "github.com/go-imsto/imsto/storage/types"
 	"github.com/go-imsto/imsto/utils"
@@ -94,7 +94,7 @@ type outItem struct {
 	roof     string
 	src      string
 	dst      string
-	id       imagid.IID
+	id       imid.IID
 	isOrig   bool
 	lock     utils.FLock
 	name     string
@@ -342,7 +342,7 @@ func Delete(roof, id string) error {
 	}
 
 	mw := NewMetaWrapper(roof)
-	eid, err := imagid.ParseID(id)
+	eid, err := imid.ParseID(id)
 	if err != nil {
 		return err
 	}
