@@ -68,7 +68,7 @@ func (ri *rpcImage) loadImageOutput(entry *storage.Entry, sizeOp string) (*pb.Im
 	spath := "orig/" + entry.Path
 	if sizeOp != "" {
 		spath = sizeOp + "/" + entry.Path
-		_, err := storage.LoadPath(storage.CatView + "/" + spath)
+		err := storage.LoadPath(storage.CatView+"/"+spath, func(_ storage.File) {})
 		if err != nil {
 			reportError(err, nil)
 			return nil, err

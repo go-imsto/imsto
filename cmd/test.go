@@ -53,19 +53,14 @@ func testApp(args []string) bool {
 
 	if *turl != "" {
 		fmt.Println("url: ", *turl)
-		item, err := storage.LoadPath(*turl)
-		if err != nil {
-			fmt.Println("Err: ", err)
-			return false
-		}
-		c := func(file storage.File) {
+		err := storage.LoadPath(*turl, func(file storage.File) {
 			fmt.Printf("file: %s, size: %d, mod: %s\n", file.Name(), file.Size(), file.Modified())
-		}
-		err = item.Walk(c)
+		})
 		if err != nil {
 			fmt.Println("Err: ", err)
 			return false
 		}
+
 		return true
 	}
 
@@ -125,7 +120,7 @@ func testApp(args []string) bool {
 	}
 
 	if al > 2 && args[0] == "thumb" {
-		topt := cimg.ThumbOption{Width: 120, Height: 120, IsFit: true, IsCrop: true}
+		topt := &cimg.ThumbOption{Width: 120, Height: 120, IsFit: true, IsCrop: true}
 		err := cimg.ThumbnailFile(args[1], args[2], topt)
 		if err != nil {
 			fmt.Printf("thumb error: %s", err)

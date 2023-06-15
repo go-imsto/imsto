@@ -32,11 +32,17 @@ type Param struct {
 	Mode   string   `json:"mode"`
 	Ext    string   `json:"ext"`
 	Name   string   `json:"name,omitempty"`
+	Roof   string   `json:"roof,omitempty"`
 
 	Width  uint `json:"width"`
 	Height uint `json:"height"`
 
 	m harg
+}
+
+func (p *Param) ValidSizes(ss ...uint) bool {
+	a := Sizes(ss)
+	return a.Has(p.Width) && a.Has(p.Height)
 }
 
 // StoredPath 计算存储路径
@@ -70,6 +76,7 @@ func ParseFromPath(uri string) (p *Param, err error) {
 		Ext:    m["ext"],
 		IsOrig: m["size"] == "orig",
 		Name:   name,
+		Roof:   m["tp"],
 	}
 	if !p.IsOrig {
 		p.Mode, p.Width, p.Height = parseSizeOp(p.SizeOp)
