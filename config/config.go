@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+
+	"github.com/go-imsto/imsto/storage/imagio"
 )
 
 // Section ...
@@ -20,17 +22,7 @@ type Section struct { // example: {demo,file,Demo,/var/lib/imsto/,demo.imsto.org
 }
 
 // Sizes ...
-type Sizes []uint
-
-// Has ...
-func (z Sizes) Has(v uint) bool {
-	for _, size := range z {
-		if v == size || v/2 == size {
-			return true
-		}
-	}
-	return false
-}
+type Sizes = imagio.Sizes
 
 // IPNet ...
 type IPNet struct{ net.IPNet }

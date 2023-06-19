@@ -118,7 +118,7 @@ func (e *Entry) Trek(roof string) (err error) {
 	}
 
 	var buf bytes.Buffer
-	err = e.im.SaveTo(&buf, *wopt)
+	_, err = e.im.SaveTo(&buf, wopt)
 	if err != nil {
 		logger().Infow("im.SaveTo fail", "id", e.Id, "err", err)
 		return

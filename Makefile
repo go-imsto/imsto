@@ -71,6 +71,12 @@ test-storage:
 	$(WITH_ENV) GO111MODULE=$(GOMOD) CGO_ENABLED=1 $(GO) test -v -cover -coverprofile tests/cover_storage.out ./storage
 	$(WITH_ENV) GO111MODULE=$(GOMOD) CGO_ENABLED=1 $(GO) tool cover -html=tests/cover_storage.out -o tests/cover_storage.out.html
 
+test-thumb:
+	GO111MODULE=$(GOMOD) $(VET) ./storage/thumbs
+	mkdir -p tests
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) test -v -cover -coverprofile tests/cover_thumb.out ./storage/thumbs
+	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) tool cover -html=tests/cover_thumb.out -o tests/cover_thumb.out.html
+
 test-rpc:
 	GO111MODULE=$(GOMOD) $(VET) ./rpc
 	mkdir -p tests

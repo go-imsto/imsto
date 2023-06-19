@@ -39,8 +39,10 @@ func Handler() http.Handler {
 func StageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("X-Server", "IMSTO STAGE")
 
-	item, err := storage.LoadPath(r.URL.Path)
-
+	walk := func(file storage.File) {
+		http.ServeContent(w, r, file.Name(), file.Modified(), file)
+	}
+	err := storage.LoadPath(r.URL.Path, walk)
 	if err != nil {
 		logger().Warnw("loadPath fail", "uri", r.URL.Path, "ref", r.Referer(), "err", err)
 		if he, ok := err.(*storage.HttpError); ok {
@@ -59,18 +61,6 @@ func StageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// log.Print(item)
-
-	c := func(file storage.File) {
-		http.ServeContent(w, r, file.Name(), file.Modified(), file)
-	}
-	err = item.Walk(c)
-	if err != nil {
-		logger().Warnw("item walk fail", "item", item, "err", err)
-		w.WriteHeader(500)
-		writeJSONError(w, r, err)
-		return
-	}
 }
 
 func roofsHandler(w http.ResponseWriter, r *http.Request) {
