@@ -186,9 +186,10 @@ func (s *thumber) prepare(o *outItem) (err error) {
 	// var roof string
 	logger().Infow("prepare", "orig", o.origFile)
 	if fi, fe := os.Stat(o.origFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
-		logger().Infow("get mapping", "id", o.id)
+		logger().Infow("loading", "roof", o.GetRoof(), "name", o.GetName())
 		err = s.loader(o)
 		if err != nil {
+			logger().Infow("load fail", "err", err)
 			return err
 		}
 		if fi, fe := os.Stat(o.origFile); fe != nil {
@@ -237,16 +238,11 @@ func (o *outItem) thumbnail() (err error) {
 		// log.Print("thumbnail already done")
 		return
 	}
-	// // mode := o.m["size"][0:1]
-	// dimension := o.p.SizeOp[1:]
-	// // log.Printf("mode %s, dimension %s", mode, dimension)
-	// supportSize := config.Current.SupportSizes
-	// if !supportSize.Has(o.p.Width) || !supportSize.Has(o.p.Height) {
-	// 	err = NewCodeError(400, fmt.Sprintf("Unsupported size: %s", dimension))
-	// 	return
-	// }
 
-	var topt = &imagi.ThumbOption{Width: o.p.Width, Height: o.p.Height, IsFit: true}
+	var topt = &imagi.ThumbOption{
+		Width:  o.p.Width,
+		Height: o.p.Height,
+		IsFit:  true}
 	topt.Format = o.p.Ext
 	if o.p.Mode == "c" {
 		topt.IsCrop = true
@@ -258,7 +254,10 @@ func (o *outItem) thumbnail() (err error) {
 	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.GetName(), "opt", topt)
 	err = imagi.ThumbnailFile(o.origFile, o.dst, topt)
 	if err != nil {
-		logger().Infow("imagi.ThumbnailFile fail", "src", o.src, "name", o.GetName(), "opt", topt, "err", err)
+		logger().Infow("imagi.ThumbnailFile fail",
+			"orig", o.origFile, "dst", o.dst,
+			"src", o.src, "name", o.GetName(),
+			"opt", topt, "err", err)
 		return
 	}
 
