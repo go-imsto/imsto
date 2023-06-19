@@ -134,13 +134,27 @@ type outItem struct {
 	id       imid.IID
 	isOrig   bool
 	lock     utils.FLock
-	name     string
 	length   int64
 	modified time.Time
 	root     string
 	origFile string
 }
 
+func (o *outItem) GetID() string {
+	return o.id.String()
+}
+func (o *outItem) GetName() string {
+	return o.p.Name
+}
+func (o *outItem) GetRoof() string {
+	return o.p.Roof
+}
+func (o *outItem) IsOrigin() bool {
+	return o.isOrig
+}
+func (o *outItem) GetOrigin() string {
+	return o.origFile
+}
 func (o *outItem) Walk(c WalkFunc) error {
 	fp, err := os.Open(o.dst)
 	if err != nil {
@@ -152,7 +166,7 @@ func (o *outItem) Walk(c WalkFunc) error {
 	defer fp.Close()
 	c(&file{
 		File:     fp,
-		name:     o.name,
+		name:     o.GetName(),
 		length:   o.length,
 		modified: o.modified,
 	})
@@ -173,7 +187,7 @@ func (s *thumber) prepare(o *outItem) (err error) {
 	logger().Infow("prepare", "orig", o.origFile)
 	if fi, fe := os.Stat(o.origFile); fe != nil && os.IsNotExist(fe) || fe == nil && fi.Size() == 0 {
 		logger().Infow("get mapping", "id", o.id)
-		err = s.loader(o.id.String(), o.origFile)
+		err = s.loader(o)
 		if err != nil {
 			return err
 		}
@@ -241,10 +255,10 @@ func (o *outItem) thumbnail() (err error) {
 	} else if o.p.Mode == "h" {
 		topt.MaxHeight = o.p.Height
 	}
-	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.name, "opt", topt)
+	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.GetName(), "opt", topt)
 	err = imagi.ThumbnailFile(o.origFile, o.dst, topt)
 	if err != nil {
-		logger().Infow("imagi.ThumbnailFile fail", "src", o.src, "name", o.name, "opt", topt, "err", err)
+		logger().Infow("imagi.ThumbnailFile fail", "src", o.src, "name", o.GetName(), "opt", topt, "err", err)
 		return
 	}
 

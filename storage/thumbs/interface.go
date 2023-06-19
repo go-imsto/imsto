@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+// Item item for load and read
+type Item interface {
+	GetID() string
+	GetName() string
+	GetRoof() string
+	IsOrigin() bool
+	GetOrigin() string
+}
+
 // File ...
 type File interface {
 	io.Reader
@@ -16,7 +25,7 @@ type File interface {
 }
 
 // LoadFunc load by key and save it into a file
-type LoadFunc func(key string, orig string) error
+type LoadFunc func(Item) error
 
 // WalkFunc ..
 type WalkFunc func(f File)

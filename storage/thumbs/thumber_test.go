@@ -27,12 +27,12 @@ func TestThumbnail(t *testing.T) {
 		assert.NoError(t, os.Mkdir(root, 0755))
 	}
 
-	loader := func(key, orig string) error {
+	loader := func(p Item) error {
 		// roof := "demo"
 		buf, err := base64.StdEncoding.DecodeString(jpegData)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, buf)
-		err = os.WriteFile(orig, buf, 0644)
+		err = os.WriteFile(p.GetOrigin(), buf, 0644)
 		assert.NoError(t, err)
 		return err
 	}

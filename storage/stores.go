@@ -51,11 +51,11 @@ func storedPath(r string) string {
 func LoadPath(u string, walk thumbs.WalkFunc) error {
 	th, err := thumbs.New(
 		config.Current.CacheRoot,
-		thumbs.WithLoader(func(key, orig string) error {
+		thumbs.WithLoader(func(p thumbs.Item) error {
 			mw := NewMetaWrapper(commonRoof)
-			entry, err := mw.GetMapping(key)
+			entry, err := mw.GetMapping(p.GetID())
 			if err != nil {
-				logger().Infow("get mapping fail", "key", key, "err", err)
+				logger().Infow("get mapping fail", "name", p.GetName(), "err", err)
 				return NewHttpError(404, err.Error())
 			}
 			roof := entry.roof()
@@ -64,7 +64,7 @@ func LoadPath(u string, walk thumbs.WalkFunc) error {
 			if err != nil {
 				return NewHttpError(500, err.Error())
 			}
-			return utils.SaveFile(orig, data)
+			return utils.SaveFile(p.GetOrigin(), data)
 		}),
 		thumbs.WithWalker(walk))
 	if err != nil {
