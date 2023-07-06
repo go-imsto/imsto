@@ -41,11 +41,11 @@ func (z *IPNet) Decode(value string) error {
 type Config struct {
 	DatabaseDSN      string            `envconfig:"META_DSN"`
 	SentryDSN        string            `envconfig:"SENTRY_DSN"`
-	MaxFileSize      uint              `envconfig:"MAX_FILESIZE" default:"2097152"` // 2MB
-	MaxWidth         uint              `envconfig:"MAX_WIDTH" default:"1600"`
-	MaxHeight        uint              `envconfig:"MAX_HEIGHT" default:"1600"`
-	MinWidth         uint              `envconfig:"MIN_WIDTH" default:"50"`
-	MinHeight        uint              `envconfig:"MIN_HEIGHT" default:"50"`
+	MaxFileSize      uint32            `envconfig:"MAX_FILESIZE" default:"2097152"` // 2MB
+	MaxWidth         uint32            `envconfig:"MAX_WIDTH" default:"1600"`
+	MaxHeight        uint32            `envconfig:"MAX_HEIGHT" default:"1600"`
+	MinWidth         uint32            `envconfig:"MIN_WIDTH" default:"50"`
+	MinHeight        uint32            `envconfig:"MIN_HEIGHT" default:"50"`
 	MaxQuality       uint8             `envconfig:"MAX_QUALITY" default:"88"`
 	CacheRoot        string            `envconfig:"CACHE_ROOT" default:"/opt/imsto/cache/"`
 	LocalRoot        string            `envconfig:"LOCAL_ROOT" default:"/var/lib/imsto/"`

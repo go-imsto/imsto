@@ -59,12 +59,6 @@ admin:
 	mkdir -p dist/linux_amd64 && GOOS=linux GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS)" -o dist/linux_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
 	mkdir -p dist/darwin_amd64 && GOOS=darwin GOARCH=amd64 GO111MODULE=$(GOMOD) $(GO) build -ldflags "$(LDFLAGS)" -o dist/darwin_amd64/$(NAME)-admin $(ROOF)/apps/$(NAME)-admin
 
-test-image:
-	GO111MODULE=$(GOMOD) $(VET) ./image
-	mkdir -p tests
-	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) test -v -cover -coverprofile tests/cover_image.out ./image
-	$(WITH_ENV) GO111MODULE=$(GOMOD) $(GO) tool cover -html=tests/cover_image.out -o tests/cover_image.out.html
-
 test-storage:
 	GO111MODULE=$(GOMOD) $(VET) ./storage
 	mkdir -p tests

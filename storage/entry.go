@@ -128,7 +128,7 @@ func (e *Entry) Trek(roof string) (err error) {
 	e.b = buf.Bytes()
 
 	size := len(e.b)
-	if uint(size) > config.Current.MaxFileSize {
+	if uint32(size) > config.Current.MaxFileSize {
 		err = fmt.Errorf("file: %s size %d is too big, max is %d", e.Name, size, config.Current.MaxFileSize)
 		return
 	}
@@ -345,7 +345,7 @@ func (e *Entry) PushTo(roof string) (sev cdb.Meta, err error) {
 
 func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err error) {
 
-	maxQuality := iimg.Quality(config.Current.MaxQuality)
+	maxQuality := config.Current.MaxQuality
 	if ia.Quality > 0 && maxQuality > 0 {
 		if ia.Quality > maxQuality {
 			log.Printf("jpeg quality %d is too high, set to %d", ia.Quality, maxQuality)
@@ -355,16 +355,16 @@ func filterImageAttr(roof string, ia *iimg.Attr) (wopt *iimg.WriteOption, err er
 		}
 	}
 
-	maxWidth := iimg.Dimension(config.Current.MaxWidth)
-	maxHeight := iimg.Dimension(config.Current.MaxHeight)
+	maxWidth := config.Current.MaxWidth
+	maxHeight := config.Current.MaxHeight
 	if ia.Width > maxWidth || ia.Height > maxHeight {
 		logger().Infow("dimension warning", "maxWidth", maxWidth, "maxHeight", maxHeight, "ia", ia)
 		err = fmt.Errorf("dimension %dx%d of %s is too big", ia.Width, ia.Height, ia.Ext)
 		return
 	}
 
-	minWidth := iimg.Dimension(config.Current.MinWidth)
-	minHeight := iimg.Dimension(config.Current.MinHeight)
+	minWidth := config.Current.MinWidth
+	minHeight := config.Current.MinHeight
 	if ia.Width < minWidth || ia.Height < minHeight {
 		err = fmt.Errorf("dimension %dx%d of %s is too small", ia.Width, ia.Height, ia.Ext)
 		return
