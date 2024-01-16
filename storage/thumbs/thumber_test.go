@@ -3,6 +3,7 @@ package thumbs
 import (
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 
@@ -10,6 +11,14 @@ import (
 
 	"github.com/go-imsto/imsto/utils"
 )
+
+func TestMain(m *testing.M) {
+	h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+	slog.SetDefault(slog.New(h))
+
+	ret := m.Run()
+	os.Exit(ret)
+}
 
 func TestThumbFailed(t *testing.T) {
 	for _, s := range []string{"", "./interface.go", "/noexists"} {

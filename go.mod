@@ -17,8 +17,8 @@ require (
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.8.4
-	go.uber.org/zap v1.25.0
-	golang.org/x/sync v0.5.0
+	go.uber.org/zap v1.26.0
+	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.56.3
 )
 

@@ -2,6 +2,7 @@ package log
 
 import (
 	syslog "log"
+	"log/slog"
 )
 
 type logger struct{}
@@ -24,42 +25,42 @@ func Get() Logger {
 	return Default
 }
 
-func (z *logger) Debugw(msg string, keysAndValues ...interface{}) {
-	syslog.Print(msg, keysAndValues)
+func (z *logger) Debugw(msg string, keysAndValues ...any) {
+	slog.Debug(msg, keysAndValues...)
 }
 
-func (z *logger) Infow(msg string, keysAndValues ...interface{}) {
-	syslog.Print(msg, keysAndValues)
+func (z *logger) Infow(msg string, keysAndValues ...any) {
+	slog.Info(msg, keysAndValues...)
 }
 
-func (z *logger) Warnw(msg string, keysAndValues ...interface{}) {
-	syslog.Print(msg, keysAndValues)
+func (z *logger) Warnw(msg string, keysAndValues ...any) {
+	slog.Warn(msg, keysAndValues...)
 }
 
-func (z *logger) Errorw(msg string, keysAndValues ...interface{}) {
-	syslog.Print(msg, keysAndValues)
+func (z *logger) Errorw(msg string, keysAndValues ...any) {
+	slog.Error(msg, keysAndValues...)
 }
 
-func (z *logger) Fatalw(msg string, keysAndValues ...interface{}) {
+func (z *logger) Fatalw(msg string, keysAndValues ...any) {
 	syslog.Fatal(msg, keysAndValues)
 }
 
-func Debugw(msg string, keysAndValues ...interface{}) {
-	Default.Debugw(msg, keysAndValues...)
+func Debugw(msg string, keysAndValues ...any) {
+	slog.Debug(msg, keysAndValues...)
 }
 
-func Infow(msg string, keysAndValues ...interface{}) {
-	Default.Infow(msg, keysAndValues...)
+func Infow(msg string, keysAndValues ...any) {
+	slog.Info(msg, keysAndValues...)
 }
 
-func Warnw(msg string, keysAndValues ...interface{}) {
-	Default.Warnw(msg, keysAndValues...)
+func Warnw(msg string, keysAndValues ...any) {
+	slog.Warn(msg, keysAndValues...)
 }
 
-func Errorw(msg string, keysAndValues ...interface{}) {
-	Default.Errorw(msg, keysAndValues...)
+func Errorw(msg string, keysAndValues ...any) {
+	slog.Error(msg, keysAndValues...)
 }
 
-func Fatalw(msg string, keysAndValues ...interface{}) {
-	Default.Fatalw(msg, keysAndValues...)
+func Fatalw(msg string, keysAndValues ...any) {
+	Default.Fatalw(msg, keysAndValues)
 }

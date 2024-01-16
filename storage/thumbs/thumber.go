@@ -65,7 +65,7 @@ func (s *thumber) Thumbnail(u string) error {
 		return NewCodeError(400, "bad size with watermark")
 	}
 
-	logger().Debugw("parsed", "param", p)
+	logger().Debugw("thumb parsed", "param", p, "u", u)
 	root := path.Join(s.root, CatThumb)
 	oi := &outItem{
 		p:        p,
