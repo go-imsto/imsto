@@ -13,7 +13,9 @@ var (
 	_ pb.ImageSvcServer = (*rpcImage)(nil)
 )
 
-type rpcImage struct{}
+type rpcImage struct {
+	pb.UnimplementedImageSvcServer
+}
 
 func (ri *rpcImage) Fetch(ctx context.Context, in *pb.FetchInput) (*pb.ImageOutput, error) {
 	app, err := storage.LoadApp(in.ApiKey)
