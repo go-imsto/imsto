@@ -6,7 +6,7 @@ require (
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/aws4 v0.1.1
-	github.com/go-imsto/imagi v0.0.0-20231106040717-20b5e8f5b070
+	github.com/go-imsto/imagi v0.0.0-20240228120159-232a192d20b5
 	github.com/go-imsto/imid v0.1.0
 	github.com/go-imsto/imsto-client v0.3.11
 	github.com/go-playground/form v3.1.4+incompatible
@@ -35,7 +35,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/image v0.13.0 // indirect
+	golang.org/x/image v0.15.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
