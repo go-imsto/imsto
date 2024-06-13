@@ -111,6 +111,7 @@ func ParseSize(s string) (mode string, width, height uint, err error) {
 	return
 }
 
+// parseSizeOp 从输入字符串解析并返回模式、宽度和高度
 func parseSizeOp(s string) (mode string, width, height uint) {
 	mode = s[0:1]
 	sz := s[1:]
@@ -128,18 +129,24 @@ func parseSizeOp(s string) (mode string, width, height uint) {
 }
 
 func (p *Param) ToThumbOption() *imagi.ThumbOption {
-	var topt = &imagi.ThumbOption{
-		Width:  p.Width,
-		Height: p.Height,
+	topt := ThumbOptionFrom(p.Mode, p.Width, p.Height)
+	topt.Format = p.Ext
+	return topt
+}
+
+// MakeThumbOption 根据给定的模式、宽度和高度创建并返回图像缩略图选项
+func ThumbOptionFrom(mode string, width, height uint) *imagi.ThumbOption {
+	topt := &imagi.ThumbOption{
+		Width:  width,
+		Height: height,
 		IsFit:  true,
 	}
-	topt.Format = p.Ext
-	if p.Mode == "c" {
+	if mode == "c" {
 		topt.IsCrop = true
-	} else if p.Mode == "w" {
-		topt.MaxWidth = p.Width
-	} else if p.Mode == "h" {
-		topt.MaxHeight = p.Height
+	} else if mode == "w" {
+		topt.MaxWidth = width
+	} else if mode == "h" {
+		topt.MaxHeight = height
 	}
 	return topt
 }
