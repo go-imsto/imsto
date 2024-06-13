@@ -1,6 +1,7 @@
 module github.com/go-imsto/imsto
 
 go 1.21
+toolchain go1.22.3
 
 require (
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
@@ -35,7 +36,7 @@ require (
 	github.com/tinylib/msgp v1.1.9 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/image v0.15.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
