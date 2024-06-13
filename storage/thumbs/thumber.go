@@ -239,18 +239,7 @@ func (o *outItem) thumbnail() (err error) {
 		return
 	}
 
-	var topt = &imagi.ThumbOption{
-		Width:  o.p.Width,
-		Height: o.p.Height,
-		IsFit:  true}
-	topt.Format = o.p.Ext
-	if o.p.Mode == "c" {
-		topt.IsCrop = true
-	} else if o.p.Mode == "w" {
-		topt.MaxWidth = o.p.Width
-	} else if o.p.Mode == "h" {
-		topt.MaxHeight = o.p.Height
-	}
+	topt := o.p.ToThumbOption()
 	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.GetName(), "opt", topt)
 	err = imagi.ThumbnailFile(o.origFile, o.dst, topt)
 	if err != nil {

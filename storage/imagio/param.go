@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	imagi "github.com/go-imsto/imagi"
 	"github.com/go-imsto/imid"
 )
 
@@ -100,7 +101,7 @@ func parsePath(s string) (m harg, err error) {
 	return
 }
 
-// ParseSize ...
+// ParseSize 解析输入的字符串格式，返回模式、宽度和高度
 func ParseSize(s string) (mode string, width, height uint, err error) {
 	if !sre.MatchString(s) {
 		err = fmt.Errorf("invalid size %q", s)
@@ -124,4 +125,21 @@ func parseSizeOp(s string) (mode string, width, height uint) {
 		height = uint(d)
 	}
 	return
+}
+
+func (p *Param) ToThumbOption() *imagi.ThumbOption {
+	var topt = &imagi.ThumbOption{
+		Width:  p.Width,
+		Height: p.Height,
+		IsFit:  true,
+	}
+	topt.Format = p.Ext
+	if p.Mode == "c" {
+		topt.IsCrop = true
+	} else if p.Mode == "w" {
+		topt.MaxWidth = p.Width
+	} else if p.Mode == "h" {
+		topt.MaxHeight = p.Height
+	}
+	return topt
 }
