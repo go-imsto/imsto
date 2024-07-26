@@ -1,13 +1,14 @@
 module github.com/go-imsto/imsto
 
-go 1.21
+go 1.22
+
 toolchain go1.22.5
 
 require (
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/aws4 v0.1.1
-	github.com/go-imsto/imagi v0.0.0-20240228120159-232a192d20b5
+	github.com/go-imsto/imagi v0.0.0-20240710072604-df6d737784dd
 	github.com/go-imsto/imid v0.1.0
 	github.com/go-imsto/imsto-client v0.3.11
 	github.com/go-playground/form v3.1.4+incompatible
@@ -28,7 +29,7 @@ require (
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect
 	github.com/chai2010/webp v1.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/liut/jpegquality v0.0.0-20230324082343-795f5b3f78b7 // indirect
+	github.com/liut/jpegquality v0.0.0-20240710065817-3f50304d6fdd // indirect
 	github.com/liut/simpauth v0.1.13 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
