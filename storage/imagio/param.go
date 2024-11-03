@@ -1,6 +1,7 @@
 package imagio
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -12,9 +13,14 @@ import (
 )
 
 const (
-	ptImagePath = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png|webp)$`
-	ptImageSize = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?)(?P<mop>[a-z])?`
+	ptImagePath  = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png|webp)$`
+	ptImageSize  = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?)(?P<mop>[a-z])?`
+	minDimension = 20   // 最小尺寸
+	maxDimension = 9999 // 最大尺寸
 )
+
+// ErrInvalidSize 表示无效的尺寸格式
+var ErrInvalidSize = errors.New("invalid image size format")
 
 var (
 	ire = regexp.MustCompile(ptImagePath)
@@ -102,12 +108,35 @@ func parsePath(s string) (m harg, err error) {
 }
 
 // ParseSize 解析输入的字符串格式，返回模式、宽度和高度
+// 格式示例: "s100", "w800x600", "h500x300"
+// 格式示例说明：
+// - c100    (正方形，100x100)
+// - c800x600 (宽800高600)
+// - h500    (限高500)
+// - w300    (限宽500)
 func ParseSize(s string) (mode string, width, height uint, err error) {
-	if !sre.MatchString(s) {
-		err = fmt.Errorf("invalid size %q", s)
-		return
+	// 基础格式验证
+	if len(s) < 2 {
+		return "", 0, 0, fmt.Errorf("%w: %q is too short", ErrInvalidSize, s)
 	}
+
+	// 验证模式字符
+	mode = s[0:1]
+	if !strings.Contains("scwh", mode) {
+		return "", 0, 0, fmt.Errorf("%w: invalid mode %q", ErrInvalidSize, mode)
+	}
+
+	// 使用正则表达式验证完整格式
+	if !sre.MatchString(s) {
+		return "", 0, 0, fmt.Errorf("%w: %q", ErrInvalidSize, s)
+	}
+
 	mode, width, height = parseSizeOp(s)
+	// 验证尺寸范围
+	if !isValidDimension(int(width)) || !isValidDimension(int(height)) {
+		return "", 0, 0, fmt.Errorf("%w: dimensions must be between %d and %d",
+			ErrInvalidSize, minDimension, maxDimension)
+	}
 	return
 }
 
@@ -126,6 +155,11 @@ func parseSizeOp(s string) (mode string, width, height uint) {
 		height = uint(d)
 	}
 	return
+}
+
+// isValidDimension 检查维度是否在有效范围内
+func isValidDimension(d int) bool {
+	return d >= minDimension && d <= maxDimension
 }
 
 func (p *Param) ToThumbOption() *imagi.ThumbOption {
