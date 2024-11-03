@@ -1,6 +1,7 @@
 package thumbs
 
 import (
+	imagi "github.com/go-imsto/imagi"
 	"github.com/go-imsto/imsto/storage/imagio"
 )
 
@@ -36,4 +37,27 @@ func WithWaterOpacity(opacity uint8) func(*thumber) {
 			s.waterOpacity = opacity
 		}
 	}
+}
+
+func ThumbOptionFromParam(p *imagio.Param) *imagi.ThumbOption {
+	topt := ThumbOptionFrom(p.Mode, p.Width, p.Height)
+	topt.Format = p.Ext
+	return topt
+}
+
+// MakeThumbOption 根据给定的模式、宽度和高度创建并返回图像缩略图选项
+func ThumbOptionFrom(mode rune, width, height uint) *imagi.ThumbOption {
+	topt := &imagi.ThumbOption{
+		Width:  width,
+		Height: height,
+		IsFit:  true,
+	}
+	if mode == imagio.ModeCrop {
+		topt.IsCrop = true
+	} else if mode == imagio.ModeWidth {
+		topt.MaxWidth = width
+	} else if mode == imagio.ModeHeight {
+		topt.MaxHeight = height
+	}
+	return topt
 }

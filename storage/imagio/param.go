@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	imagi "github.com/go-imsto/imagi"
 	"github.com/go-imsto/imid"
 )
 
@@ -171,27 +170,4 @@ func parseSizeOp(s string) (mode rune, width, height uint) {
 // isValidDimension 检查维度是否在有效范围内
 func isValidDimension(d int) bool {
 	return d >= minDimension && d <= maxDimension
-}
-
-func (p *Param) ToThumbOption() *imagi.ThumbOption {
-	topt := ThumbOptionFrom(p.Mode, p.Width, p.Height)
-	topt.Format = p.Ext
-	return topt
-}
-
-// MakeThumbOption 根据给定的模式、宽度和高度创建并返回图像缩略图选项
-func ThumbOptionFrom(mode rune, width, height uint) *imagi.ThumbOption {
-	topt := &imagi.ThumbOption{
-		Width:  width,
-		Height: height,
-		IsFit:  true,
-	}
-	if mode == ModeCrop {
-		topt.IsCrop = true
-	} else if mode == ModeWidth {
-		topt.MaxWidth = width
-	} else if mode == ModeHeight {
-		topt.MaxHeight = height
-	}
-	return topt
 }

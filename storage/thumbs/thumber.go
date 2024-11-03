@@ -205,21 +205,20 @@ func (s *thumber) prepare(o *outItem) (err error) {
 		return
 	}
 
-	if o.p.Mop != "" {
-		if o.p.Mop == "w" && s.watermark != "" {
-			orgFile := path.Join(o.root, o.p.SizeOp, o.src)
-			dstFile := path.Join(o.root, o.p.SizeOp+"w", o.src)
-			waterOption := imagi.WaterOption{
-				Pos:     imagi.Golden,
-				Opacity: imagi.Opacity(s.waterOpacity),
-			}
-			err = imagi.WatermarkFile(orgFile, s.watermark, dstFile, waterOption)
-			if err != nil {
-				logger().Infow("watermark fail", "err", err)
-			}
-			o.dst = dstFile
+	if o.p.Mop == "w" && s.watermark != "" {
+		orgFile := path.Join(o.root, o.p.SizeOp, o.src)
+		dstFile := path.Join(o.root, o.p.SizeOp+"w", o.src)
+		waterOption := imagi.WaterOption{
+			Pos:     imagi.Golden,
+			Opacity: imagi.Opacity(s.waterOpacity),
 		}
+		err = imagi.WatermarkFile(orgFile, s.watermark, dstFile, waterOption)
+		if err != nil {
+			logger().Infow("watermark fail", "err", err)
+		}
+		o.dst = dstFile
 	}
+
 	if fi, fe := os.Stat(o.dst); fe == nil && fi.Size() > 0 {
 		o.length = fi.Size()
 		o.modified = fi.ModTime()
@@ -239,7 +238,7 @@ func (o *outItem) thumbnail() (err error) {
 		return
 	}
 
-	topt := o.p.ToThumbOption()
+	topt := ThumbOptionFromParam(o.p)
 	logger().Infow("thumbnail starting", "roof", o.roof, "name", o.GetName(), "opt", topt)
 	err = imagi.ThumbnailFile(o.origFile, o.dst, topt)
 	if err != nil {
