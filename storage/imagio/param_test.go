@@ -23,7 +23,7 @@ func TestParseSize(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      string
-		wantMode   string
+		wantMode   rune
 		wantWidth  uint
 		wantHeight uint
 		wantErr    bool
@@ -31,7 +31,7 @@ func TestParseSize(t *testing.T) {
 		{
 			name:       "square size",
 			input:      "s100",
-			wantMode:   "s",
+			wantMode:   ModeScale,
 			wantWidth:  100,
 			wantHeight: 100,
 			wantErr:    false,
@@ -39,7 +39,7 @@ func TestParseSize(t *testing.T) {
 		{
 			name:       "width and height",
 			input:      "s800x600",
-			wantMode:   "s",
+			wantMode:   ModeScale,
 			wantWidth:  800,
 			wantHeight: 600,
 			wantErr:    false,
@@ -47,7 +47,7 @@ func TestParseSize(t *testing.T) {
 		{
 			name:       "height only",
 			input:      "h500",
-			wantMode:   "h",
+			wantMode:   ModeHeight,
 			wantWidth:  500,
 			wantHeight: 500,
 			wantErr:    false,
@@ -55,7 +55,7 @@ func TestParseSize(t *testing.T) {
 		{
 			name:       "width only",
 			input:      "w600",
-			wantMode:   "w",
+			wantMode:   ModeWidth,
 			wantWidth:  600,
 			wantHeight: 600,
 			wantErr:    false,

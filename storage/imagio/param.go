@@ -13,6 +13,13 @@ import (
 )
 
 const (
+	ModeScale  rune = 's'
+	ModeCrop   rune = 'c'
+	ModeWidth  rune = 'w'
+	ModeHeight rune = 'h'
+)
+
+const (
 	ptImagePath  = `(?P<tp>[a-z_][a-z0-9_-]*)/(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?|orig)(?P<mop>[a-z])?/(?P<t1>[a-z0-9]{2})/?(?P<t2>[a-z0-9]{2})/?(?P<t3>[a-z0-9]{5,36})\.(?P<ext>gif|jpg|jpeg|png|webp)$`
 	ptImageSize  = `(?P<size>[scwh]\d{2,4}(?P<x>x\d{2,4})?)(?P<mop>[a-z])?`
 	minDimension = 20   // 最小尺寸
@@ -36,7 +43,7 @@ type Param struct {
 	Path   string   `json:"path"`
 	SizeOp string   `json:"size"`
 	Mop    string   `json:"mop,omitempty"`
-	Mode   string   `json:"mode"`
+	Mode   rune     `json:"mode"`
 	Ext    string   `json:"ext"`
 	Name   string   `json:"name,omitempty"`
 	Roof   string   `json:"roof,omitempty"`
@@ -114,35 +121,39 @@ func parsePath(s string) (m harg, err error) {
 // - c800x600 (宽800高600)
 // - h500    (限高500)
 // - w300    (限宽500)
-func ParseSize(s string) (mode string, width, height uint, err error) {
+func ParseSize(s string) (mode rune, width, height uint, err error) {
 	// 基础格式验证
 	if len(s) < 2 {
-		return "", 0, 0, fmt.Errorf("%w: %q is too short", ErrInvalidSize, s)
+		err = fmt.Errorf("%w: %q is too short", ErrInvalidSize, s)
+		return
 	}
 
 	// 验证模式字符
-	mode = s[0:1]
-	if !strings.Contains("scwh", mode) {
-		return "", 0, 0, fmt.Errorf("%w: invalid mode %q", ErrInvalidSize, mode)
+	mode = rune(s[0])
+	if !strings.ContainsRune("scwh", rune(mode)) {
+		err = fmt.Errorf("%w: invalid mode %q", ErrInvalidSize, mode)
+		return
 	}
 
 	// 使用正则表达式验证完整格式
 	if !sre.MatchString(s) {
-		return "", 0, 0, fmt.Errorf("%w: %q", ErrInvalidSize, s)
+		err = fmt.Errorf("%w: %q", ErrInvalidSize, s)
+		return
 	}
 
 	mode, width, height = parseSizeOp(s)
 	// 验证尺寸范围
 	if !isValidDimension(int(width)) || !isValidDimension(int(height)) {
-		return "", 0, 0, fmt.Errorf("%w: dimensions must be between %d and %d",
+		err = fmt.Errorf("%w: dimensions must be between %d and %d",
 			ErrInvalidSize, minDimension, maxDimension)
+		return
 	}
 	return
 }
 
 // parseSizeOp 从输入字符串解析并返回模式、宽度和高度
-func parseSizeOp(s string) (mode string, width, height uint) {
-	mode = s[0:1]
+func parseSizeOp(s string) (mode rune, width, height uint) {
+	mode = rune(s[0])
 	sz := s[1:]
 	if i := strings.Index(sz, "x"); i > 1 {
 		dw, _ := strconv.Atoi(sz[0:i])
@@ -169,17 +180,17 @@ func (p *Param) ToThumbOption() *imagi.ThumbOption {
 }
 
 // MakeThumbOption 根据给定的模式、宽度和高度创建并返回图像缩略图选项
-func ThumbOptionFrom(mode string, width, height uint) *imagi.ThumbOption {
+func ThumbOptionFrom(mode rune, width, height uint) *imagi.ThumbOption {
 	topt := &imagi.ThumbOption{
 		Width:  width,
 		Height: height,
 		IsFit:  true,
 	}
-	if mode == "c" {
+	if mode == ModeCrop {
 		topt.IsCrop = true
-	} else if mode == "w" {
+	} else if mode == ModeWidth {
 		topt.MaxWidth = width
-	} else if mode == "h" {
+	} else if mode == ModeHeight {
 		topt.MaxHeight = height
 	}
 	return topt
