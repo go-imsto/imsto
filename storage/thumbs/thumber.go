@@ -14,7 +14,7 @@ import (
 
 // consts Cate of Key
 const (
-	catOrig  = "orig"
+	CatOrig  = "orig"
 	CatThumb = "thumb"
 )
 
@@ -54,7 +54,7 @@ func (s *thumber) Thumbnail(u string) error {
 		logger().Infow("bad url", "url", u, "err", err)
 		return err
 	}
-	if p.SizeOp != catOrig {
+	if p.SizeOp != CatOrig {
 		dimension := p.SizeOp[1:]
 		if len(s.okSizes) > 0 && !p.ValidSizes(s.okSizes...) {
 			return NewCodeError(400, fmt.Sprintf("unsupported size: %s", dimension))
@@ -73,7 +73,7 @@ func (s *thumber) Thumbnail(u string) error {
 		src:      p.Path,
 		isOrig:   p.IsOrig,
 		root:     root,
-		origFile: path.Join(root, catOrig, p.Path),
+		origFile: path.Join(root, CatOrig, p.Path),
 	}
 
 	if oi.isOrig {
