@@ -1,8 +1,6 @@
 module github.com/go-imsto/imsto
 
-go 1.22
-
-toolchain go1.22.5
+go 1.23.0
 
 require (
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
@@ -27,7 +25,7 @@ require (
 
 require (
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect
-	github.com/chai2010/webp v1.1.1 // indirect
+	github.com/chai2010/webp v1.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/liut/jpegquality v0.0.0-20240710065817-3f50304d6fdd // indirect
 	github.com/liut/simpauth v0.1.15 // indirect
