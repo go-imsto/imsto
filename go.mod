@@ -8,7 +8,7 @@ require (
 	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/aws4 v0.1.1
-	github.com/go-imsto/imagi v0.0.0-20250519072135-1459175f73e9
+	github.com/go-imsto/imagi v0.0.0-20250616180444-c436c60afe5e
 	github.com/go-imsto/imid v0.1.0
 	github.com/go-imsto/imsto-client v0.3.11
 	github.com/go-playground/form v3.1.4+incompatible
@@ -21,7 +21,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sync v0.13.0
+	golang.org/x/sync v0.15.0
 	google.golang.org/grpc v1.71.1
 )
 
@@ -36,11 +36,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/image v0.25.0 // indirect
+	golang.org/x/image v0.28.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/protobuf v1.36.4 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
