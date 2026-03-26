@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bmizerany/pat"
 	staffio "github.com/liut/staffio-client"
 	"go.uber.org/zap"
 
@@ -37,24 +36,28 @@ func main() {
 
 	apiKey = config.EnvOr("IMSTO_DEMO_API_KEY", "")
 
-	mux := pat.New()
+	mux := http.NewServeMux()
 	loginPath := "/auth/login"
 	staffio.SetLoginPath(loginPath)
 	staffio.SetAdminPath("/")
 
-	mux.Get(loginPath, http.HandlerFunc(staffio.LoginHandler))
-	mux.Get("/auth/callback", staffio.AuthCodeCallback("verandah"))
+	mux.HandleFunc(loginPath, staffio.LoginHandler)
+	mux.HandleFunc("/auth/callback", staffio.AuthCodeCallback("verandah").ServeHTTP)
 	authF1 := staffio.AuthMiddleware(true) // auto redirect
 
-	mux.Get("/", authF1(http.HandlerFunc(handleIndex)))
-	mux.Get("/gallery", httpLogger(authF1(http.HandlerFunc(handlerGallery))))
-	mux.Get("/upload", httpLogger(authF1(http.HandlerFunc(handlerUpload))))
+	mux.HandleFunc("/", adapt(authF1(http.HandlerFunc(handleIndex))))
+	mux.HandleFunc("/gallery", adapt(httpLogger(authF1(http.HandlerFunc(handlerGallery)))))
+	mux.HandleFunc("/upload", adapt(httpLogger(authF1(http.HandlerFunc(handlerUpload)))))
 
-	mux.Get("/static/", http.StripPrefix("/static/", static.Server))
+	mux.Handle("/static/", http.StripPrefix("/static/", static.Server))
 
 	logger().Infow("listen admin", "addr", addr)
 	logger().Fatalw("listen fail", "err", http.ListenAndServe(":8970", mux))
 
+}
+
+func adapt(h http.Handler) func(http.ResponseWriter, *http.Request) {
+	return h.ServeHTTP
 }
 
 func logger() zlog.Logger {

@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bmizerany/pat"
-
 	"github.com/go-imsto/imid"
 	"github.com/go-imsto/imsto/config"
 	"github.com/go-imsto/imsto/storage"
@@ -16,21 +14,21 @@ import (
 
 // Handler ...
 func Handler() http.Handler {
-	mux := pat.New()
-	mux.Get("/imsto/roofs", http.HandlerFunc(roofsHandler))
+	mux := http.NewServeMux()
 
-	mux.Post("/imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
-	mux.Get("/imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
+	mux.HandleFunc("GET /imsto/roofs", roofsHandler)
 
-	mux.Post("/imsto/token", CheckAPIKey(http.HandlerFunc(tokenHandler)))
+	mux.Handle("POST /imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerPost)))
+	mux.Handle("GET /imsto/ticket", CheckAPIKey(http.HandlerFunc(ticketHandlerGet)))
 
-	mux.Post("/imsto/:roof", CheckAPIKey(secure(storedHandler)))
-	mux.Del("/imsto/:roof/:id", CheckAPIKey(secure(deleteHandler)))
-	mux.Get("/imsto/:roof/id", http.HandlerFunc(GetOrHeadHandler))
-	mux.Get("/imsto/:roof/metas/count", http.HandlerFunc(countHandler))
-	mux.Get("/imsto/:roof/metas", http.HandlerFunc(browseHandler))
-	// mux.Post("/imsto/:roof/token", http.HandlerFunc(tokenHandler))
-	// mux.Post("/imsto/:roof/ticket", http.HandlerFunc(ticketHandler))
+	mux.Handle("POST /imsto/token", CheckAPIKey(http.HandlerFunc(tokenHandler)))
+
+	mux.Handle("POST /imsto/:roof", CheckAPIKey(secure(storedHandler)))
+	mux.Handle("DELETE /imsto/:roof/:id", CheckAPIKey(secure(deleteHandler)))
+
+	mux.HandleFunc("GET /imsto/:roof/id", GetOrHeadHandler)
+	mux.HandleFunc("GET /imsto/:roof/metas/count", countHandler)
+	mux.HandleFunc("GET /imsto/:roof/metas", browseHandler)
 
 	return mux
 }
@@ -69,7 +67,7 @@ func roofsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func browseHandler(w http.ResponseWriter, r *http.Request) {
-	roof := r.URL.Query().Get(":roof")
+	roof := r.PathValue("roof")
 	logger().Debugw("browse", "roof", roof, "query", r.URL.Query())
 	var (
 		limit  uint64
@@ -167,7 +165,7 @@ func countHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetOrHeadHandler ...
 func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := imid.ParseID(r.URL.Query().Get(":id"))
+	id, err := imid.ParseID(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Printf("ERROR: %s", err)
@@ -175,7 +173,7 @@ func GetOrHeadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roof := r.URL.Query().Get(":roof")
+	roof := r.PathValue("roof")
 	mw := storage.NewMetaWrapper(roof)
 	entry, err := mw.GetMeta(id.String())
 	if err != nil {
@@ -214,7 +212,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if us.Roof == "" {
-		us.Roof = r.URL.Query().Get(":roof")
+		us.Roof = r.PathValue("roof")
 	}
 	if err = r.ParseMultipartForm(DefaultMaxMemory); err != nil {
 		log.Print("multipart form parse error:", err)
@@ -292,7 +290,7 @@ func storedHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
-	err := storage.Delete(r.URL.Query().Get(":roof"), r.URL.Query().Get(":id"))
+	err := storage.Delete(r.PathValue("roof"), r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("ERROR: %s", err)

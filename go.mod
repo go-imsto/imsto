@@ -3,7 +3,6 @@ module github.com/go-imsto/imsto
 go 1.25.0
 
 require (
-	github.com/bmizerany/pat v0.0.0-20210406213842-e4b6760bdd6f
 	github.com/getsentry/raven-go v0.2.0
 	github.com/go-imsto/aws4 v0.1.1
 	github.com/go-imsto/imagi v0.0.0-20250616180444-c436c60afe5e
